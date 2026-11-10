@@ -1,0 +1,1898 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Carte des pousses</title>
+<meta name="description" content="Chances de pousse des champignons : Aigoual, Pic Saint-Loup, Haut-Languedoc.">
+<meta name="theme-color" content="#5A6B3A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Pousses">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="stylesheet" href="lib/leaflet.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,500;0,700;1,400&family=Alegreya+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EFEDE4; --panel:#F7F5EE; --ink:#2B2620; --muted:#6B675C; --line:#D2CEBF;
+  --moss:#5A6B3A; --moss-soft:#E0E3D0; --ochre:#B07A1E; --water:#3E6E8C; --danger:#8E2B2B;
+  --serif:"Alegreya", Georgia, "Times New Roman", serif;
+  --sans:"Alegreya Sans", "Gill Sans", "Segoe UI", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#1C1D18; --panel:#23241E; --ink:#E7E4D9; --muted:#A49F91; --line:#3C3E33;
+    --moss:#AFC08E; --moss-soft:#30362A; --ochre:#E2AF4F; --water:#8DB8D3; --danger:#E08A7E;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#1C1D18; --panel:#23241E; --ink:#E7E4D9; --muted:#A49F91; --line:#3C3E33;
+  --moss:#AFC08E; --moss-soft:#30362A; --ochre:#E2AF4F; --water:#8DB8D3; --danger:#E08A7E;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.4;
+  display:grid;grid-template-columns:390px 1fr;height:100%}
+#panel{background:var(--panel);border-right:1px solid var(--line);overflow-y:auto;padding:22px 22px 40px;
+  padding-top:max(22px, env(safe-area-inset-top))}
+#map{height:100%;background:var(--paper)}
+h1{font-family:var(--serif);font-weight:700;font-size:30px;line-height:1.05;margin:0 0 4px;letter-spacing:-.01em}
+.sub{color:var(--muted);margin:0 0 18px;font-size:15px}
+h2{font-family:var(--serif);font-weight:500;font-size:20px;margin:22px 0 8px}
+h3{font-family:var(--serif);font-weight:500;font-size:17px;margin:14px 0 4px}
+section{border-top:1px solid var(--line);padding-top:4px}
+.daylabel{font-family:var(--serif);font-size:19px;margin:0 0 2px}
+.daylabel small{font-family:var(--sans);color:var(--muted);font-size:14px;margin-left:6px}
+input[type=range]{width:100%;accent-color:var(--moss);margin:6px 0 4px}
+canvas.chart{width:100%;display:block;margin-top:6px}
+#chart1{height:110px} #chart2{height:80px}
+.chartnote{font-size:13px;color:var(--muted);margin:4px 0 0}
+.keys{display:flex;gap:12px;font-size:13px;color:var(--muted);margin-top:4px;flex-wrap:wrap}
+.keys i{display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:-1px;border-radius:2px}
+.keys i.l{height:3px;vertical-align:3px}
+dl.wx{display:grid;grid-template-columns:1fr auto;gap:2px 10px;margin:10px 0 0;font-size:15px}
+dl.wx dt{color:var(--muted)} dl.wx dd{margin:0;text-align:right;font-weight:700}
+.zones{margin:10px 0 8px}
+.tabs{display:flex;gap:18px;border-bottom:1px solid var(--line);margin-top:4px}
+.tabs button{background:none;border:0;font:inherit;font-family:var(--serif);font-size:18px;color:var(--muted);padding:6px 0 8px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ochre)}
+.now{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;align-items:baseline;margin:14px 0 4px}
+.now .big{font-family:var(--serif);font-size:44px;line-height:1;font-weight:500}
+.now .sky{font-family:var(--serif);font-size:19px}
+.place{font-family:var(--serif);font-size:20px;margin:12px 0 0}
+.place small{display:block;font-family:var(--sans);font-size:13px;color:var(--muted)}
+#hourly{height:120px}
+.days{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.days div{border:1px solid var(--line);border-radius:8px;padding:8px;font-size:14px}
+.days b{display:block;font-family:var(--serif);font-weight:500;font-size:16px}
+.verdict{border-left:3px solid var(--ochre);padding:6px 0 6px 10px;margin:14px 0 0;font-size:15px}
+.zones label{font-size:14px;padding:7px 4px;white-space:nowrap}
+.modes{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;margin:6px 0 12px}
+.modes label{flex:1;text-align:center;padding:7px 8px;cursor:pointer;font-size:15px}
+.modes input{position:absolute;opacity:0;pointer-events:none}
+.modes label:has(input:checked){background:var(--moss);color:var(--panel)}
+.modes label:has(input:focus-visible){outline:2px solid var(--ochre);outline-offset:-3px}
+.modes label.disabled{opacity:.45;cursor:not-allowed}
+button.primary{width:100%;font:inherit;font-weight:700;font-size:16px;padding:11px 14px;border-radius:10px;border:0;background:var(--ink);color:var(--panel);cursor:pointer}
+button.primary:disabled{opacity:.5;cursor:progress}
+button:focus-visible,input:focus-visible{outline:2px solid var(--ochre);outline-offset:2px}
+#status{font-size:14px;color:var(--muted);margin:8px 0 0;min-height:1.4em}
+#status.err{color:var(--danger)}
+.sp{border-bottom:1px solid var(--line)}
+.sprow{display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:8px;padding:7px 0}
+.sprow input{accent-color:var(--moss);margin:0}
+.spname{font-family:var(--serif);font-size:17px;line-height:1.15;cursor:pointer}
+.spname em{display:block;font-size:14px;color:var(--muted)}
+.spname .off{color:var(--muted)}
+.sp.unlikely .spname{opacity:.55}
+.season{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--moss);margin-left:6px;vertical-align:2px}
+.rank{display:flex;align-items:center;gap:6px}
+.rank small{font-size:12px;color:var(--muted);min-width:30px;text-align:right}
+.bar{width:54px;height:6px;background:var(--moss-soft);border-radius:3px;overflow:hidden}
+.bar span{display:block;height:100%;background:var(--ochre)}
+.more{background:none;border:0;color:var(--muted);font:inherit;font-size:13px;cursor:pointer;padding:2px 0 0;grid-column:2;justify-self:start}
+.details{grid-column:2 / 4;font-size:14px;padding:0 0 10px;display:none}
+.details.open{display:block}
+.details p{margin:4px 0}
+.details .warn{color:var(--danger)}
+.details .src{color:var(--muted);font-size:13px}
+.tag{display:inline-block;font-size:12px;border:1px solid var(--line);border-radius:999px;padding:1px 8px;margin:0 4px 4px 0;color:var(--muted)}
+.legend{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-top:8px}
+.ramp{flex:1;height:10px;border-radius:5px;background:linear-gradient(90deg,#F2E6A0,#E3A63A,#C4572A,#7A1E3A)}
+.fine{font-size:14px}
+.fine p{margin:6px 0}
+.fine ol{padding-left:20px;margin:6px 0;color:var(--muted);font-size:13px}
+.fine ol li{margin-bottom:4px}
+.caution{border-left:3px solid var(--danger);padding:6px 0 6px 10px;margin:14px 0;font-size:14px}
+.leaflet-container{font-family:var(--sans)}
+.map-banner{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 10px;max-width:340px;font-size:14px;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.leaflet-control-layers-toggle{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232B2620' stroke-width='1.8' stroke-linejoin='round'%3E%3Cpath d='M12 3 2 8l10 5 10-5-10-5Z'/%3E%3Cpath d='m2 13 10 5 10-5'/%3E%3Cpath d='m2 17.5 10 5 10-5' opacity='.5'/%3E%3C/svg%3E")!important;background-size:24px 24px!important;background-repeat:no-repeat;background-position:center}
+.diag li{list-style:none;margin:2px 0}
+.diag li b{display:inline-block;width:1.4em}
+.leaflet-popup-content{font-size:14px;line-height:1.35;min-width:240px}
+.pop h3{font-family:var(--serif);font-size:17px;margin:0 0 4px}
+.pop table{border-collapse:collapse;width:100%;margin:4px 0 8px}
+.pop td{padding:1px 0;vertical-align:top}
+.pop td:first-child{color:#6B675C;padding-right:8px;white-space:nowrap}
+.pop .rk{display:grid;grid-template-columns:1fr 60px 40px;gap:6px;align-items:center;margin:2px 0}
+.pop .rk .bar{width:60px}
+.pop .rk b{font-weight:500}
+.pop .rk span:last-child{white-space:nowrap;text-align:right}
+.pop .why{font-size:12.5px;color:#6B675C;margin:2px 0 6px}
+.handle{display:none}
+.mstatus{display:none}
+.quick{display:flex;gap:8px;margin:10px 0 4px}
+.quick button{flex:1;font:inherit;font-size:15px;font-weight:700;padding:10px 8px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+.quick button.on{background:var(--water);color:#fff;border-color:var(--water)}
+button.secondary{width:100%;font:inherit;font-size:15px;font-weight:700;padding:10px 12px;border-radius:10px;border:1px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer;margin-top:8px}
+button.secondary:disabled{opacity:.5}
+details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer;margin:18px 0 6px}
+.me{width:16px;height:16px;border-radius:50%;background:#2E7BD6;border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+@media (max-width:760px){
+  html,body{height:100%;overflow:hidden}
+  body{display:block}
+  #map{position:fixed;top:0;left:0;right:0;bottom:0;height:auto}
+  #panel{position:fixed;left:0;right:0;bottom:0;z-index:1000;height:var(--sheet,180px);max-height:calc(100% - env(safe-area-inset-top,0px) - 8px);
+    border-right:0;border-top:1px solid var(--line);border-radius:16px 16px 0 0;box-shadow:0 -4px 18px rgba(0,0,0,.18);
+    padding:0 16px calc(24px + env(safe-area-inset-bottom,0px));overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+    transition:height .25s ease}
+  #panel.dragging{transition:none}
+  .handle{display:block;position:sticky;top:0;z-index:2;background:var(--panel);padding:8px 0 4px;margin:0 -16px;touch-action:none;cursor:grab}
+  .handle span{display:block;width:44px;height:5px;border-radius:3px;background:var(--line);margin:0 auto}
+  h1{display:none}
+  .zones{margin:2px 0 6px}
+  .quick{margin:6px 0 2px}
+  .mstatus{display:block;font-size:13px;color:var(--muted);margin:4px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mstatus.err{color:var(--danger)}
+  .sub{font-size:14px;margin-bottom:10px}
+  #tab-carte{display:flex;flex-direction:column}
+  #sec-calcul{order:1} #sec-especes{order:2} #sec-jour{order:3} #tab-carte .caution{order:4} #tab-carte .fine{order:5}
+  .leaflet-top{top:env(safe-area-inset-top,0px)}
+  .leaflet-bottom{bottom:var(--sheet,180px)}
+  .leaflet-popup-content{min-width:200px;max-width:260px;font-size:13.5px}
+  .modes label,.tabs button,button.primary{min-height:44px}
+  .sprow{padding:9px 0}
+  input[type=range]{height:28px}
+}
+</style>
+</head>
+<body>
+<aside id="panel">
+  <div class="handle" id="handle" role="button" aria-label="Agrandir ou réduire le panneau" tabindex="0"><span></span></div>
+  <h1>Carte des pousses</h1>
+  <div class="modes zones" role="radiogroup" aria-label="Secteur">
+    <label><input type="radio" name="zone" value="aigoual">Aigoual</label>
+    <label><input type="radio" name="zone" value="pic-saint-loup">Pic Saint-Loup</label>
+    <label><input type="radio" name="zone" value="haut-languedoc">Haut-Languedoc</label>
+  </div>
+  <div class="quick">
+    <button id="aroundme">Analyser autour de moi</button>
+    <button id="follow" aria-pressed="false">Suivre ma position</button>
+  </div>
+  <p class="mstatus" id="mstatus"></p>
+  <p class="sub" id="zonesub"></p>
+  <div class="tabs" role="tablist">
+    <button role="tab" id="tb-carte" aria-selected="true" aria-controls="tab-carte">Carte des pousses</button>
+    <button role="tab" id="tb-meteo" aria-selected="false" aria-controls="tab-meteo">Météo sur place</button>
+  </div>
+  <div id="tab-meteo" role="tabpanel" hidden>
+    <p class="sub" style="margin-top:12px">Conditions actuelles et prévisions des prochaines heures, d’après les modèles Météo-France AROME et ARPÈGE.</p>
+    <div class="modes" style="margin-bottom:6px">
+      <label><input type="radio" name="wxwhere" value="gps">Ma position</label>
+      <label><input type="radio" name="wxwhere" value="map" checked>Point de la carte</label>
+    </div>
+    <p class="chartnote" id="wxwherenote">Cliquez sur la carte pour choisir un lieu, ou utilisez votre position.</p>
+    <div id="wxnow"></div>
+  </div>
+  <div id="tab-carte" role="tabpanel">
+
+  <section id="sec-jour">
+    <h2>Jour étudié</h2>
+    <p class="daylabel" id="daylabel">Chargement de la météo…</p>
+    <input type="range" id="day" min="0" max="0" value="0" aria-label="Jour étudié" disabled>
+    <canvas class="chart" id="chart1" aria-label="Pluie et humidité du sol"></canvas>
+    <div class="keys"><span><i style="background:var(--ochre)"></i>pluie des 26 derniers jours</span><span><i style="background:var(--line)"></i>autre pluie</span><span><i class="l" style="background:var(--water)"></i>eau du sol (9 à 27 cm)</span></div>
+    <canvas class="chart" id="chart2" aria-label="Température et humidité de l’air"></canvas>
+    <div class="keys"><span><i class="l" style="background:var(--moss)"></i>température moyenne</span><span><i class="l" style="background:var(--muted)"></i>humidité de l’air</span></div>
+    <p class="chartnote" id="chartnote"></p>
+    <dl class="wx" id="wx"></dl>
+  </section>
+
+  <section id="sec-calcul">
+    <h2>Calcul</h2>
+
+    <div class="modes" role="radiogroup" aria-label="Mode de calcul">
+      <label id="lab-meteo"><input type="radio" name="mode" value="meteo" checked>Terrain et météo</label>
+      <label><input type="radio" name="mode" value="terrain">Terrain seul</label>
+    </div>
+    <button class="primary" id="go">Analyser la zone visible</button>
+    <p id="status">Zoomez sur un secteur (15 km de côté au plus), puis lancez l’analyse.</p>
+    <div class="legend"><span>faible</span><div class="ramp"></div><span>forte</span></div>
+    <label class="chartnote" style="display:flex;align-items:center;gap:8px;margin-top:6px">Opacité de la coloration<input type="range" id="heatop" min="0.2" max="1" step="0.05" value="0.7" style="flex:1"></label>
+    <h3>Terrains affichés</h3>
+    <div class="modes" role="radiogroup" aria-label="Terrains affichés">
+      <label><input type="radio" name="land" value="tous" checked>Tous</label>
+      <label><input type="radio" name="land" value="public">Forêts publiques</label>
+      <label><input type="radio" name="land" value="prive">Privés</label>
+    </div>
+    <h3>Préparer la sortie</h3>
+    <p class="chartnote">À faire en wifi avant de partir : enregistre l’analyse et le fond de carte de la zone, pour les retrouver en forêt sans réseau. Le GPS fonctionne sans réseau.</p>
+    <button class="secondary" id="savetrip">Enregistrer pour la sortie</button>
+    <button class="secondary" id="opentrip" hidden>Ouvrir la sortie enregistrée</button>
+    <p class="chartnote" id="tripnote"></p>
+    <p class="chartnote" id="landnote">Forêts publiques : domaniales, communales et autres forêts gérées par l’ONF, où la cueillette familiale est en général tolérée. Le reste est le plus souvent privé : il faut l’accord du propriétaire.</p>
+  </section>
+
+  <section id="sec-especes">
+    <h2>Espèces</h2>
+    <p class="chartnote" id="sporder" style="margin-top:-4px">Classées par saison. Lancez une analyse pour les classer de la plus probable à la moins probable.</p>
+    <div id="species"></div>
+  </section>
+
+  <div class="caution">Cet outil estime des chances de pousse, il n’identifie aucun champignon. Ne consommez jamais une récolte sans identification certaine, par exemple auprès d’un pharmacien ou d’une société mycologique.</div>
+
+  <section class="fine">
+    <h2>Avant de partir</h2>
+    <p>Le cœur du Parc national des Cévennes, côté Aigoual, a sa propre réglementation de la cueillette ; côté Haut-Languedoc, renseignez-vous aussi auprès du Parc naturel régional et des communes. Dans les forêts publiques, la cueillette familiale est tolérée dans des limites raisonnables, souvent 5 litres par personne et par jour ; en forêt privée, il faut l’accord du propriétaire. Dans l’Hérault, le Gard et les départements voisins, des arrêtés préfectoraux réglementent aussi l’accès aux massifs forestiers en période de risque d’incendie, jusqu’à fin septembre au moins. La couche « Forêts publiques » aide à savoir où l’on se trouve.</p>
+
+    <details class="more-info"><summary>Comment c’est calculé, sources et services</summary>
+    <p>Chaque maille reçoit un score de terrain et un score météo, multipliés entre eux. Le détail par facteur s’affiche quand on clique sur la carte.</p>
+    <h3>Terrain</h3>
+    <p>L’arbre hôte vient de la BD Forêt de l’IGN. Le pH et la part de sable du sol viennent de SoilGrids (modèle mondial à 250 m) ; à défaut, l’outil se rabat sur les arbres indicateurs. L’altitude, l’exposition et la position dans le relief viennent du RGE ALTI. Les versants nord et les fonds de vallon gardent mieux l’eau, ce qui compte davantage quand le sol s’assèche.</p>
+    <h3>Météo</h3>
+    <p>En climat méditerranéen, l’eau est le facteur limitant [2][3][4]. L’indice d’eau combine la pluie des 26 derniers jours [1], le bilan pluie moins évapotranspiration [4] et l’humidité du sol modélisée entre 9 et 27 cm, qui prédit les récoltes aussi bien que la pluie [3]. La température retenue est la moyenne des 20 derniers jours [1], corrigée de l’altitude ; les coups de chaleur freinent les pousses [2][5]. L’humidité de l’air, via le déficit de saturation, joue sur le dessèchement des champignons sortis [6]. Une baisse marquée de la température du sol donne un léger bonus [7].</p>
+    <h3>Précisions ajoutées</h3>
+    <p>La roche vient de la carte géologique harmonisée du BRGM au 1/50 000 : chaque formation visible est identifiée et classée en calcaire, marnes, roche siliceuse ou dépôts récents. Elle prime sur SoilGrids pour estimer l’acidité du sol.</p>
+    <p>Chaque maille a son propre bilan d’eau, jour par jour depuis 45 jours : la réserve utile est estimée à partir de la texture du sol [10], de la profondeur probable (sols minces sur calcaire et sur les crêtes, plus épais en fond de vallon) et des cailloux ; elle se remplit avec la pluie (moins ce que retiennent les arbres) et se vide par évaporation, plus vite sur les versants sud. Cette réserve compte pour plus de la moitié de l’indice d’eau.</p>
+    <p>La hauteur et le couvert des arbres viennent du LiDAR HD de l’IGN : les très jeunes peuplements sont pénalisés, les coupes récentes repérées, et les boisements absents de la BD Forêt pris en compte. La densité et la maturité du peuplement influencent la production de cèpes [11]. Les forêts anciennes reçoivent un léger bonus.</p>
+    <p>Ces règles (profondeurs, pénalités, bonus) sont des choix de modélisation raisonnables, à confronter au terrain.</p>
+    <h3>Vérifier les services</h3>
+    <p>Si une carte ou une donnée ne s’affiche pas, ce test indique quel service ne répond pas depuis votre navigateur.</p>
+    <button class="primary" id="diagbtn" style="font-size:15px;padding:8px 12px">Tester les services</button>
+    <ul class="diag" id="diag" style="padding:0;margin:8px 0"></ul>
+    <h3>Terrains publics et privés</h3>
+    <p>Les forêts publiques viennent de la couche de l’ONF diffusée par l’IGN. Tout ce qui n’en fait pas partie est classé « privé », ce qui est vrai dans la grande majorité des cas, mais pas toujours (chemins, terrains communaux non forestiers). En cas de doute, le cadastre fait foi, et un panneau à l’entrée d’une parcelle prime sur la carte.</p>
+    <h3>D’où vient la météo</h3>
+    <p>Pluie, températures, humidité de l’air et évaporation viennent des modèles de Météo-France, AROME (maille de 1,3 km) puis ARPÈGE, servis par Open-Meteo : ce sont les modèles que l’on consulte sur Météociel. L’humidité et la température du sol, que Météo-France ne fournit pas par cette voie, viennent du modèle par défaut d’Open-Meteo. Ensuite, la pluie des jours passés est remplacée, quand c’est possible, par celle mesurée aux stations Météo-France des départements voisins (données ouvertes, mises à jour avec quelques jours de retard). La mention sous les graphiques indique jusqu’à quelle date la pluie est mesurée.</p>
+    <p>Les seuils de chaque espèce sont des valeurs de départ, en partie tirées des études ci-dessous, en partie de l’expérience courante. Ils sont à recaler avec vos observations.</p>
+    <h3>Sources</h3>
+    <ol>
+      <li>Brejon Lamartinière &amp; Hoffman, cèpe de Bordeaux et déclencheurs météo, bioRxiv, 2026.</li>
+      <li>Karavani et al., climat, eau du sol et production de champignons en pinède méditerranéenne, Agricultural and Forest Meteorology, 2018.</li>
+      <li>Rodríguez Puerta et al., productivité primaire, climat et récoltes en pinède méditerranéenne, Agricultural and Forest Meteorology, 2020.</li>
+      <li>Ágreda et al., demande évaporative et baisse des récoltes en climat méditerranéen, Global Change Biology, 2015.</li>
+      <li>Salerni et al., cèpe de Bordeaux et extrêmes climatiques, Italian Journal of Mycology, 2023.</li>
+      <li>Perte d’eau des sporophores ectomycorhiziens en sécheresse et déficit de saturation, 2009.</li>
+      <li>Pinna et al., température et humidité du sol et phénologie des champignons, 2010.</li>
+      <li>Ponce et al., moteurs environnementaux des champignons des chênaies vertes, Forest Ecology and Management, 2022.</li>
+      <li>El Karkouri, Martin &amp; Mousain, ectomycorhizes du pin d’Alep dans l’Hérault, Annals of Forest Science, 2004.</li>
+      <li>Saxton &amp; Rawls, estimation des propriétés hydriques des sols à partir de la texture et de la matière organique, Soil Science Society of America Journal, 2006.</li>
+      <li>Martínez-Peña et al., modèles de production de cèpes et de lactaires en pinède, Forest Ecology and Management, 2012.</li>
+    </ol>
+    <p style="color:var(--muted);font-size:13px">Données : IGN Géoplateforme, ISRIC SoilGrids, BRGM, Météo-France (modèles et stations), Open-Meteo.</p>
+    </details>
+  </section>
+  </div>
+</aside>
+<main id="map" aria-label="Carte"></main>
+
+<script src="lib/leaflet.js"></script>
+<script src="lib/geotiff.js"></script>
+<script>
+"use strict";
+/* ============================================================
+   Zone et espèces
+   ============================================================ */
+let CENTER, CENTER_ALT, ZONE_KM, Z;
+const MAX_AREA_KM2 = 230;
+const IS_MOBILE = window.matchMedia("(max-width:760px)").matches || /iPhone|iPad|Android/i.test(navigator.userAgent);
+const TARGET_CELLS = IS_MOBILE ? 1600 : 2400;
+
+const FEUILLUS = ["hetre","chene","chene_vert","chataignier","bouleau","robinier","peuplier"];
+const CONIF = ["pin","pin_maritime","sapin","epicea","meleze","douglas","cedre"];
+const TOUS = FEUILLUS.concat(CONIF);
+const MOIS = ["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
+
+/*
+  milieu : foret | ouvert | mixte
+  sol    : acide | tendance acide | calcaire | indifférent
+  temp   : plage favorable de la température moyenne sur 20 jours (°C)
+  pluie  : [seuil, optimum] de pluie cumulée sur 26 jours (mm)
+  tmax   : moyenne des maximales sur 7 jours au-delà de laquelle la chaleur freine (°C)
+  src    : numéros des sources du panneau
+*/
+const SPECIES_PSL = [
+ {id:"cepe-bronze",nom:"Cèpe bronzé",latin:"Boletus aereus",comest:"excellent",milieu:"foret",
+  hotes:["chene_vert","chene","chataignier"],sol:"tendance acide",alt:[0,1000],mois:[6,7,8,9,10,11],temp:[13,21],pluie:[45,110],tmax:31,expo:"chaud",lisiere:true,
+  habitat:"Chênaies vertes et pubescentes, châtaigneraies, souvent après les orages de fin d’été, sur sols décalcifiés.",
+  confusion:"Bolet amer (Tylopilus felleus) : réseau brun foncé sur le pied, pores rosés. Immangeable, pas dangereux.",src:"[1][8]"},
+ {id:"cepe-ete",nom:"Cèpe d’été",latin:"Boletus reticulatus",comest:"excellent",milieu:"foret",
+  hotes:["chene","chene_vert","chataignier"],sol:"indifférent",alt:[0,1100],mois:[5,6,7,8,9,10],temp:[15,23],pluie:[40,100],tmax:32,lisiere:true,
+  habitat:"Chênaies claires et lisières, dès les orages chauds.",
+  confusion:"Bolet amer.",src:"[8]"},
+ {id:"cepe-bordeaux",nom:"Cèpe de Bordeaux",latin:"Boletus edulis",comest:"excellent",milieu:"foret",
+  hotes:["chataignier","chene","hetre","pin","pin_maritime","douglas","cedre"],sol:"acide",alt:[200,1500],mois:[9,10,11,12],temp:[10,16],pluie:[55,110],tmax:27,
+  habitat:"Rare en garrigue calcaire : plutôt châtaigneraies et versants frais sur sol acide, vers la Séranne et les contreforts cévenols.",
+  confusion:"Bolet amer.",src:"[1][5]"},
+ {id:"oronge",nom:"Amanite des Césars",latin:"Amanita caesarea",comest:"excellent",milieu:"foret",
+  hotes:["chene_vert","chene","chataignier"],sol:"tendance acide",alt:[0,900],mois:[7,8,9,10],temp:[17,24],pluie:[40,90],tmax:34,expo:"chaud",lisiere:true,
+  habitat:"Chênaies vertes et châtaigneraies chaudes, après un été chaud suivi de pluies.",
+  confusion:"Amanite tue-mouches (lames et pied blancs), toxique. Les jeunes « œufs » sont les plus piégeux : ne jamais les cueillir sans les ouvrir.",src:"[8]"},
+ {id:"girolle",nom:"Girolle",latin:"Cantharellus cibarius",comest:"excellent",milieu:"foret",
+  hotes:["chene_vert","chene","chataignier","pin","pin_maritime"],sol:"tendance acide",alt:[0,1200],mois:[9,10,11,12],temp:[10,18],pluie:[45,100],tmax:28,expo:"frais",
+  habitat:"Chênaies vertes moussues et châtaigneraies, talus ombragés.",
+  confusion:"Clitocybe de l’olivier (Omphalotus), toxique, très commun ici : vraies lames, touffes sur souches de chêne vert ou d’olivier.",src:"[8]"},
+ {id:"hygrophore-rougissant",nom:"Hygrophore rougissant",latin:"Hygrophorus russula",comest:"bon",milieu:"foret",
+  hotes:["chene_vert","chene"],sol:"calcaire",alt:[0,1000],mois:[10,11,12],temp:[7,15],pluie:[45,100],tmax:26,
+  habitat:"Chênaies vertes et pubescentes sur calcaire, en troupes, en fin de saison.",
+  confusion:"Russules et tricholomes rosés ; vérifier les lames espacées, cireuses.",src:"[8]"},
+ {id:"russule-charbonniere",nom:"Russule charbonnière",latin:"Russula cyanoxantha",comest:"bon",milieu:"foret",
+  hotes:["chene_vert","chene","chataignier"],sol:"indifférent",alt:[0,1200],mois:[9,10,11],temp:[11,19],pluie:[40,90],tmax:29,
+  habitat:"Chênaies, très commune.",
+  confusion:"Russules âcres. Écarter toute amanite : vérifier l’absence d’anneau et de volve.",src:"[8]"},
+ {id:"pied-mouton",nom:"Pied-de-mouton",latin:"Hydnum repandum",comest:"bon",milieu:"foret",
+  hotes:["chene_vert","chene","chataignier","pin"],sol:"indifférent",alt:[0,1400],mois:[10,11,12,1],temp:[6,15],pluie:[40,90],tmax:25,froid:true,
+  habitat:"Chênaies vertes et pinèdes, en ronds ou en lignes, tard dans la saison.",
+  confusion:"Peu de risques : aiguillons sous le chapeau.",src:"[8]"},
+ {id:"trompette",nom:"Trompette de la mort",latin:"Craterellus cornucopioides",comest:"excellent",milieu:"foret",
+  hotes:["chene","chene_vert","chataignier","hetre"],sol:"indifférent",alt:[0,1300],mois:[10,11,12],temp:[7,15],pluie:[55,110],tmax:25,expo:"frais",
+  habitat:"Ubacs et fonds de vallon humides sous chênes, dans les feuilles.",
+  confusion:"Très peu de risques.",src:""},
+ {id:"lactaire-sanguin",nom:"Lactaire sanguin",latin:"Lactarius sanguifluus",comest:"excellent",milieu:"foret",
+  hotes:["pin"],sol:"calcaire",alt:[0,1200],mois:[10,11,12],temp:[9,16],pluie:[45,100],tmax:27,
+  habitat:"Pinèdes de pin d’Alep et de pin noir sur calcaire ; signalé sous pin d’Alep dans l’Hérault.",
+  confusion:"Lactaire à toison (chapeau poilu, lait blanc âcre), toxique. Lait rouge vineux chez le sanguin.",src:"[9]"},
+ {id:"lactaire-delicieux",nom:"Lactaire délicieux",latin:"Lactarius deliciosus",comest:"bon",milieu:"foret",
+  hotes:["pin","pin_maritime"],sol:"indifférent",alt:[0,1400],mois:[10,11,12],temp:[8,16],pluie:[45,100],tmax:27,
+  habitat:"Sous les pins, herbe et aiguilles, jeunes peuplements compris.",
+  confusion:"Lactaire à toison. Le lait doit être orange carotte.",src:"[2][3]"},
+ {id:"bolet-jaune-pins",nom:"Bolet granulé des pins d’Alep",latin:"Suillus collinitus",comest:"moyen, cuticule à retirer",milieu:"foret",
+  hotes:["pin"],sol:"calcaire",alt:[0,1000],mois:[10,11,12],temp:[9,18],pluie:[40,90],tmax:28,
+  habitat:"Partenaire le plus fréquent du pin d’Alep, y compris dans l’Hérault. Bon indicateur d’une pinède « active ».",
+  confusion:"Autres Suillus, sans danger grave.",src:"[9]"},
+ {id:"pied-bleu",nom:"Pied bleu",latin:"Lepista nuda",comest:"bon bien cuit",milieu:"mixte",
+  hotes:TOUS,sol:"indifférent",alt:[0,1400],mois:[10,11,12,1],temp:[4,12],pluie:[40,90],tmax:22,froid:true,
+  habitat:"Litière de chênes et de pins, lisières, tas de feuilles.",
+  confusion:"Cortinaires violets, certains très toxiques : cortine et sporée rouille. Sporée rose pâle chez le pied bleu.",src:""},
+ {id:"clitocybe-geotrope",nom:"Clitocybe géotrope",latin:"Infundibulicybe geotropa",comest:"bon",milieu:"mixte",
+  hotes:["chene","chene_vert","pin"],sol:"calcaire",alt:[0,1200],mois:[10,11,12],temp:[7,15],pluie:[40,90],tmax:25,lisiere:true,
+  habitat:"Lisières et clairières sur calcaire, en grands ronds.",
+  confusion:"Clitocybes blancs toxiques, entolome livide.",src:""},
+ {id:"coulemelle",nom:"Coulemelle",latin:"Macrolepiota procera",comest:"bon",milieu:"mixte",
+  hotes:TOUS,sol:"indifférent",alt:[0,1300],mois:[9,10,11],temp:[11,20],pluie:[35,80],tmax:30,lisiere:true,
+  habitat:"Clairières, lisières, prés bordés de bois.",
+  confusion:"Petites lépiotes, dont certaines mortelles. Ne cueillir que de grands exemplaires, pied tigré, anneau coulissant.",src:""},
+ {id:"langue-boeuf",nom:"Langue de bœuf",latin:"Fistulina hepatica",comest:"moyen",milieu:"foret",
+  hotes:["chene","chataignier"],sol:"indifférent",alt:[0,1000],mois:[8,9,10,11],temp:[12,20],pluie:[35,80],tmax:30,
+  habitat:"Sur troncs et souches de chênes pubescents et de châtaigniers.",
+  confusion:"Peu de risques.",src:""},
+ {id:"rose-pres",nom:"Rosé des prés",latin:"Agaricus campestris",comest:"bon",milieu:"ouvert",
+  hotes:[],sol:"indifférent",alt:[0,1400],mois:[9,10,11],temp:[12,20],pluie:[35,80],tmax:30,
+  habitat:"Prairies pâturées, surtout par les chevaux et les moutons.",
+  confusion:"Amanites blanches mortelles (lames restant blanches, volve) et agaric jaunissant, toxique.",src:""},
+ {id:"pleurote-panicaut",nom:"Pleurote du panicaut",latin:"Pleurotus eryngii",comest:"excellent",milieu:"ouvert",
+  hotes:[],sol:"calcaire",alt:[0,1000],mois:[10,11,12],temp:[9,17],pluie:[30,70],tmax:27,lande:0.95,
+  habitat:"Garrigues ouvertes, friches et pelouses sèches, sur les racines mortes du panicaut champêtre.",
+  confusion:"Peu de risques si l’on vérifie la présence du panicaut.",src:""},
+ {id:"saint-georges",nom:"Tricholome de la Saint-Georges",latin:"Calocybe gambosa",comest:"excellent",milieu:"ouvert",
+  hotes:[],sol:"calcaire",alt:[0,1200],mois:[3,4,5],temp:[9,15],pluie:[35,80],tmax:26,lisiere:true,lande:0.8,
+  habitat:"Prairies et lisières, sous les haies d’aubépines et de prunelliers, plus tôt ici qu’en montagne.",
+  confusion:"Entolome livide et inocybes, toxiques, au printemps.",src:""},
+ {id:"morille",nom:"Morilles",latin:"Morchella spp.",comest:"excellent bien cuit",milieu:"mixte",
+  hotes:["peuplier","robinier","chene","pin"],sol:"calcaire",alt:[0,1200],mois:[2,3,4],temp:[8,15],pluie:[35,80],tmax:24,lisiere:true,froid:true,
+  habitat:"Ripisylves, vergers, lisières, terrains remaniés ou brûlés. Très capricieuses : le modèle est peu fiable pour elles.",
+  confusion:"Gyromitre, mortelle, d’aspect cérébral et non alvéolé.",src:""}
+];
+const SPECIES_AIG = [
+ {id:"cepe-bordeaux",nom:"Cèpe de Bordeaux",latin:"Boletus edulis",comest:"excellent",milieu:"foret",
+  hotes:["hetre","epicea","sapin","chataignier","chene","pin","douglas"],sol:"acide",alt:[300,1600],mois:[6,7,8,9,10,11],temp:[10,16],pluie:[55,110],tmax:27,
+  habitat:"Hêtraies, sapinières et pessières, souvent en lisière ou en bord de chemin, sur les sols acides du granite et des schistes.",
+  confusion:"Bolet amer (Tylopilus felleus) : réseau brun foncé sur le pied, pores rosés. Immangeable, pas dangereux.",src:"[1][5]"},
+ {id:"cepe-pins",nom:"Cèpe des pins",latin:"Boletus pinophilus",comest:"excellent",milieu:"foret",
+  hotes:["pin","epicea","sapin"],sol:"acide",alt:[600,1700],mois:[6,7,8,9,10],temp:[10,17],pluie:[55,110],tmax:27,
+  habitat:"Pinèdes et résineux d’altitude sur sol acide, souvent dans la mousse.",confusion:"Bolet amer.",src:""},
+ {id:"cepe-bronze",nom:"Cèpe bronzé",latin:"Boletus aereus",comest:"excellent",milieu:"foret",
+  hotes:["chataignier","chene","chene_vert","hetre"],sol:"tendance acide",alt:[0,1000],mois:[7,8,9,10],temp:[13,21],pluie:[45,110],tmax:31,expo:"chaud",lisiere:true,
+  habitat:"Châtaigneraies et chênaies chaudes des pentes cévenoles, versants bien exposés.",confusion:"Bolet amer.",src:"[8]"},
+ {id:"cepe-ete",nom:"Cèpe d’été",latin:"Boletus reticulatus",comest:"excellent",milieu:"foret",
+  hotes:["chene","hetre","chataignier"],sol:"indifférent",alt:[0,1200],mois:[5,6,7,8,9],temp:[15,23],pluie:[40,100],tmax:32,lisiere:true,
+  habitat:"Chênaies et hêtraies claires, lisières, dès les premiers orages chauds.",confusion:"Bolet amer.",src:""},
+ {id:"girolle",nom:"Girolle",latin:"Cantharellus cibarius",comest:"excellent",milieu:"foret",
+  hotes:["hetre","chene","chataignier","epicea","sapin","pin"],sol:"acide",alt:[0,1600],mois:[6,7,8,9,10,11],temp:[11,19],pluie:[40,90],tmax:29,
+  habitat:"Feuillus et résineux sur sol acide, talus moussus.",
+  confusion:"Clitocybe de l’olivier (Omphalotus), toxique : vraies lames, touffes sur souches. Fausse girolle (Hygrophoropsis).",src:""},
+ {id:"chanterelle-tube",nom:"Chanterelle en tube",latin:"Craterellus tubaeformis",comest:"bon",milieu:"foret",
+  hotes:["epicea","sapin","pin","hetre","douglas"],sol:"acide",alt:[400,1700],mois:[9,10,11,12],temp:[4,13],pluie:[45,100],tmax:24,expo:"frais",froid:true,
+  habitat:"Mousses humides sous résineux, en grandes troupes, jusqu’aux premières vraies gelées.",confusion:"Peu de confusions graves.",src:""},
+ {id:"chanterelle-jaunissante",nom:"Chanterelle jaunissante",latin:"Craterellus lutescens",comest:"bon",milieu:"foret",
+  hotes:["epicea","sapin","pin"],sol:"calcaire",alt:[400,1500],mois:[9,10,11,12],temp:[4,13],pluie:[45,100],tmax:24,expo:"frais",froid:true,
+  habitat:"Mousses très humides et bords de ruisseaux sous résineux, plutôt sur calcaire.",confusion:"Peu de confusions graves.",src:""},
+ {id:"trompette",nom:"Trompette de la mort",latin:"Craterellus cornucopioides",comest:"excellent",milieu:"foret",
+  hotes:["hetre","chene","chataignier"],sol:"indifférent",alt:[0,1400],mois:[8,9,10,11],temp:[7,15],pluie:[55,110],tmax:25,expo:"frais",
+  habitat:"Hêtraies et chênaies humides, dans les feuilles mortes, en colonies.",confusion:"Très peu de risques.",src:""},
+ {id:"pied-mouton",nom:"Pied-de-mouton",latin:"Hydnum repandum",comest:"bon",milieu:"foret",
+  hotes:["hetre","chene","chataignier","epicea","sapin","pin"],sol:"indifférent",alt:[0,1600],mois:[8,9,10,11,12],temp:[5,14],pluie:[40,90],tmax:25,froid:true,
+  habitat:"Feuillus et résineux, en ronds ou en lignes, résiste aux petites gelées.",confusion:"Peu de risques : aiguillons sous le chapeau.",src:""},
+ {id:"lactaire-delicieux",nom:"Lactaire délicieux",latin:"Lactarius deliciosus",comest:"bon",milieu:"foret",
+  hotes:["pin"],sol:"indifférent",alt:[0,1500],mois:[9,10,11],temp:[8,16],pluie:[45,100],tmax:27,
+  habitat:"Sous les pins, herbe et aiguilles.",confusion:"Lactaire à toison, toxique. Le lait doit être orange carotte.",src:"[2][3]"},
+ {id:"lactaire-sanguin",nom:"Lactaire sanguin",latin:"Lactarius sanguifluus",comest:"excellent",milieu:"foret",
+  hotes:["pin"],sol:"calcaire",alt:[300,1300],mois:[9,10,11],temp:[9,16],pluie:[40,90],tmax:27,expo:"chaud",
+  habitat:"Pinèdes de pin noir et de pin sylvestre des Causses, sur calcaire.",confusion:"Lactaire à toison. Lait rouge vineux chez le sanguin.",src:"[9]"},
+ {id:"lactaire-saumon",nom:"Lactaire saumon",latin:"Lactarius salmonicolor",comest:"bon",milieu:"foret",
+  hotes:["sapin"],sol:"indifférent",alt:[600,1600],mois:[9,10,11],temp:[7,15],pluie:[45,100],tmax:25,
+  habitat:"Strictement sous les sapins.",confusion:"Lactaire à toison.",src:""},
+ {id:"bolet-bai",nom:"Bolet bai",latin:"Imleria badia",comest:"bon",milieu:"foret",
+  hotes:["epicea","sapin","pin","douglas","hetre","chataignier"],sol:"acide",alt:[200,1600],mois:[8,9,10,11],temp:[7,15],pluie:[45,100],tmax:26,
+  habitat:"Résineux et feuillus sur sol acide, souvent sur souches moussues.",confusion:"Bolet amer. Les pores bleuissent au toucher, c’est normal ici.",src:""},
+ {id:"bolet-pied-rouge",nom:"Bolet à pied rouge",latin:"Neoboletus erythropus",comest:"bon bien cuit",milieu:"foret",
+  hotes:["hetre","epicea","sapin","chataignier","chene"],sol:"acide",alt:[300,1600],mois:[6,7,8,9,10],temp:[10,18],pluie:[45,100],tmax:28,
+  habitat:"Hêtraies et résineux sur sol acide.",confusion:"Bolet Satan, toxique, sur calcaire : réseau rouge sur le pied. Toujours bien cuire.",src:""},
+ {id:"russule-charbonniere",nom:"Russule charbonnière",latin:"Russula cyanoxantha",comest:"bon",milieu:"foret",
+  hotes:["hetre","chene","chataignier"],sol:"indifférent",alt:[0,1400],mois:[6,7,8,9,10],temp:[12,20],pluie:[40,90],tmax:29,
+  habitat:"Hêtraies et chênaies, très commune.",confusion:"Russules âcres. Écarter toute amanite : ni anneau ni volve.",src:"[8]"},
+ {id:"russule-verdoyante",nom:"Russule verdoyante",latin:"Russula virescens",comest:"excellent",milieu:"foret",
+  hotes:["hetre","chene","chataignier"],sol:"acide",alt:[0,1200],mois:[6,7,8,9],temp:[15,22],pluie:[40,90],tmax:31,lisiere:true,
+  habitat:"Chênaies et châtaigneraies claires, après les orages d’été.",confusion:"Amanite phalloïde, mortelle, au chapeau verdâtre. Toujours déterrer le pied entier.",src:""},
+ {id:"oronge",nom:"Amanite des Césars",latin:"Amanita caesarea",comest:"excellent",milieu:"foret",
+  hotes:["chene","chataignier","chene_vert"],sol:"tendance acide",alt:[0,900],mois:[7,8,9,10],temp:[17,24],pluie:[40,90],tmax:34,expo:"chaud",lisiere:true,
+  habitat:"Chênaies et châtaigneraies chaudes, après un été chaud suivi de pluies.",
+  confusion:"Amanite tue-mouches (lames et pied blancs), toxique. Ne jamais cueillir un « œuf » sans l’ouvrir.",src:"[8]"},
+ {id:"coulemelle",nom:"Coulemelle",latin:"Macrolepiota procera",comest:"bon",milieu:"mixte",
+  hotes:TOUS,sol:"indifférent",alt:[0,1500],mois:[7,8,9,10,11],temp:[11,19],pluie:[35,80],tmax:30,lisiere:true,
+  habitat:"Clairières, lisières, prés bordés de bois.",confusion:"Petites lépiotes, dont certaines mortelles. Seulement de grands exemplaires.",src:""},
+ {id:"rose-pres",nom:"Rosé des prés",latin:"Agaricus campestris",comest:"bon",milieu:"ouvert",
+  hotes:[],sol:"indifférent",alt:[0,1600],mois:[6,7,8,9,10],temp:[12,20],pluie:[35,80],tmax:30,
+  habitat:"Prairies pâturées, surtout par les chevaux et les moutons.",confusion:"Amanites blanches mortelles et agaric jaunissant, toxique.",src:""},
+ {id:"mousseron",nom:"Faux mousseron",latin:"Marasmius oreades",comest:"bon",milieu:"ouvert",
+  hotes:[],sol:"indifférent",alt:[0,1700],mois:[5,6,7,8,9,10],temp:[10,19],pluie:[25,60],tmax:30,
+  habitat:"Pelouses rases, en ronds de sorcière.",confusion:"Clitocybes blancs, toxiques, dans les mêmes ronds.",src:""},
+ {id:"saint-georges",nom:"Tricholome de la Saint-Georges",latin:"Calocybe gambosa",comest:"excellent",milieu:"ouvert",
+  hotes:[],sol:"calcaire",alt:[300,1500],mois:[4,5,6],temp:[8,14],pluie:[35,80],tmax:26,lisiere:true,lande:0.8,
+  habitat:"Prairies et lisières, sous les haies d’aubépines, surtout sur les Causses.",confusion:"Entolome livide et inocybes, toxiques, au printemps.",src:""},
+ {id:"morille",nom:"Morilles",latin:"Morchella spp.",comest:"excellent bien cuit",milieu:"mixte",
+  hotes:["peuplier","robinier","chene","hetre","pin"],sol:"calcaire",alt:[200,1500],mois:[3,4,5],temp:[7,14],pluie:[35,80],tmax:24,lisiere:true,froid:true,
+  habitat:"Lisières, bords de rivières, terrains remaniés ou brûlés. Le modèle est peu fiable pour elles.",confusion:"Gyromitre, mortelle. Toujours bien cuire.",src:""},
+ {id:"hygrophore-mars",nom:"Hygrophore de mars",latin:"Hygrophorus marzuolus",comest:"excellent",milieu:"foret",
+  hotes:["sapin","epicea","hetre"],sol:"indifférent",alt:[800,1700],mois:[2,3,4,5],temp:[1,9],pluie:[30,70],tmax:20,expo:"frais",froid:true,
+  habitat:"Sapinières et hêtraies-sapinières d’altitude, à la fonte des neiges, sous la mousse.",confusion:"Peu de confusions dans ces conditions.",src:""},
+ {id:"pleurote-panicaut",nom:"Pleurote du panicaut",latin:"Pleurotus eryngii",comest:"excellent",milieu:"ouvert",
+  hotes:[],sol:"calcaire",alt:[300,1200],mois:[9,10,11],temp:[9,17],pluie:[30,70],tmax:27,lande:0.9,
+  habitat:"Pelouses sèches des Causses, sur les racines mortes du panicaut champêtre.",confusion:"Peu de risques si le panicaut est là.",src:""},
+ {id:"pied-bleu",nom:"Pied bleu",latin:"Lepista nuda",comest:"bon bien cuit",milieu:"mixte",
+  hotes:TOUS,sol:"indifférent",alt:[0,1500],mois:[10,11,12],temp:[3,11],pluie:[40,90],tmax:22,froid:true,
+  habitat:"Litière de feuillus et de résineux, lisières.",confusion:"Cortinaires violets, certains très toxiques : sporée rouille. Sporée rose pâle chez le pied bleu.",src:""},
+ {id:"clitocybe-geotrope",nom:"Clitocybe géotrope",latin:"Infundibulicybe geotropa",comest:"bon",milieu:"mixte",
+  hotes:["hetre","chene","chataignier","pin"],sol:"calcaire",alt:[0,1400],mois:[9,10,11],temp:[7,15],pluie:[40,90],tmax:25,lisiere:true,
+  habitat:"Lisières et clairières, en grands ronds.",confusion:"Clitocybes blancs toxiques, entolome livide.",src:""},
+ {id:"sparassis",nom:"Sparassis crépu",latin:"Sparassis crispa",comest:"bon",milieu:"foret",
+  hotes:["pin","douglas","sapin","epicea"],sol:"indifférent",alt:[0,1500],mois:[8,9,10,11],temp:[10,17],pluie:[40,90],tmax:28,
+  habitat:"Au pied des pins vivants ou de souches de résineux ; revient au même endroit.",confusion:"Peu de risques.",src:""}
+];
+
+const HL_OVERRIDES = {
+  "cepe-bordeaux": {habitat:"Hêtraies, hêtraies-sapinières et plantations de résineux des Monts de Lacaune, du Somail et de l’Espinouse, sur gneiss et granite acides.", alt:[300,1300]},
+  "cepe-pins": {habitat:"Pinèdes (pin sylvestre, pin laricio) et résineux d’altitude sur sol acide, Somail et Monts de Lacaune.", alt:[500,1300]},
+  "cepe-bronze": {habitat:"Châtaigneraies et chênaies chaudes des vallées de l’Orb et du Jaur, versants sud.", alt:[0,900]},
+  "lactaire-sanguin": {habitat:"Pinèdes de pin noir et de pin laricio, surtout sur les calcaires de la bordure sud (Saint-Ponais, Minervois)."},
+  "chanterelle-jaunissante": {habitat:"Mousses très humides sous résineux, plutôt sur les rares secteurs calcaires de la zone."},
+  "saint-georges": {habitat:"Prairies et lisières sous les haies, plutôt sur les secteurs calcaires de la bordure sud."},
+  "pleurote-panicaut": {habitat:"Pelouses sèches et friches calcaires de la bordure sud (Minervois), sur les racines mortes du panicaut champêtre."},
+  "hygrophore-mars": {habitat:"Sapinières et hêtraies-sapinières de l’Espinouse, du Somail et des Monts de Lacaune, à la fonte des neiges.", alt:[700,1300]},
+  "chanterelle-tube": {alt:[400,1300]}
+};
+const SPECIES_HL = SPECIES_AIG.map(sp => ({...sp, ...(HL_OVERRIDES[sp.id]||{})}));
+
+const ZONES = {
+  "aigoual": {nom:"Massif de l’Aigoual", court:"Mont Aigoual", lieu:"Au Mont Aigoual", center:[44.1213,3.5817], alt:1567, km:35, depts:["30","48","12"], species:SPECIES_AIG,
+    sub:"Massif de l’Aigoual, rayon de 35 km : granite et schistes cévenols, calcaires des Causses, hêtraies et résineux d’altitude."},
+  "pic-saint-loup": {nom:"Pic Saint-Loup", court:"Pic Saint-Loup", lieu:"Au Pic Saint-Loup", center:[43.7797,3.8106], alt:658, km:30, depts:["34","30"], species:SPECIES_PSL,
+    sub:"Pic Saint-Loup, rayon de 30 km : garrigues et chênaies vertes sur calcaire, pinèdes de pin d’Alep, châtaigneraies vers les Cévennes."},
+  "haut-languedoc": {nom:"Haut-Languedoc", court:"La Salvetat-sur-Agout", lieu:"À La Salvetat-sur-Agout", center:[43.6017,2.7039], alt:690, km:50, grid:6, depts:["34","81","12","11"], species:SPECIES_HL,
+    sub:"Haut-Languedoc, rayon de 50 km autour de La Salvetat-sur-Agout : gneiss et granites des Monts de Lacaune, du Somail et de l’Espinouse, hêtraies et résineux, lacs ; vallées méditerranéennes de l’Orb et du Jaur au sud."}
+};
+let SPECIES = SPECIES_PSL;
+
+
+/* ============================================================
+   Utilitaires
+   ============================================================ */
+const $ = s => document.querySelector(s);
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const lin = (v,a,b) => clamp((v-a)/(b-a), 0, 1);
+const norm = s => String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+const fmt = (v,d=0) => v==null||isNaN(v) ? "—" : v.toLocaleString("fr-FR",{maximumFractionDigits:d,minimumFractionDigits:d});
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const mean = a => { let s=0,n=0; for(const v of a){ if(v!=null && !isNaN(v)){ s+=v; n++; } } return n ? s/n : NaN; };
+
+async function fetchJSON(url, opts={}, timeout=60000){
+  const ctl = new AbortController(); const t = setTimeout(()=>ctl.abort(), timeout);
+  try{ const r = await fetch(url, {...opts, signal:ctl.signal}); if(!r.ok) throw new Error("HTTP " + r.status); return await r.json(); }
+  finally{ clearTimeout(t); }
+}
+async function fetchBuf(url, timeout=60000){
+  const ctl = new AbortController(); const t = setTimeout(()=>ctl.abort(), timeout);
+  try{ const r = await fetch(url, {signal:ctl.signal}); if(!r.ok) throw new Error("HTTP " + r.status); return await r.arrayBuffer(); }
+  finally{ clearTimeout(t); }
+}
+function rampColor(v){
+  const st = [[0,[242,230,160]],[0.35,[227,166,58]],[0.65,[196,87,42]],[1,[122,30,58]]];
+  v = clamp(v,0,1);
+  for(let i=1;i<st.length;i++) if(v<=st[i][0]){ const [a,ca]=st[i-1],[b,cb]=st[i],t=(v-a)/(b-a); return ca.map((x,k)=>Math.round(x+(cb[k]-x)*t)); }
+  return st[st.length-1][1];
+}
+
+/* ============================================================
+   Peuplements forestiers (BD Forêt V2)
+   ============================================================ */
+function classifyForest(props){
+  const vals = Object.values(props||{}).filter(v => typeof v === "string");
+  const txt = norm(vals.join(" | "));
+  const k = new Set();
+  if(/hetre/.test(txt)) k.add("hetre");
+  if(/chenes? sempervirent|chene vert|yeuse|chene-liege|chene liege/.test(txt)) k.add("chene_vert");
+  if(/chenes? decidu|chene pubescent|chene blanc|chene sessile|chene pedoncule/.test(txt)) k.add("chene");
+  if(/chene/.test(txt) && !k.has("chene_vert") && !k.has("chene")) k.add("chene");
+  if(/chataignier/.test(txt)) k.add("chataignier");
+  if(/robinier/.test(txt)) k.add("robinier");
+  if(/peupl/.test(txt)) k.add("peuplier");
+  if(/bouleau/.test(txt)) k.add("bouleau");
+  if(/pin maritime/.test(txt)) k.add("pin_maritime");
+  if(/\bpins?\b(?! maritime)|laricio|cembro|pin d.alep|pin noir|pin sylvestre|pin pignon|pin parasol/.test(txt)) k.add("pin");
+  if(/sapin|epicea/.test(txt)){ k.add("sapin"); k.add("epicea"); }
+  if(/meleze/.test(txt)) k.add("meleze");
+  if(/douglas/.test(txt)) k.add("douglas");
+  if(/cedre/.test(txt)) k.add("cedre");
+  if(/feuillus/.test(txt)) k.add("feuillus");
+  if(/coniferes/.test(txt)) k.add("coniferes");
+  if(/lande|garrigue|maquis/.test(txt)) k.add("lande");
+  if(/herbace/.test(txt)) k.add("herbace");
+  const trees = [...k].filter(x => TOUS.includes(x) || x==="feuillus" || x==="coniferes");
+  if(!trees.length && /foret|bois/.test(txt) && !k.has("lande") && !k.has("herbace")) k.add("foret_indet");
+  const ouvert = /ouverte/.test(txt);
+  let label = props && (props.tfv || props.libelle || props.lib_tfv || props.LIBELLE || props.TFV);
+  if(!label) label = vals.find(v => /for[eê]t|lande|formation|peupleraie/i.test(v)) || "Formation végétale";
+  return {keys:k, ouvert, label, forest: trees.length>0 || k.has("foret_indet")};
+}
+function ringContains(ring, x, y){
+  let inside=false;
+  for(let i=0,j=ring.length-1;i<ring.length;j=i++){
+    const xi=ring[i][0], yi=ring[i][1], xj=ring[j][0], yj=ring[j][1];
+    if(((yi>y)!==(yj>y)) && (x < (xj-xi)*(y-yi)/(yj-yi)+xi)) inside=!inside;
+  }
+  return inside;
+}
+function polyContains(r,x,y){ if(!ringContains(r[0],x,y)) return false; for(let h=1;h<r.length;h++) if(ringContains(r[h],x,y)) return false; return true; }
+function geomContains(g,x,y){ if(g.type==="Polygon") return polyContains(g.coordinates,x,y); if(g.type==="MultiPolygon") return g.coordinates.some(p=>polyContains(p,x,y)); return false; }
+function swapCoords(c){ return typeof c[0]==="number" ? [c[1],c[0]] : c.map(swapCoords); }
+function firstCoord(c){ return typeof c[0]==="number" ? c : firstCoord(c[0]); }
+function geomBBox(g){
+  let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+  const w = c => { if(typeof c[0]==="number"){ if(c[0]<x0)x0=c[0]; if(c[0]>x1)x1=c[0]; if(c[1]<y0)y0=c[1]; if(c[1]>y1)y1=c[1]; } else c.forEach(w); };
+  w(g.coordinates); return [x0,y0,x1,y1];
+}
+async function loadForest(b, onProgress){
+  const base = "https://data.geopf.fr/wfs/ows?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature"
+    + "&TYPENAMES=LANDCOVER.FORESTINVENTORY.V2:formation_vegetale"
+    + "&OUTPUTFORMAT=application/json&SRSNAME=urn:ogc:def:crs:EPSG::4326"
+    + `&BBOX=${b.s},${b.w},${b.n},${b.e},urn:ogc:def:crs:EPSG::4326`;
+  const page=1000, out=[];
+  for(let i=0;i<20;i++){
+    const js = await fetchJSON(`${base}&COUNT=${page}&STARTINDEX=${i*page}`);
+    const f = (js.features||[]).filter(x=>x.geometry); out.push(...f);
+    onProgress && onProgress(out.length);
+    if(f.length < page) break;
+  }
+  if(out.length){
+    const c = firstCoord(out[0].geometry.coordinates);
+    if(Math.abs(c[0]-CENTER[0]) < Math.abs(c[0]-CENTER[1])) out.forEach(f => f.geometry.coordinates = swapCoords(f.geometry.coordinates));
+  }
+  return out.map(f => ({geom:f.geometry, bbox:geomBBox(f.geometry), info:classifyForest(f.properties)}));
+}
+
+/* ============================================================
+   Altitudes (RGE ALTI)
+   ============================================================ */
+const ALTI_URL = "https://data.geopf.fr/altimetrie/1.0/calcul/alti/rest/elevation.json";
+let altiMode = "post";
+async function altiBatch(pts){
+  const lon = pts.map(p=>p[1].toFixed(6)).join("|"), lat = pts.map(p=>p[0].toFixed(6)).join("|");
+  if(altiMode==="post"){
+    try{
+      const js = await fetchJSON(ALTI_URL,{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({lon,lat,resource:"ign_rge_alti_wld",delimiter:"|",indent:"false",measures:"false",zonly:"true"})});
+      return js.elevations;
+    }catch(e){ altiMode="get"; }
+  }
+  const url = `${ALTI_URL}?lon=${encodeURIComponent(lon)}&lat=${encodeURIComponent(lat)}&resource=ign_rge_alti_wld&delimiter=${encodeURIComponent("|")}&indent=false&measures=false&zonly=true`;
+  return (await fetchJSON(url)).elevations;
+}
+/*
+  Le service d’altitude de l’IGN accepte jusqu’à 5 000 points par requête, mais seulement
+  5 requêtes par seconde : au-delà, il bloque 5 secondes (erreur 429). On envoie donc
+  tout en une seule requête, puis, en cas d’échec, des lots espacés avec nouvel essai ;
+  en dernier recours, l’altitude d’Open-Meteo (modèle à 90 m) prend le relais.
+*/
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const toZ = v => { const n = (v && typeof v==="object") ? v.z : v; return (n==null || n<-1000) ? null : n; };
+async function altiGetBatch(pts){
+  const lon = pts.map(p=>p[1].toFixed(6)).join("|"), lat = pts.map(p=>p[0].toFixed(6)).join("|");
+  const url = `${ALTI_URL}?lon=${encodeURIComponent(lon)}&lat=${encodeURIComponent(lat)}&resource=ign_rge_alti_wld&delimiter=${encodeURIComponent("|")}&indent=false&measures=false&zonly=true`;
+  return (await fetchJSON(url, {}, 30000)).elevations;
+}
+async function omElevation(pts){
+  const url = `https://api.open-meteo.com/v1/elevation?latitude=${pts.map(p=>p[0].toFixed(5)).join(",")}&longitude=${pts.map(p=>p[1].toFixed(5)).join(",")}`;
+  return (await fetchJSON(url, {}, 30000)).elevation;
+}
+async function loadAltitudes(points, onProgress){
+  const res = new Array(points.length).fill(null);
+  S.altiSrc = "IGN";
+  // 1) Une seule requête POST pour toute la grille
+  try{
+    onProgress && onProgress(0, points.length);
+    const lon = points.map(p=>p[1].toFixed(6)).join("|"), lat = points.map(p=>p[0].toFixed(6)).join("|");
+    const js = await fetchJSON(ALTI_URL, {method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({lon, lat, resource:"ign_rge_alti_wld", delimiter:"|", indent:"false", measures:"false", zonly:"true"})}, 60000);
+    if(js.elevations && js.elevations.length === points.length){
+      js.elevations.forEach((v,k)=>res[k]=toZ(v)); onProgress && onProgress(points.length, points.length); return res;
+    }
+  }catch(e){ console.warn("Altitudes IGN (POST)", e); }
+  // 2) Lots de 100 points, un toutes les 300 ms, nouvel essai après le blocage de 5 s
+  let done = 0, failed = [], streak = 0;
+  for(let a=0; a<points.length; a+=100){
+    const b = Math.min(points.length, a+100), batch = points.slice(a,b);
+    let z = null;
+    for(let attempt=0; attempt<3 && !z; attempt++){
+      try{ z = await altiGetBatch(batch); }
+      catch(e){ await sleep(String(e.message).includes("429") ? 5500 : 1500); }
+    }
+    if(z){ z.forEach((v,k)=>res[a+k]=toZ(v)); streak=0; }
+    else { failed.push([a,b]); streak++; }
+    done = b; onProgress && onProgress(done, points.length);
+    if(streak>=2){ // l’IGN ne répond plus : le reste part directement vers le secours
+      for(let c=b; c<points.length; c+=100) failed.push([c, Math.min(points.length, c+100)]);
+      break;
+    }
+    await sleep(300);
+  }
+  // 3) Secours : Open-Meteo pour les lots restés vides
+  if(failed.length){
+    S.altiSrc = failed.length*100 >= points.length*0.9 ? "Open-Meteo" : "IGN et Open-Meteo";
+    let k2=0;
+    for(const [a,b] of failed){
+      onProgress && onProgress(Math.min(points.length, done + (++k2)*100), points.length + failed.length*100);
+      try{ const z = await omElevation(points.slice(a,b)); z.forEach((v,k)=>res[a+k]=(v==null||isNaN(v))?null:v); }
+      catch(e){ console.warn("Altitudes Open-Meteo", e); }
+      await sleep(200);
+    }
+  }
+  return res;
+}
+
+/* ============================================================
+   Sol (ISRIC SoilGrids : pH et sable, 0 à 5 cm)
+   ============================================================ */
+async function loadSoilLayer(prop, b, depth="0-5cm"){
+  const pad = 0.01;
+  const url = `https://maps.isric.org/mapserv?map=/map/${prop}.map&SERVICE=WCS&VERSION=2.0.1&REQUEST=GetCoverage`
+    + `&COVERAGEID=${prop}_${depth}_mean&FORMAT=image/tiff`
+    + `&SUBSET=long(${(b.w-pad).toFixed(4)},${(b.e+pad).toFixed(4)})&SUBSET=lat(${(b.s-pad).toFixed(4)},${(b.n+pad).toFixed(4)})`
+    + `&SUBSETTINGCRS=http://www.opengis.net/def/crs/EPSG/0/4326&OUTPUTCRS=http://www.opengis.net/def/crs/EPSG/0/4326`;
+  const buf = await fetchBuf(url);
+  const tiff = await GeoTIFF.fromArrayBuffer(buf);
+  const img = await tiff.getImage();
+  const r = await img.readRasters();
+  const nd = img.getGDALNoData();
+  return {data:r[0], w:img.getWidth(), h:img.getHeight(), bbox:img.getBoundingBox(), nd};
+}
+function sampleLayer(L, lat, lon){
+  if(!L) return null;
+  const [x0,y0,x1,y1] = L.bbox;
+  const c = Math.floor((lon-x0)/(x1-x0)*L.w), r = Math.floor((y1-lat)/(y1-y0)*L.h);
+  if(c<0||r<0||c>=L.w||r>=L.h) return null;
+  const v = L.data[r*L.w+c];
+  if(v==null || v===L.nd || v<=0 || v===-32768) return null;
+  return v;
+}
+async function loadSoil(b){
+  if(typeof GeoTIFF === "undefined") throw new Error("lecteur GeoTIFF indisponible");
+  const opt = (p,d) => loadSoilLayer(p, b, d).catch(()=>null);
+  const [ph, sand, clay, soc, cfvo] = await Promise.all([loadSoilLayer("phh2o", b), opt("sand","5-15cm"), opt("clay","5-15cm"), opt("soc","5-15cm"), opt("cfvo","5-15cm")]);
+  return {ph, sand, clay, soc, cfvo};
+}
+const GEO_PH = {calcaire:8.0, marneux:7.6, siliceux:5.4};
+const GEO_NOM = {calcaire:"roche calcaire", marneux:"marnes ou argiles", siliceux:"roche siliceuse (acide)", variable:"dépôts récents, sol variable"};
+function soilEstimate(c){
+  if(c.geo && GEO_PH[c.geo.cls]!=null){
+    const g = GEO_PH[c.geo.cls];
+    if(c.ph != null) return {ph:0.6*g+0.4*c.ph, src:`${GEO_NOM[c.geo.cls]} (BRGM 1/50 000), corrigé par SoilGrids`};
+    return {ph:g, src:`${GEO_NOM[c.geo.cls]} (BRGM 1/50 000)`};
+  }
+  if(c.ph != null) return {ph:c.ph, src:"SoilGrids"};
+  const k = c.keys;
+  if(k.has("chataignier") || k.has("pin_maritime")) return {ph:5.5, src:"indicateur : châtaignier ou pin maritime"};
+  if(Z && Z.id==="pic-saint-loup" && (k.has("chene_vert") || k.has("pin"))) return {ph:7.3, src:"indicateur : chêne vert ou pin d’Alep (incertain)"};
+  return {ph:null, src:"inconnu"};
+}
+
+/* ============================================================
+   Météo (Open-Meteo) : pluie, ETP, eau du sol, air
+   ============================================================ */
+const W = {pts:[], days:[], todayIdx:0, ok:false, hasSM:false};
+const OM = "https://api.open-meteo.com/v1/forecast";
+function gridPoints(){
+  const n=Z.grid||5, lats=[], lons=[];
+  const dLat = ZONE_KM/110.57, dLon = ZONE_KM/(111.32*Math.cos(CENTER[0]*Math.PI/180));
+  for(let i=0;i<n;i++) for(let j=0;j<n;j++){ lats.push((CENTER[0]-dLat+2*dLat*i/(n-1)).toFixed(4)); lons.push((CENTER[1]-dLon+2*dLon*j/(n-1)).toFixed(4)); }
+  lats.push(CENTER[0]); lons.push(CENTER[1]);
+  return {lats, lons};
+}
+const dayAgg = (arr, nd, hours) => {
+  const out = new Array(nd).fill(NaN); if(!arr) return out;
+  for(let i=0;i<nd;i++){ const sl=[]; for(let k=0;k<24;k++){ if(hours && !hours.includes(k)) continue; const v=arr[i*24+k]; if(v!=null) sl.push(v); } out[i]=mean(sl); }
+  return out;
+};
+async function loadWeather(){
+  const {lats, lons} = gridPoints(), loc = "latitude="+lats.join(",")+"&longitude="+lons.join(",");
+  const common = "&past_days=45&timezone=Europe%2FParis";
+  const D = "&daily=precipitation_sum,temperature_2m_max,temperature_2m_min,et0_fao_evapotranspiration";
+  // 1) Modèle par défaut : sert d’ossature (7 jours de prévision) et fournit l’eau et la température du sol.
+  const urlBase = `${OM}?${loc}${D}&hourly=relative_humidity_2m,vapour_pressure_deficit,soil_moisture_9_to_27cm,soil_moisture_3_to_9cm,soil_temperature_6cm${common}&forecast_days=7`;
+  // 2) Météo-France AROME puis ARPÈGE pour la pluie, les températures et l’air.
+  const urlMF = `${OM}?${loc}${D}&hourly=relative_humidity_2m,vapour_pressure_deficit&models=meteofrance_seamless${common}&forecast_days=4`;
+  const [base, mf] = await Promise.all([
+    fetchJSON(urlBase, {}, 90000).then(j=>Array.isArray(j)?j:[j]),
+    fetchJSON(urlMF, {}, 90000).then(j=>Array.isArray(j)?j:[j]).catch(e=>{ console.warn("Météo-France via Open-Meteo", e); return null; })
+  ]);
+  W.days = base[0].daily.time; const nd = W.days.length;
+  W.src = {mf:0, total:0};
+  W.pts = base.map((p, idx) => {
+    const d=p.daily, h=p.hourly||{};
+    const m = mf && mf[idx] ? mf[idx] : null;
+    const mIdx = m ? new Map(m.daily.time.map((t,i)=>[t,i])) : null;
+    const mHour = m ? dayAgg(m.hourly && m.hourly.relative_humidity_2m, m.daily.time.length) : null;
+    const mVpd = m ? dayAgg(m.hourly && m.hourly.vapour_pressure_deficit, m.daily.time.length, [9,10,11,12,13,14,15,16,17,18]) : null;
+    const pick = (key, i) => {
+      if(mIdx && mIdx.has(W.days[i])){ const v = m.daily[key] && m.daily[key][mIdx.get(W.days[i])]; if(v!=null){ if(key==="precipitation_sum") W.src.mf++; return v; } }
+      return d[key] ? d[key][i] : null;
+    };
+    const rain=[], tmin=[], tmax=[], et0=[];
+    for(let i=0;i<nd;i++){
+      W.src.total++;
+      const r=pick("precipitation_sum",i); rain.push(r==null?0:r);
+      const a=pick("temperature_2m_min",i), b=pick("temperature_2m_max",i); tmin.push(a==null?NaN:a); tmax.push(b==null?NaN:b);
+      const e=pick("et0_fao_evapotranspiration",i); et0.push(e==null?0:e);
+    }
+    const rhB = dayAgg(h.relative_humidity_2m, nd), vpdB = dayAgg(h.vapour_pressure_deficit, nd, [9,10,11,12,13,14,15,16,17,18]);
+    const rh = rhB.map((v,i)=>{ if(mIdx && mIdx.has(W.days[i])){ const x=mHour[mIdx.get(W.days[i])]; if(!isNaN(x)) return x; } return v; });
+    const vpd = vpdB.map((v,i)=>{ if(mIdx && mIdx.has(W.days[i])){ const x=mVpd[mIdx.get(W.days[i])]; if(!isNaN(x)) return x; } return v; });
+    const sm = dayAgg(h.soil_moisture_9_to_27cm, nd), sm2 = dayAgg(h.soil_moisture_3_to_9cm, nd);
+    return {lat:p.latitude, lon:p.longitude, elev:p.elevation, rain, rainObs:new Array(nd).fill(false), tmin, tmax, tmean:tmin.map((v,i)=>(v+tmax[i])/2), et0,
+      sm: sm.map((v,i)=>isNaN(v)?sm2[i]:v), rh, vpd, tsoil: dayAgg(h.soil_temperature_6cm, nd)};
+  });
+  const t=new Date(), iso=t.getFullYear()+"-"+String(t.getMonth()+1).padStart(2,"0")+"-"+String(t.getDate()).padStart(2,"0");
+  const i=W.days.indexOf(iso); W.todayIdx = i>=0 ? i : Math.min(45, nd-1);
+  W.hasSM = W.pts.some(p=>p.sm.some(v=>!isNaN(v)));
+  W.obsUntil = null; W.nStations = 0;
+  W.ok = true;
+}
+
+/* Pluie mesurée aux stations Météo-France (données ouvertes, quotidiennes) */
+async function gunzipText(buf){
+  const u = new Uint8Array(buf);
+  if(u[0]===0x1f && u[1]===0x8b){
+    if(typeof DecompressionStream==="undefined") throw new Error("décompression non prise en charge");
+    const ds = new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream("gzip")));
+    return await ds.text();
+  }
+  return new TextDecoder("utf-8").decode(u);
+}
+async function findStationFiles(depts){
+  const found = {};
+  for(let page=1; page<=12; page++){
+    const js = await fetchJSON(`https://www.data.gouv.fr/api/2/datasets/6569b51ae64326786e4e8e1a/resources/?page=${page}&page_size=100&type=main`, {}, 30000);
+    for(const r of (js.data||[])){
+      const m = /departement_(\d\d)_periode_(\d{4})-(\d{4})_RR-T-Vent/i.exec(r.title||r.url||"");
+      if(m && depts.includes(m[1])){ const end=+m[3]; if(!found[m[1]] || end>found[m[1]].end) found[m[1]] = {end, url:r.url||r.latest}; }
+    }
+    if(!js.next_page || (js.data||[]).length<100) break;
+  }
+  return Object.values(found).map(f=>f.url);
+}
+async function loadStationRain(){
+  const urls = await findStationFiles(Z.depts);
+  if(!urls.length) throw new Error("aucun fichier de stations trouvé");
+  const first = W.days[0].replace(/-/g,""), last = W.days[W.todayIdx].replace(/-/g,"");
+  const kx = Math.cos(CENTER[0]*Math.PI/180), maxD = (ZONE_KM+25)/111;
+  const obs = new Map(); // date -> [{lat,lon,rr}]
+  const stations = new Set(); let lastObs = "";
+  for(const url of urls){
+    const txt = await gunzipText(await fetchBuf(url, 120000));
+    const lines = txt.split(/\r?\n/); const H = lines[0].split(";").map(x=>x.trim().toUpperCase());
+    const iD=H.indexOf("AAAAMMJJ"), iR=H.indexOf("RR"), iLa=H.indexOf("LAT"), iLo=H.indexOf("LON"), iP=H.indexOf("NUM_POSTE");
+    if(iD<0||iR<0||iLa<0||iLo<0) continue;
+    for(let k=1;k<lines.length;k++){
+      const c = lines[k].split(";"); if(c.length<=iR) continue;
+      const dte=c[iD]; if(dte<first||dte>last) continue;
+      const rr=c[iR]; if(rr===""||rr==null) continue;
+      const lat=parseFloat(c[iLa].replace(",",".")), lon=parseFloat(c[iLo].replace(",",".")), v=parseFloat(rr.replace(",","."));
+      if(isNaN(lat)||isNaN(lon)||isNaN(v)) continue;
+      if(Math.hypot((lon-CENTER[1])*kx, lat-CENTER[0]) > maxD) continue;
+      if(!obs.has(dte)) obs.set(dte, []); obs.get(dte).push({lat,lon,v}); stations.add(c[iP]);
+      if(dte>lastObs) lastObs=dte;
+    }
+  }
+  if(!obs.size) throw new Error("pas de mesure récente");
+  // Remplacement de la pluie modélisée par l’interpolation des stations à moins de 20 km
+  W.pts.forEach(p=>{
+    const kxp = Math.cos(p.lat*Math.PI/180);
+    W.days.forEach((d,i)=>{
+      const list = obs.get(d.replace(/-/g,"")); if(!list) return;
+      let s=0,t=0;
+      for(const o of list){ const dk=Math.hypot((o.lon-p.lon)*kxp*111.32, (o.lat-p.lat)*110.57); if(dk>20) continue; const w=1/Math.max(1,dk)**2; s+=w*o.v; t+=w; }
+      if(t>0){ p.rain[i]=s/t; p.rainObs[i]=true; }
+    });
+  });
+  W.obsUntil = lastObs ? `${lastObs.slice(6,8)}/${lastObs.slice(4,6)}` : null; W.nStations = stations.size;
+}
+const win = (arr, a, b) => arr.slice(Math.max(0,a), b+1);
+function pointStats(p, d){
+  const sum = a => a.reduce((s,v)=>s+(isNaN(v)?0:v),0);
+  const P26 = sum(win(p.rain, d-25, d)), E26 = sum(win(p.et0, d-25, d));
+  return {
+    P26, WB: P26 - E26,
+    T20: mean(win(p.tmean, d-19, d)), Tmax7: mean(win(p.tmax, d-6, d)),
+    SM: mean(win(p.sm, d-6, d)), RH: mean(win(p.rh, d-2, d)), VPD: mean(win(p.vpd, d-2, d)),
+    frost: win(p.tmin, d-4, d).filter(v=>v < -1).length,
+    soilDrop: mean(win(p.tsoil, d-14, d-5)) - mean(win(p.tsoil, d-4, d))
+  };
+}
+function nearestWeights(lat, lon){
+  const kx = Math.cos(lat*Math.PI/180);
+  const ds = W.pts.map((p,i)=>{ const dx=(p.lon-lon)*kx, dy=p.lat-lat; return [i,dx*dx+dy*dy]; }).sort((a,b)=>a[1]-b[1]).slice(0,4);
+  if(ds[0][1] < 1e-10) return [[ds[0][0],1]];
+  let tot=0; const w = ds.map(([i,d2])=>{ const v=1/d2; tot+=v; return [i,v]; });
+  return w.map(([i,v])=>[i,v/tot]);
+}
+function blendWeather(ww, stats, alt){
+  const o = {P26:0,WB:0,T20:0,Tmax7:0,SM:0,RH:0,VPD:0,frost:0,soilDrop:0}, wsum={SM:0,RH:0,VPD:0,soilDrop:0};
+  for(const [i,w] of ww){
+    const s = stats[i], p = W.pts[i], dz = alt==null ? 0 : alt - p.elev;
+    o.P26 += w*s.P26; o.WB += w*s.WB;
+    o.T20 += w*(s.T20 - 0.0065*dz); o.Tmax7 += w*(s.Tmax7 - 0.0065*dz);
+    o.frost += w*(s.frost + (dz>300?1:0));
+    for(const k of ["SM","RH","VPD","soilDrop"]) if(!isNaN(s[k])){ o[k] += w*s[k]; wsum[k] += w; }
+  }
+  for(const k of ["SM","RH","VPD","soilDrop"]) o[k] = wsum[k] ? o[k]/wsum[k] : NaN;
+  return o;
+}
+
+/* ============================================================
+   Score par espèce
+   ============================================================ */
+function seasonFactor(sp, m){
+  if(sp.mois.includes(m)) return 1;
+  const prev = m===1?12:m-1, next = m===12?1:m+1;
+  return (sp.mois.includes(prev)||sp.mois.includes(next)) ? 0.35 : 0.03;
+}
+function hostFactor(sp, c){
+  const k = c.keys;
+  const woodedLidar = !c.mapped && c.h!=null && c.cover>0.5 && c.h>5;
+  if(woodedLidar && sp.milieu!=="ouvert") return sp.milieu==="mixte" ? 0.6 : 0.35;
+  if(woodedLidar && sp.milieu==="ouvert") return 0.1;
+  if(sp.milieu==="ouvert"){
+    if(!c.mapped) return c.edge && sp.lisiere ? 0.9 : 0.55;
+    if(k.has("herbace")) return 1;
+    if(k.has("lande")) return sp.lande ?? 0.7;
+    if(c.edge && sp.lisiere) return 0.6;
+    return c.ouvert ? 0.4 : 0.1;
+  }
+  let f = 0;
+  if(c.mapped){
+    if(sp.hotes.some(t=>k.has(t))) f = 1;
+    else {
+      if(k.has("feuillus") && sp.hotes.some(t=>FEUILLUS.includes(t))) f = 0.6;
+      if(k.has("coniferes") && sp.hotes.some(t=>CONIF.includes(t))) f = Math.max(f,0.6);
+      if(k.has("foret_indet")) f = Math.max(f,0.3);
+    }
+    if(c.ouvert && f>0) f *= 0.85;
+  }
+  if(sp.milieu==="mixte"){
+    if(!c.mapped) f = Math.max(f,0.5);
+    if(k.has("herbace")||k.has("lande")) f = Math.max(f,0.75);
+  }
+  if(sp.lisiere && c.edge && f>0) f = Math.min(1, f*1.25);
+  return f;
+}
+function soilFactor(sp, c){
+  const {ph} = soilEstimate(c);
+  if(ph==null || sp.sol==="indifférent") return 1;
+  if(sp.sol==="acide") return ph<6 ? 1 : ph<7 ? 0.65 : 0.3;
+  if(sp.sol==="tendance acide") return ph<6.5 ? 1 : ph<7.5 ? 0.8 : 0.55;
+  if(sp.sol==="calcaire") return ph>7 ? 1 : ph>6 ? 0.75 : 0.4;
+  return 1;
+}
+function altFactor(sp, alt){
+  if(alt==null) return 0.7;
+  const [a,b] = sp.alt; if(alt>=a && alt<=b) return 1;
+  return clamp(1 - (alt<a ? a-alt : alt-b)/250, 0, 1);
+}
+function reliefFactor(sp, c, dryness){
+  if(c.slope==null) return 1;
+  const sw = Math.min(1, c.slope/15), north = Math.cos(c.aspect*Math.PI/180);
+  // En climat méditerranéen, les ubacs gardent l’eau : effet renforcé quand le sol s’assèche.
+  const base = sp.expo==="chaud" ? -0.10 : sp.expo==="frais" ? 0.14 : 0.06;
+  let f = 1 + base*north*sw*(0.5 + dryness);
+  if(c.tpi!=null){
+    if(sp.expo!=="chaud"){ if(c.tpi < -8) f *= 1 + 0.10*(0.5+dryness); else if(c.tpi > 12) f *= 1 - 0.08*(0.5+dryness); }
+    else { if(c.tpi > 12) f *= 1.04; }
+  }
+  return f;
+}
+function waterIndex(sp, w){
+  const [p0,p1] = sp.pluie;
+  if(w.relW!=null && !isNaN(w.relW)){
+    return 0.25*lin(w.P26, p0*0.5, p1) + 0.15*lin(w.WB, -25, 50) + 0.6*lin(w.relW, 0.25, 0.75);
+  }
+  const parts = [[0.4, lin(w.P26, p0*0.5, p1)], [0.3, lin(w.WB, -25, 50)]];
+  if(!isNaN(w.SM)) parts.push([0.3, lin(w.SM, 0.12, 0.30)]);
+  const tw = parts.reduce((s,[a])=>s+a,0);
+  return parts.reduce((s,[a,v])=>s+a*v,0)/tw;
+}
+function weatherParts(sp, w, month){
+  const season = seasonFactor(sp, month);
+  const water = 0.05 + 0.95*waterIndex(sp, w);
+  const [t0,t1] = sp.temp;
+  let temp = isNaN(w.T20) ? 0.5 : w.T20<t0 ? clamp(1-(t0-w.T20)/5,0,1) : w.T20>t1 ? clamp(1-(w.T20-t1)/5,0,1) : 1;
+  if(!isNaN(w.Tmax7) && w.Tmax7 > sp.tmax) temp *= clamp(1 - (w.Tmax7-sp.tmax)/8, 0.3, 1);
+  const air = isNaN(w.VPD) ? 1 : 1 - 0.35*lin(w.VPD, 0.5, 1.6);
+  const frost = (w.frost>=2 && !sp.froid) ? 0.35 : 1;
+  const shock = (!isNaN(w.soilDrop) && w.soilDrop >= 2) ? 1.08 : 1;
+  return {season, water, temp, air, frost, shock, total: clamp(season*water*temp*air*frost*shock, 0, 1)};
+}
+/* Hauteur et couvert des arbres (LiDAR HD) : les champignons mycorhiziens fructifient peu sous les très jeunes
+   peuplements et disparaissent des coupes rases ; lisières et clairières profitent aux espèces de milieux ouverts. */
+function structureFactor(sp, c){
+  let f = 1;
+  if(c.h!=null && c.mapped && c.forest){
+    if(c.cover < 0.25){ // coupe ou clairière récente, absente de la BD Forêt
+      f = sp.milieu==="foret" ? (sp.lisiere ? 0.75 : 0.5) : sp.milieu==="mixte" ? 1.1 : 1.2;
+    } else if(sp.milieu!=="ouvert"){
+      f = c.h<4 ? 0.6 : c.h<8 ? 0.8 : c.h<12 ? 0.92 : 1;
+    }
+  }
+  if(c.anc && sp.milieu!=="ouvert") f *= c.anc==="ancienne" ? 1.08 : c.anc==="recente" ? 0.95 : 1;
+  return f;
+}
+function terrainParts(sp, c, dryness){
+  const host = hostFactor(sp,c), soil = soilFactor(sp,c), alt = altFactor(sp,c.alt), relief = reliefFactor(sp,c,dryness), struct = structureFactor(sp,c);
+  return {host, soil, alt, relief, struct, total: clamp(host*soil*alt*relief*struct, 0, 1)};
+}
+
+/* ============================================================
+   Carte
+   ============================================================ */
+const map = L.map("map",{zoomControl:true, preferCanvas:true}).setView([44.0,3.7], 9);
+const wmts = (layer, f, style="normal") =>
+  `https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=${layer}&STYLE=${style}&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=${f}`;
+const attrIGN = "© IGN Géoplateforme";
+const basePlan = L.tileLayer(wmts("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2","image/png"),{maxZoom:19, maxNativeZoom:19, attribution:attrIGN}).addTo(map);
+const baseOrtho = L.tileLayer(wmts("ORTHOIMAGERY.ORTHOPHOTOS","image/jpeg"),{maxZoom:19, maxNativeZoom:19, attribution:attrIGN});
+const baseOSM = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19, attribution:"© OpenStreetMap"});
+const baseTopo = L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",{maxZoom:19, maxNativeZoom:17, subdomains:"abc", attribution:"© OpenStreetMap, SRTM, OpenTopoMap (CC-BY-SA)"});
+const relief = L.tileLayer(wmts("ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW","image/png","estompage_grayscale"),{maxZoom:19, maxNativeZoom:18, opacity:0.45, attribution:attrIGN});
+
+/* Bandeau d’information sur la carte, et bascule automatique si un fond ne s’affiche pas */
+const Banner = L.Control.extend({ options:{position:"bottomleft"},
+  onAdd(){ const d=L.DomUtil.create("div","map-banner"); d.hidden=true; L.DomEvent.disableClickPropagation(d); this._d=d; return d; },
+  show(msg){ this._d.textContent=msg; this._d.hidden=false; clearTimeout(this._t); this._t=setTimeout(()=>{ this._d.hidden=true; }, 12000); } });
+const banner = new Banner().addTo(map);
+function watchBase(layer, name, fallback){
+  let ok=0, bad=0, switched=false;
+  layer.on("tileload", ()=>{ ok++; });
+  layer.on("tileerror", ()=>{
+    bad++;
+    if(!switched && bad>=6 && ok===0 && map.hasLayer(layer) && fallback){
+      switched=true; map.removeLayer(layer); fallback.addTo(map);
+      banner.show(`${name} ne répond pas sur ce navigateur : affichage d’un autre fond de carte. Vous pouvez en changer avec le bouton des couches, en haut à droite.`);
+    }
+  });
+}
+watchBase(basePlan, "Le Plan IGN", baseTopo);
+watchBase(baseOrtho, "Les photos aériennes de l’IGN", baseTopo);
+watchBase(baseTopo, "OpenTopoMap", baseOSM);
+function watchOverlay(layer, name){
+  let ok=0, bad=0, told=false;
+  layer.on("tileload", ()=>{ ok++; });
+  layer.on("tileerror", ()=>{ bad++; if(!told && bad>=4 && ok===0){ told=true; banner.show(`${name} ne répond pas pour le moment : la couche reste vide.`); } });
+  layer.on("add", ()=>{ ok=0; bad=0; told=false; });
+}
+const geol = L.tileLayer.wms("https://geoservices.brgm.fr/geologie",{layers:"SCAN_H_GEOL50", format:"image/png", transparent:true, version:"1.3.0", opacity:0.55, attribution:"© BRGM"});
+const foretsPub = L.tileLayer.wms("https://data.geopf.fr/wms-r/wms",{layers:"FORETS.PUBLIQUES", format:"image/png", transparent:true, version:"1.3.0", opacity:0.6, attribution:"© ONF, IGN"});
+const foretsAnc = L.tileLayer.wms("https://data.geopf.fr/wms-r/wms",{layers:"IGNF_FORETS-ANCIENNES", format:"image/png", transparent:true, version:"1.3.0", opacity:0.6, attribution:attrIGN});
+const zone = L.layerGroup().addTo(map);
+function drawZones(){
+  zone.clearLayers();
+  for(const [id,z] of Object.entries(ZONES)){
+    const active = Z && Z.id===id;
+    L.circle(z.center,{radius:z.km*1000, color:"#5A6B3A", weight:active?1.8:1, opacity:active?1:0.45, dashArray:"4 6", fill:false, interactive:false}).addTo(zone);
+    L.circleMarker(z.center,{radius:5, color:"#2B2620", weight:2, fillColor:"#EFEDE4", fillOpacity:1}).bindTooltip(`${z.court}, ${fmt(z.alt)} m`).addTo(zone);
+  }
+}
+const forestLayer = L.layerGroup();
+let heatLayer = null;
+L.control.layers(
+  {"Plan IGN":basePlan, "Photos aériennes":baseOrtho, "Topographique (OpenTopoMap)":baseTopo, "OpenStreetMap":baseOSM},
+  {"Zones d’étude":zone, "Relief":relief, "Géologie (BRGM 1/50 000)":geol, "Forêts publiques":foretsPub, "Forêts anciennes":foretsAnc, "Peuplements analysés":forestLayer},
+  {collapsed:true}).addTo(map);
+L.control.scale({imperial:false}).addTo(map);
+watchOverlay(relief,"Le relief IGN"); watchOverlay(geol,"La carte géologique du BRGM"); watchOverlay(foretsPub,"La couche des forêts publiques"); watchOverlay(foretsAnc,"La couche des forêts anciennes");
+/* Recalcule la taille de la carte quand la mise en page change (polices, onglets, fenêtre) */
+const refreshMap = ()=>map.invalidateSize({pan:false});
+window.addEventListener("load", ()=>setTimeout(refreshMap, 50));
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(refreshMap);
+if(window.ResizeObserver) new ResizeObserver(refreshMap).observe(document.getElementById("map"));
+
+/* ============================================================
+   Analyse
+   ============================================================ */
+const S = {species:"all", mode:"meteo", day:0, month:null, grid:null, forest:[], soilOk:false, land:"tous", pubOk:false};
+
+/* Forêts publiques (ONF, via la Géoplateforme) : l’image de la couche est lue pixel par pixel sur la grille */
+const PUB_WMS = "https://data.geopf.fr/wms-r/wms";
+async function loadPublicMask(b, cols, rows){
+  const W2=cols*2, H2=rows*2;
+  const url = `${PUB_WMS}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=FORETS.PUBLIQUES&STYLES=&CRS=EPSG:4326`
+    + `&BBOX=${b.s},${b.w},${b.n},${b.e}&WIDTH=${W2}&HEIGHT=${H2}&FORMAT=image/png&TRANSPARENT=true`;
+  const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),60000);
+  let blob; try{ const r=await fetch(url,{signal:ctl.signal}); if(!r.ok) throw new Error("HTTP "+r.status); blob=await r.blob(); } finally{ clearTimeout(t); }
+  if(!/image/.test(blob.type)) throw new Error("réponse inattendue");
+  let src;
+  try{ src = await createImageBitmap(blob); }
+  catch(e){
+    const u = URL.createObjectURL(blob); src = new Image(); src.src = u;
+    try{ await src.decode(); } finally{ setTimeout(()=>URL.revokeObjectURL(u), 1000); }
+  }
+  const cv=document.createElement("canvas"); cv.width=W2; cv.height=H2;
+  const ctx=cv.getContext("2d"); ctx.drawImage(src,0,0,W2,H2);
+  const d=ctx.getImageData(0,0,W2,H2).data, mask=new Uint8Array(cols*rows);
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+    const y0=(rows-1-r)*2, x0=c*2; let hit=0;
+    for(let dy=0;dy<2;dy++) for(let dx=0;dx<2;dx++) if(d[((y0+dy)*W2+x0+dx)*4+3] > 40) hit++;
+    mask[r*cols+c] = hit>=2 ? 1 : 0;
+  }
+  return mask;
+}
+async function publicInfo(lat, lon){
+  const e=0.0005;
+  const url = `${PUB_WMS}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&LAYERS=FORETS.PUBLIQUES&QUERY_LAYERS=FORETS.PUBLIQUES&STYLES=&CRS=EPSG:4326`
+    + `&BBOX=${lat-e},${lon-e},${lat+e},${lon+e}&WIDTH=101&HEIGHT=101&I=50&J=50&INFO_FORMAT=application/json&FEATURE_COUNT=1`;
+  const js = await fetchJSON(url, {}, 20000);
+  const f = js && js.features && js.features[0];
+  if(!f) return null;
+  const pr = f.properties || {};
+  const name = pr.llib_frt || pr.lib_frt || pr.nom || pr.libelle || pr.LIBELLE || Object.values(pr).find(v=>typeof v==="string" && /for[eê]t/i.test(v)) || "Forêt publique";
+  const kind = Object.values(pr).find(v=>typeof v==="string" && /domanial|communal|sectional|départemental|departemental|établissement/i.test(v));
+  return {name, kind};
+}
+function setStatus(msg, err=false){
+  const el=$("#status"); el.textContent=msg; el.classList.toggle("err",err);
+  const m=document.getElementById("mstatus"); if(m){ m.textContent=msg; m.classList.toggle("err",err); }
+}
+
+
+/* ============================================================
+   Lecture d’une image WMS et classement par couleur
+   ============================================================ */
+async function fetchImageData(url, W2, H2){
+  const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),60000);
+  let blob; try{ const r=await fetch(url,{signal:ctl.signal}); if(!r.ok) throw new Error("HTTP "+r.status); blob=await r.blob(); } finally{ clearTimeout(t); }
+  if(!/image/.test(blob.type)) throw new Error("réponse inattendue");
+  let src;
+  try{ src = await createImageBitmap(blob); }
+  catch(e){ const u=URL.createObjectURL(blob); src=new Image(); src.src=u; try{ await src.decode(); } finally{ setTimeout(()=>URL.revokeObjectURL(u),1000); } }
+  const cv=document.createElement("canvas"); cv.width=W2; cv.height=H2;
+  const ctx=cv.getContext("2d"); ctx.imageSmoothingEnabled=false; ctx.drawImage(src,0,0,W2,H2);
+  return ctx.getImageData(0,0,W2,H2).data;
+}
+let gfiFormat = {};
+async function gfiText(base, layer, lat, lon){
+  const e=0.0004, fmts = gfiFormat[base] ? [gfiFormat[base]] : ["application/json","text/plain","application/vnd.ogc.gml","text/html"];
+  for(const f of fmts){
+    const url = `${base}${base.includes("?")?"&":"?"}SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&LAYERS=${layer}&QUERY_LAYERS=${layer}&STYLES=&CRS=EPSG:4326`
+      + `&BBOX=${lat-e},${lon-e},${lat+e},${lon+e}&WIDTH=101&HEIGHT=101&I=50&J=50&INFO_FORMAT=${encodeURIComponent(f)}&FEATURE_COUNT=1`;
+    try{
+      const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),15000);
+      const r=await fetch(url,{signal:ctl.signal}); clearTimeout(t);
+      if(!r.ok) continue;
+      let txt = await r.text();
+      if(/ServiceException|ExceptionReport/i.test(txt)) continue;
+      if(f==="application/json"){ try{ const js=JSON.parse(txt); const pr=(js.features&&js.features[0]&&js.features[0].properties)||{}; txt=Object.values(pr).filter(v=>typeof v==="string").join(" | "); }catch(e){ continue; } }
+      txt = txt.replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim();
+      gfiFormat[base]=f;
+      return txt;
+    }catch(e){}
+  }
+  return null;
+}
+async function classifyByColor(base, layer, b, cols, rows, classify, onProgress, maxColors=40){
+  const W2=cols*2, H2=rows*2;
+  const url = `${base}${base.includes("?")?"&":"?"}SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=${layer}&STYLES=&CRS=EPSG:4326`
+    + `&BBOX=${b.s},${b.w},${b.n},${b.e}&WIDTH=${W2}&HEIGHT=${H2}&FORMAT=image/png&TRANSPARENT=true`;
+  const d = await fetchImageData(url, W2, H2);
+  const cellKey = new Int32Array(cols*rows).fill(-1), counts=new Map(), rep=new Map();
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+    const y0=(rows-1-r)*2, x0=c*2, ks=[];
+    for(let dy=0;dy<2;dy++) for(let dx=0;dx<2;dx++){ const o=((y0+dy)*W2+x0+dx)*4; if(d[o+3]>128) ks.push((d[o]>>3)<<10|(d[o+1]>>3)<<5|(d[o+2]>>3)); }
+    if(!ks.length) continue;
+    const m=new Map(); ks.forEach(k=>m.set(k,(m.get(k)||0)+1));
+    let best=ks[0], bn=0; m.forEach((n,k)=>{ if(n>bn){ bn=n; best=k; } });
+    cellKey[r*cols+c]=best; counts.set(best,(counts.get(best)||0)+1);
+    if(bn===ks.length && !rep.has(best)) rep.set(best, r*cols+c);
+  }
+  const known=[...counts.entries()].filter(([k,n])=>n>=2).sort((a,b)=>b[1]-a[1]).slice(0,maxColors).map(([k])=>k);
+  const rgb=k=>[(k>>10)&31,(k>>5)&31,k&31];
+  const nearest=k=>{ const a=rgb(k); let best=null,bd=1e9; for(const q of known){ const c=rgb(q), dd=(a[0]-c[0])**2+(a[1]-c[1])**2+(a[2]-c[2])**2; if(dd<bd){ bd=dd; best=q; } } return best; };
+  const meaning=new Map(); let i=0;
+  for(const k of known){
+    let idx = rep.has(k) ? rep.get(k) : cellKey.indexOf(k);
+    const r=Math.floor(idx/cols), c=idx%cols;
+    const lat=b.s+(r+0.5)*(b.n-b.s)/rows, lon=b.w+(c+0.5)*(b.e-b.w)/cols;
+    const txt = await gfiText(base, layer, lat, lon);
+    meaning.set(k, txt ? classify(txt) : null);
+    onProgress && onProgress(++i, known.length);
+    await sleep(120);
+  }
+  const out = new Array(cols*rows).fill(null);
+  for(let j=0;j<out.length;j++){ const k=cellKey[j]; if(k<0) continue; const kk = meaning.has(k) ? k : nearest(k); out[j] = kk!=null ? meaning.get(kk) : null; }
+  return out;
+}
+
+/* Géologie détaillée (BRGM 1/50 000 harmonisée) */
+const BRGM_WMS = "https://geoservices.brgm.fr/geologie";
+function classifyGeology(txt){
+  const t = norm(txt);
+  let cls = null;
+  if(/calcaire|dolomi|calcschiste|craie|calcareni|travertin|tuf calc|marno-calc|marnocalc/.test(t)) cls="calcaire";
+  else if(/granit|gneiss|migmatit|schiste|micaschist|quartzit|gres|rhyolit|basalt|arkose|phyllade|leptynit|amphibolit|diorit|gabbro|porphyr|pelite|conglomerat|sable/.test(t)) cls="siliceux";
+  else if(/marne|argil/.test(t)) cls="marneux";
+  else if(/alluvion|colluvion|eboulis|limon|depots/.test(t)) cls="variable";
+  if(!cls) return null;
+  const parts = txt.split(/\s*\|\s*/).filter(x=>/[a-zà-ÿ]{4,}/i.test(x)).sort((a,b)=>b.length-a.length);
+  const label = (parts[0]||txt).slice(0,140);
+  return {cls, label};
+}
+async function loadGeology(b, cols, rows, onProgress){
+  let res = await classifyByColor(BRGM_WMS, "SCAN_H_GEOL50", b, cols, rows, classifyGeology, onProgress, 40);
+  let ok = res.filter(Boolean).length;
+  if(ok < res.length*0.2){ // repli sur la carte lithologique simplifiée au millionième
+    res = await classifyByColor(BRGM_WMS, "LITHO_1M_SIMPLIFIEE", b, cols, rows, classifyGeology, onProgress, 20);
+    res.forEach(r=>{ if(r) r.coarse=true; });
+    ok = res.filter(Boolean).length;
+  }
+  if(!ok) throw new Error("aucune formation reconnue");
+  return res;
+}
+
+/* Forêts anciennes (IGN) */
+function classifyAnc(txt){
+  const t=norm(txt);
+  if(/ancienne/.test(t)) return "ancienne";
+  if(/recente/.test(t)) return "recente";
+  if(/disparue/.test(t)) return "disparue";
+  return null;
+}
+async function loadAncient(b, cols, rows){
+  return classifyByColor(PUB_WMS, "IGNF_FORETS-ANCIENNES", b, cols, rows, classifyAnc, null, 8);
+}
+
+/* Hauteur des arbres : modèle numérique de hauteur du LiDAR HD (IGN), lu en valeurs brutes */
+async function discoverMNH(){
+  try{ const c=localStorage.getItem("mnhLayer"); if(c) return c; }catch(e){}
+  for(const cand of ["IGNF_LIDAR-HD_MNH_ELEVATION.ELEVATIONGRIDCOVERAGE.LAMB93","IGNF_LIDAR-HD_MNH_ELEVATION.ELEVATIONGRIDCOVERAGE"]){
+    try{
+      const r = await fetch(`${PUB_WMS}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=${encodeURIComponent(cand)}&STYLES=&CRS=EPSG:4326&BBOX=43.77,3.80,43.771,3.801&WIDTH=2&HEIGHT=2&FORMAT=${encodeURIComponent("image/x-bil;bits=32")}`);
+      if(r.ok && (await r.arrayBuffer()).byteLength===16){ try{ localStorage.setItem("mnhLayer", cand); }catch(e){} return cand; }
+    }catch(e){}
+  }
+  const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),90000);
+  let txt; try{ const r=await fetch(`${PUB_WMS}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetCapabilities`,{signal:ctl.signal}); txt=await r.text(); } finally{ clearTimeout(t); }
+  const names=[...txt.matchAll(/<Name>\s*(IGNF_LIDAR-HD_MNH_ELEVATION\.ELEVATIONGRIDCOVERAGE[^<\s]*)\s*<\/Name>/g)].map(m=>m[1]).filter(n=>!/shadow/i.test(n));
+  if(!names.length) throw new Error("couche LiDAR introuvable");
+  const pick = names.find(n=>/LAMB93/i.test(n)) || names[0];
+  try{ localStorage.setItem("mnhLayer", pick); }catch(e){}
+  return pick;
+}
+async function loadCanopy(b, cols, rows){
+  const layer = await discoverMNH();
+  const k=3, W3=cols*k, H3=rows*k;
+  const url = `${PUB_WMS}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=${encodeURIComponent(layer)}&STYLES=&CRS=EPSG:4326`
+    + `&BBOX=${b.s},${b.w},${b.n},${b.e}&WIDTH=${W3}&HEIGHT=${H3}&FORMAT=${encodeURIComponent("image/x-bil;bits=32")}`;
+  const buf = await fetchBuf(url, 90000);
+  if(buf.byteLength !== W3*H3*4) throw new Error("format inattendu");
+  let f = new Float32Array(buf);
+  const plausible = a => { let ok=0,n=0; for(let i=0;i<a.length;i+=97){ n++; if(a[i]>-50 && a[i]<120) ok++; } return ok/n; };
+  if(plausible(f) < 0.5){ const dv=new DataView(buf); f=new Float32Array(W3*H3); for(let i=0;i<f.length;i++) f[i]=dv.getFloat32(i*4,false); }
+  if(plausible(f) < 0.3) throw new Error("pas de données LiDAR ici");
+  const out=new Array(cols*rows).fill(null);
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+    let s=0,n=0,cov=0; const y0=(rows-1-r)*k, x0=c*k;
+    for(let dy=0;dy<k;dy++) for(let dx=0;dx<k;dx++){ const v=f[(y0+dy)*W3+x0+dx]; if(v>-50 && v<120){ const h=Math.max(0,v); s+=h; n++; if(h>3) cov++; } }
+    if(n) out[r*cols+c] = {h:s/n, cover:cov/n};
+  }
+  return out;
+}
+
+/* Réserve utile du sol (Saxton et Rawls, 2006) et bilan d’eau jour par jour pour chaque maille */
+function awcOf(c){
+  let dTheta = 0.13;
+  if(c.clay!=null && c.sand!=null){
+    const S_=c.sand/100, C_=c.clay/100, OM = c.soc!=null ? c.soc*1.724/10 : 2.5;
+    const t1500t = -0.024*S_ + 0.487*C_ + 0.006*OM + 0.005*S_*OM - 0.013*C_*OM + 0.068*S_*C_ + 0.031;
+    const t1500 = t1500t + (0.14*t1500t - 0.02);
+    const t33t = -0.251*S_ + 0.195*C_ + 0.011*OM + 0.006*S_*OM - 0.027*C_*OM + 0.452*S_*C_ + 0.299;
+    const t33 = t33t + (1.283*t33t*t33t - 0.374*t33t - 0.015);
+    dTheta = clamp(t33 - t1500, 0.04, 0.25);
+  }
+  const cls = c.geo && c.geo.cls;
+  let depth = cls==="calcaire" ? 250 : cls==="marneux" ? 450 : cls==="siliceux" ? 400 : 350;
+  if(c.tpi!=null){ if(c.tpi>12) depth*=0.7; else if(c.tpi<-8) depth*=1.3; }
+  if(c.slope!=null && c.slope>25) depth*=0.8;
+  const stones = c.cfvo!=null ? clamp(c.cfvo/100,0,0.7) : (cls==="calcaire"?0.35:0.2);
+  return Math.max(15, dTheta*depth*(1-stones));
+}
+function computeWaterBalance(cells){
+  if(!W.ok) return;
+  const nd = W.days.length;
+  for(const c of cells){
+    if(!c.ww) c.ww = nearestWeights(c.lat,c.lon);
+    c.awc = awcOf(c);
+    const forest = c.forest || (c.cover!=null && c.cover>0.5);
+    const inter = forest ? 0.8 : 0.95, run = (c.slope!=null && c.slope>20) ? 0.9 : 1;
+    const sw = c.slope!=null ? Math.min(1,c.slope/15) : 0, south = c.aspect!=null ? -Math.cos(c.aspect*Math.PI/180) : 0;
+    const etF = (1 + 0.15*south*sw) * (forest ? 0.85 : 0.7);
+    let Wt = 0.5*c.awc; const rel = new Float32Array(nd);
+    for(let d=0; d<nd; d++){
+      let P=0, E=0;
+      for(const [i,w] of c.ww){ P += w*W.pts[i].rain[d]; E += w*W.pts[i].et0[d]; }
+      Wt = Math.min(c.awc, Wt + P*inter*run);
+      Wt = Math.max(0, Wt - E*etF*Math.min(1, Wt/(0.5*c.awc)));
+      rel[d] = Wt/c.awc;
+    }
+    c.relW = rel;
+  }
+}
+
+async function analyze(){
+  const bnd = map.getBounds();
+  const b = {s:bnd.getSouth(), n:bnd.getNorth(), w:bnd.getWest(), e:bnd.getEast()};
+  const midLat=(b.s+b.n)/2, kx=Math.cos(midLat*Math.PI/180);
+  const wKm=(b.e-b.w)*111.32*kx, hKm=(b.n-b.s)*110.57;
+  if(wKm*hKm > MAX_AREA_KM2){ setStatus(`La zone visible fait environ ${fmt(wKm*hKm)} km². Zoomez jusqu’à ${MAX_AREA_KM2} km² au plus.`, true); return; }
+  const btn=$("#go"); btn.disabled=true;
+  try{
+    const cellM = Math.max(100, Math.sqrt(wKm*hKm*1e6/TARGET_CELLS));
+    const cols=Math.max(2,Math.ceil(wKm*1000/cellM)), rows=Math.max(2,Math.ceil(hKm*1000/cellM));
+    const dLon=(b.e-b.w)/cols, dLat=(b.n-b.s)/rows, cells=[];
+    for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) cells.push({r,c,lat:b.s+(r+0.5)*dLat, lon:b.w+(c+0.5)*dLon});
+
+    setStatus("Peuplements forestiers : chargement…");
+    const forest = await loadForest(b, n=>setStatus(`Peuplements forestiers : ${fmt(n)} polygones…`));
+    S.forest = forest;
+
+    setStatus("Forêts publiques : chargement…");
+    let pubMask=null;
+    try{ pubMask = await loadPublicMask(b, cols, rows); S.pubOk=true; } catch(e){ console.warn("Forêts publiques", e); S.pubOk=false; }
+    cells.forEach((x,i)=>x.pub = pubMask ? pubMask[i] : null);
+
+    setStatus("Géologie : lecture de la carte du BRGM…");
+    let geo=null;
+    try{ geo = await loadGeology(b, cols, rows, (i,n)=>setStatus(`Géologie : identification des formations, ${i} sur ${n}…`)); S.geoOk = geo.some(g=>g && !g.coarse) ? "50k" : "1M"; }
+    catch(e){ console.warn("Géologie BRGM", e); S.geoOk=false; }
+    cells.forEach((x,i)=>x.geo = geo ? geo[i] : null);
+
+    setStatus("Hauteur des arbres (LiDAR HD) : chargement…");
+    let can=null;
+    try{ can = await loadCanopy(b, cols, rows); S.lidarOk=true; } catch(e){ console.warn("LiDAR HD", e); S.lidarOk=false; }
+    cells.forEach((x,i)=>{ const v = can ? can[i] : null; x.h = v ? v.h : null; x.cover = v ? v.cover : null; });
+
+    setStatus("Forêts anciennes : chargement…");
+    let anc=null;
+    try{ anc = await loadAncient(b, cols, rows); S.ancOk = anc.some(Boolean); } catch(e){ console.warn("Forêts anciennes", e); S.ancOk=false; }
+    cells.forEach((x,i)=>x.anc = anc ? anc[i] : null);
+
+    setStatus("Sol : chargement du pH et de la texture…");
+    let soil = null;
+    try{ soil = await loadSoil(b); S.soilOk = true; }
+    catch(e){ console.warn("SoilGrids", e); S.soilOk = false; }
+
+    setStatus("Altitudes : 0 %");
+    const alts = await loadAltitudes(cells.map(x=>[x.lat,x.lon]), (d,t)=>setStatus(`Altitudes : ${fmt(100*d/t)} %`));
+
+    setStatus("Calcul des mailles…");
+    for(let i=0;i<cells.length;i++){
+      const x = cells[i]; x.alt = alts[i];
+      let hit=null;
+      for(const f of forest){
+        if(x.lon<f.bbox[0]||x.lon>f.bbox[2]||x.lat<f.bbox[1]||x.lat>f.bbox[3]) continue;
+        if(geomContains(f.geom,x.lon,x.lat)){ hit=f; break; }
+      }
+      x.mapped=!!hit; x.keys=hit?hit.info.keys:new Set(); x.ouvert=hit?hit.info.ouvert:false; x.forest=hit?hit.info.forest:false;
+      x.label = hit ? hit.info.label : "Hors forêt (prairie, culture ou bâti)";
+      if(soil){
+        const ph = sampleLayer(soil.ph, x.lat, x.lon); x.ph = ph!=null ? ph/10 : null;
+        const g = (L,k) => { const v = sampleLayer(L, x.lat, x.lon); return v!=null ? v/k : null; };
+        x.sand = g(soil.sand,10); x.clay = g(soil.clay,10); x.soc = g(soil.soc,10); x.cfvo = g(soil.cfvo,10);
+      } else { x.ph = null; x.sand = null; x.clay = null; x.soc = null; x.cfvo = null; }
+    }
+    const at=(r,c)=>(r<0||c<0||r>=rows||c>=cols)?null:cells[r*cols+c];
+    const dx=dLon*111320*kx, dy=dLat*110574;
+    for(const x of cells){
+      x.edge = [at(x.r+1,x.c),at(x.r-1,x.c),at(x.r,x.c+1),at(x.r,x.c-1)].some(n=>n && n.forest!==x.forest);
+      if(x.alt==null){ x.slope=null; x.aspect=null; x.tpi=null; continue; }
+      const z = q => q && q.alt!=null ? q.alt : x.alt;
+      const gx=(z(at(x.r,x.c+1))-z(at(x.r,x.c-1)))/(2*dx), gy=(z(at(x.r+1,x.c))-z(at(x.r-1,x.c)))/(2*dy);
+      x.slope=Math.atan(Math.hypot(gx,gy))*180/Math.PI; x.aspect=(Math.atan2(-gx,-gy)*180/Math.PI+360)%360;
+      let s=0,n=0; for(let rr=x.r-2;rr<=x.r+2;rr++) for(let cc=x.c-2;cc<=x.c+2;cc++){ const q=at(rr,cc); if(q&&q!==x&&q.alt!=null){ s+=q.alt; n++; } }
+      x.tpi = n ? x.alt - s/n : null;
+    }
+    if(W.ok){ cells.forEach(x=>x.ww=nearestWeights(x.lat,x.lon)); setStatus("Bilan d’eau de chaque maille…"); computeWaterBalance(cells); }
+    S.grid={cells,rows,cols,b};
+    drawForest(); render();
+    const nf=cells.filter(x=>x.forest).length;
+    setStatus(`${fmt(cells.length)} mailles de ${fmt(cellM)} m analysées${S.altiSrc && S.altiSrc!=="IGN" ? ` (altitudes : ${S.altiSrc})` : ""}, dont ${fmt(100*nf/cells.length)} % en forêt. ${S.soilOk?"pH et sable : SoilGrids.":"SoilGrids n’a pas répondu : pH estimé d’après les arbres."} ${S.pubOk?`${fmt(100*cells.filter(x=>x.pub===1).length/cells.length)} % en forêt publique.`:"Les forêts publiques n’ont pas pu être chargées : le filtre des terrains est inactif."} ${S.geoOk==="50k"?"Géologie : BRGM 1/50 000.":S.geoOk==="1M"?"Géologie : carte simplifiée au millionième seulement.":"Géologie détaillée indisponible."} ${S.lidarOk?"Hauteur des arbres : LiDAR HD.":"LiDAR HD indisponible ici."} Cliquez sur la carte pour le détail.`);
+  }catch(e){
+    console.error(e);
+    setStatus("L’analyse a échoué : "+e.message+". Vérifiez la connexion et relancez ; si le problème persiste, essayez un autre navigateur.", true);
+  }finally{ btn.disabled=false; }
+}
+
+function forestColor(info){
+  const k=info.keys;
+  if(k.has("herbace")) return "#D9D27A"; if(k.has("lande")) return "#C7A15A";
+  const f=[...k].some(x=>FEUILLUS.includes(x))||k.has("feuillus"), c=[...k].some(x=>CONIF.includes(x))||k.has("coniferes");
+  return f&&c ? "#6E8B4E" : c ? "#2F5D4F" : f ? "#7FA34A" : "#8C8C7A";
+}
+function drawForest(){
+  forestLayer.clearLayers();
+  for(const f of S.forest) L.geoJSON({type:"Feature",geometry:f.geom},{style:{color:forestColor(f.info),weight:0.8,fillOpacity:0.18},interactive:false}).addTo(forestLayer);
+}
+
+function currentStats(){ return W.ok ? W.pts.map(p=>pointStats(p,S.day)) : null; }
+function monthOfDay(){ return W.ok ? Number(W.days[S.day].slice(5,7)) : (new Date().getMonth()+1); }
+function cellWx(c, stats){
+  if(!stats) return null; if(!c.ww) c.ww = nearestWeights(c.lat,c.lon);
+  const w = blendWeather(c.ww, stats, c.alt);
+  if(c.relW){ const a=Math.max(0,S.day-6); let s=0,n=0; for(let i=a;i<=S.day;i++){ s+=c.relW[i]; n++; } w.relW = n ? s/n : NaN; }
+  return w;
+}
+function dryness(w){ return w ? 1 - waterIndex({pluie:[40,90]}, w) : 0.5; }
+function scoreCell(sp, c, stats, month, wx){
+  const w = wx !== undefined ? wx : cellWx(c, stats);
+  const t = terrainParts(sp, c, dryness(w));
+  if(S.mode==="terrain" || !w) return {score:t.total, t, m:null};
+  if(t.total===0) return {score:0, t, m:null};
+  const m = weatherParts(sp, w, month);
+  return {score:t.total*m.total, t, m};
+}
+
+function render(){
+  if(!S.grid) return;
+  const {cells,rows,cols,b} = S.grid, stats=currentStats(), month=monthOfDay();
+  const list = S.species==="all" ? SPECIES : SPECIES.filter(s=>s.id===S.species);
+  const per={}; SPECIES.forEach(s=>per[s.id]={good:0,max:0,vals:[]});
+  const cv=document.createElement("canvas"); cv.width=cols; cv.height=rows;
+  const ctx=cv.getContext("2d"), img=ctx.createImageData(cols,rows);
+  let shown=0;
+  for(const c of cells){
+    c.score=0;
+    if(S.land!=="tous" && c.pub!=null && ((S.land==="public") !== (c.pub===1))) continue;
+    shown++;
+    const w = cellWx(c, stats); let best=0;
+    for(const sp of SPECIES){
+      const v = scoreCell(sp,c,stats,month,w).score;
+      if(v>=0.5) per[sp.id].good++; if(v>per[sp.id].max) per[sp.id].max=v; per[sp.id].vals.push(v);
+      if(list.includes(sp) && v>best) best=v;
+    }
+    c.score=best;
+    const px=((rows-1-c.r)*cols+c.c)*4;
+    if(best>=0.06){ const [R,G,B]=rampColor(best); img.data[px]=R; img.data[px+1]=G; img.data[px+2]=B; img.data[px+3]=Math.round(255*(0.2+0.6*best)); }
+  }
+  ctx.putImageData(img,0,0);
+  if(heatLayer) map.removeLayer(heatLayer);
+  heatLayer = L.imageOverlay(cv.toDataURL(), [[b.s,b.w],[b.n,b.e]], {interactive:false, opacity:Number($("#heatop").value)}).addTo(map);
+  updateSpeciesBars(per, shown);
+}
+
+function cellAt(ll){
+  const g=S.grid; if(!g) return null; const {b,rows,cols,cells}=g;
+  if(ll.lat<b.s||ll.lat>b.n||ll.lng<b.w||ll.lng>b.e) return null;
+  return cells[Math.min(rows-1,Math.floor((ll.lat-b.s)/(b.n-b.s)*rows))*cols + Math.min(cols-1,Math.floor((ll.lng-b.w)/(b.e-b.w)*cols))];
+}
+const DIRS=["nord","nord-est","est","sud-est","sud","sud-ouest","ouest","nord-ouest"];
+const pct = v => Math.round(v*100)+" %";
+map.on("click", e=>{
+  const c=cellAt(e.latlng); if(!c) return;
+  const stats=currentStats(), month=monthOfDay(), w=cellWx(c,stats);
+  const ranked=SPECIES.map(sp=>[sp,scoreCell(sp,c,stats,month,w)]).filter(x=>x[1].score>=0.05).sort((a,b)=>b[1].score-a[1].score).slice(0,6);
+  const expo = c.slope==null ? "—" : (c.slope<4 ? "replat" : DIRS[Math.round(c.aspect/45)%8]+`, pente ${fmt(c.slope)}°`);
+  const pos = c.tpi==null ? "" : (c.tpi<-8 ? " (creux, fond de vallon)" : c.tpi>12 ? " (crête ou bosse)" : "");
+  const se = soilEstimate(c);
+  let html=`<div class="pop"><h3>${esc(c.label)}</h3><table>
+    <tr><td>Altitude</td><td>${c.alt==null?"—":fmt(c.alt)+" m"}${pos}</td></tr>
+    <tr><td>Exposition</td><td>${expo}</td></tr>
+    <tr><td>Sol</td><td>${se.ph==null?"pH inconnu":"pH "+fmt(se.ph,1)}${c.sand!=null?`, ${fmt(c.sand)} % de sable`:""}<br><span style="color:#6B675C">${esc(se.src)}</span></td></tr>
+    ${c.geo?`<tr><td>Roche</td><td>${esc(c.geo.label)}${c.geo.coarse?" (carte au millionième)":""}</td></tr>`:""}
+    ${c.h!=null?`<tr><td>Arbres</td><td>${c.cover<0.25?"couvert clairsemé ou coupe":`hauteur moyenne ${fmt(c.h)} m`}, couvert ${fmt(c.cover*100)} %</td></tr>`:""}
+    ${c.anc?`<tr><td>Ancienneté</td><td>${c.anc==="ancienne"?"forêt ancienne (boisée depuis au moins 150 ans)":c.anc==="recente"?"forêt récente":"forêt disparue"}</td></tr>`:""}
+    ${c.awc!=null?`<tr><td>Réserve en eau</td><td>${fmt(c.awc)} mm${w&&w.relW!=null&&!isNaN(w.relW)?`, remplie à ${fmt(w.relW*100)} %`:""}</td></tr>`:""}
+    <tr><td>Lisière</td><td>${c.edge?"oui":"non"}</td></tr>
+    <tr><td>Terrain</td><td id="pubinfo">${c.pub===1?"forêt publique":c.pub===0?"hors forêt publique, le plus souvent privé":"statut inconnu"}</td></tr>`;
+  if(w && S.mode==="meteo"){
+    html+=`<tr><td>Pluie 26 j</td><td>${fmt(w.P26)} mm, bilan ${w.WB>=0?"+":""}${fmt(w.WB)} mm</td></tr>
+      <tr><td>Eau du sol</td><td>${isNaN(w.SM)?"—":fmt(w.SM*100)+" % vol."} (modèle régional)</td></tr>
+      <tr><td>Temp. 20 j</td><td>${fmt(w.T20,1)} °C à cette altitude</td></tr>
+      <tr><td>Air</td><td>${isNaN(w.RH)?"—":fmt(w.RH)+" % d’humidité"}${isNaN(w.VPD)?"":`, déficit ${fmt(w.VPD,1)} kPa`}</td></tr>`;
+  }
+  html+=`</table>`;
+  if(ranked.length){
+    html += ranked.map(([sp,r])=>`<div class="rk"><b>${esc(sp.nom)}</b><div class="bar"><span style="width:${Math.round(r.score*100)}%"></span></div><span>${pct(r.score)}</span></div>`).join("");
+    const [sp0,r0]=ranked[0];
+    let why=`Pour ${esc(sp0.nom)} : hôte ${pct(r0.t.host)}, sol ${pct(r0.t.soil)}, altitude ${pct(r0.t.alt)}, relief ×${fmt(r0.t.relief,2)}, structure ×${fmt(r0.t.struct,2)}`;
+    if(r0.m) why+=`, saison ${pct(r0.m.season)}, eau ${pct(r0.m.water)}, température ${pct(r0.m.temp)}, air ${pct(r0.m.air)}${r0.m.frost<1?", gel récent":""}${r0.m.shock>1?", refroidissement du sol":""}`;
+    html += `<p class="why">${why}.</p>`;
+  } else html+=`<p>Aucune espèce de la liste ne trouve ici de conditions favorables${S.mode==="meteo"?" pour ce jour":""}.</p>`;
+  html+=`</div>`;
+  L.popup({maxWidth:320}).setLatLng(e.latlng).setContent(html).openOn(map);
+  publicInfo(e.latlng.lat, e.latlng.lng).then(info=>{
+    const el=document.getElementById("pubinfo"); if(!el) return;
+    el.textContent = info ? `${info.name}${info.kind?` (${info.kind.toLowerCase()})`:""} : forêt publique` : "hors forêt publique, le plus souvent privé : accord du propriétaire nécessaire";
+  }).catch(()=>{});
+  if(W.ok) drawCharts(c.lat,c.lon,c.alt);
+});
+
+/* ============================================================
+   Liste des espèces
+   ============================================================ */
+function buildSpecies(){
+  const m=monthOfDay(), box=$("#species"); box.innerHTML="";
+  const all=document.createElement("div"); all.className="sp";
+  all.innerHTML=`<div class="sprow"><input type="radio" name="sp" id="sp-all" value="all" ${S.species==="all"?"checked":""}><label class="spname" for="sp-all">Toutes les espèces<em>meilleure chance par maille</em></label><span></span></div>`;
+  box.appendChild(all);
+  for(const sp of [...SPECIES].sort((a,b)=>(seasonFactor(b,m)-seasonFactor(a,m))||a.nom.localeCompare(b.nom,"fr"))){
+    const inS=sp.mois.includes(m), d=document.createElement("div"); d.className="sp"; d.dataset.id=sp.id;
+    d.innerHTML=`<div class="sprow">
+      <input type="radio" name="sp" id="sp-${sp.id}" value="${sp.id}" ${S.species===sp.id?"checked":""}>
+      <label class="spname" for="sp-${sp.id}"><span class="${inS?"":"off"}">${esc(sp.nom)}</span>${inS?'<span class="season" title="de saison"></span>':""}<em>${esc(sp.latin)}</em></label>
+      <div class="rank"><div class="bar"><span style="width:0"></span></div><small></small></div>
+      <button class="more" aria-expanded="false">Fiche</button>
+      <div class="details">
+        <p><span class="tag">${esc(sp.comest)}</span><span class="tag">sol ${esc(sp.sol)}</span><span class="tag">${fmt(sp.alt[0])} à ${fmt(sp.alt[1])} m</span></p>
+        <p>${esc(sp.habitat)}</p>
+        <p>Période : ${sp.mois.map(x=>MOIS[x-1]).join(", ")}. Pluie visée sur 26 jours : ${sp.pluie[0]} à ${sp.pluie[1]} mm. Température moyenne sur 20 jours : ${sp.temp[0]} à ${sp.temp[1]} °C ; la chaleur freine au-delà de ${sp.tmax} °C de maximales.</p>
+        <p class="warn">Confusions : ${esc(sp.confusion)}</p>
+        ${sp.src?`<p class="src">Sources : ${sp.src}</p>`:""}
+      </div></div>`;
+    box.appendChild(d);
+  }
+  box.querySelectorAll('input[name="sp"]').forEach(r=>r.addEventListener("change",e=>{S.species=e.target.value; render();}));
+  box.querySelectorAll(".more").forEach(btn=>btn.addEventListener("click",()=>{
+    const det=btn.nextElementSibling, open=det.classList.toggle("open");
+    btn.setAttribute("aria-expanded",open); btn.textContent=open?"Fermer":"Fiche";
+  }));
+}
+function updateSpeciesBars(per,total){
+  // Indice de chance pour la zone : moyenne des 10 % de meilleures mailles, plus la part de zone favorable
+  const keys={};
+  for(const id in per){
+    const p=per[id], v=p.vals.sort((a,b)=>b-a), n=Math.max(1,Math.ceil(v.length*0.1));
+    const top = v.length ? v.slice(0,n).reduce((a,b)=>a+b,0)/n : 0;
+    const share = total ? p.good/total : 0;
+    keys[id] = {k: 0.7*top + 0.3*Math.min(1, share*3), top, share, max:p.max};
+  }
+  const box=$("#species"), rows=[...box.querySelectorAll(".sp[data-id]")];
+  rows.sort((a,b)=>keys[b.dataset.id].k-keys[a.dataset.id].k || a.dataset.id.localeCompare(b.dataset.id));
+  rows.forEach(d=>{
+    const q=keys[d.dataset.id];
+    d.querySelector(".bar span").style.width=Math.round(q.k*100)+"%";
+    d.querySelector(".rank small").textContent = q.k>=0.02 ? pct(q.k) : "—";
+    d.querySelector(".rank").title=`Meilleurs coins : ${pct(q.top)} de chance ; ${fmt(100*q.share,1)} % de la zone avec une chance forte ; maximum ${pct(q.max)}`;
+    d.classList.toggle("unlikely", q.k<0.05);
+    box.appendChild(d);
+  });
+  const lbl = S.species==="all" ? "" : "";
+  $("#sporder").textContent = `Classées de la plus probable à la moins probable dans la zone analysée${S.mode==="meteo"?" pour le jour choisi":", d’après le terrain seul"}${S.land!=="tous"?(S.land==="public"?", en forêt publique":", en terrain privé"):""}. Le pourcentage résume les chances dans les meilleurs coins.`;
+}
+
+/* ============================================================
+   Météo affichée
+   ============================================================ */
+function dayLabel(i){
+  const s=new Date(W.days[i]+"T12:00:00").toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
+  const rel = i===W.todayIdx ? "aujourd’hui" : i>W.todayIdx ? "prévision" : `il y a ${W.todayIdx-i} j`;
+  return `${s.charAt(0).toUpperCase()+s.slice(1)}<small>${rel}</small>`;
+}
+let chartTarget=null;
+function prepCanvas(cv){
+  const dpr=window.devicePixelRatio||1, Wd=cv.clientWidth, Ht=cv.clientHeight;
+  cv.width=Wd*dpr; cv.height=Ht*dpr; const ctx=cv.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,Wd,Ht);
+  return {ctx,Wd,Ht};
+}
+function drawLine(ctx, vals, x, y, color, width=2){
+  ctx.strokeStyle=color; ctx.lineWidth=width; ctx.beginPath(); let started=false;
+  vals.forEach((v,i)=>{ if(isNaN(v)){ started=false; return; } const X=x(i),Y=y(v); started?ctx.lineTo(X,Y):ctx.moveTo(X,Y); started=true; });
+  ctx.stroke();
+}
+function drawCharts(lat, lon, alt){
+  chartTarget={lat,lon,alt};
+  const cs=getComputedStyle(document.documentElement), col=n=>cs.getPropertyValue(n).trim();
+  const ww=nearestWeights(lat,lon), n=W.days.length;
+  const series = key => Array.from({length:n},(_,i)=>{ let s=0,t=0; for(const [k,w] of ww){ const v=W.pts[k][key][i]; if(!isNaN(v)){ s+=w*v; t+=w; } } return t?s/t:NaN; });
+  const rain=series("rain"), sm=series("sm"), rh=series("rh");
+  const tm=Array.from({length:n},(_,i)=>{ let s=0; for(const [k,w] of ww){ const p=W.pts[k]; s+=w*(p.tmean[i]-0.0065*((alt??p.elev)-p.elev)); } return s; });
+  const a=Math.max(0,S.day-25);
+  // Graphique 1 : pluie et eau du sol
+  { const {ctx,Wd,Ht}=prepCanvas($("#chart1")); const top=14,bot=Ht-16,h=bot-top,bw=Wd/n, maxR=Math.max(20,...rain);
+    for(let i=0;i<n;i++){ const bh=rain[i]/maxR*h; ctx.fillStyle=(i>=a&&i<=S.day)?col("--ochre"):col("--line"); ctx.globalAlpha=i>W.todayIdx?0.5:1; ctx.fillRect(i*bw+1,bot-bh,Math.max(1,bw-2),bh); }
+    ctx.globalAlpha=1;
+    const smv=sm.filter(v=>!isNaN(v));
+    if(smv.length){ const lo=Math.min(...smv)-0.02, hi=Math.max(...smv)+0.02; drawLine(ctx,sm,i=>i*bw+bw/2,v=>bot-(v-lo)/(hi-lo)*h,col("--water")); }
+    ctx.strokeStyle=col("--ink"); ctx.lineWidth=1; ctx.setLineDash([3,3]); const xs=S.day*bw+bw/2; ctx.beginPath(); ctx.moveTo(xs,2); ctx.lineTo(xs,bot); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle=col("--muted"); ctx.font="12px 'Alegreya Sans', sans-serif"; ctx.fillText(`${fmt(maxR)} mm`,2,11);
+    if(smv.length){ const t=`sol ${fmt(Math.min(...smv)*100)} à ${fmt(Math.max(...smv)*100)} %`; ctx.fillText(t,Wd-ctx.measureText(t).width-2,11); }
+    const d0=W.days[0].slice(8,10)+"/"+W.days[0].slice(5,7), d1=W.days[n-1].slice(8,10)+"/"+W.days[n-1].slice(5,7);
+    ctx.fillText(d0,2,Ht-3); ctx.fillText(d1,Wd-ctx.measureText(d1).width-2,Ht-3); }
+  // Graphique 2 : température et humidité de l’air
+  { const {ctx,Wd,Ht}=prepCanvas($("#chart2")); const top=12,bot=Ht-4,h=bot-top,bw=Wd/n;
+    const tv=tm.filter(v=>!isNaN(v)), lo=Math.min(...tv)-1, hi=Math.max(...tv)+1;
+    // fenêtre de 20 jours pour la température
+    ctx.fillStyle=col("--moss-soft"); ctx.fillRect(Math.max(0,S.day-19)*bw,top,Math.min(20,S.day+1)*bw,h);
+    drawLine(ctx,rh,i=>i*bw+bw/2,v=>bot-v/100*h,col("--muted"),1.5);
+    drawLine(ctx,tm,i=>i*bw+bw/2,v=>bot-(v-lo)/(hi-lo)*h,col("--moss"));
+    ctx.strokeStyle=col("--ink"); ctx.lineWidth=1; ctx.setLineDash([3,3]); const xs=S.day*bw+bw/2; ctx.beginPath(); ctx.moveTo(xs,2); ctx.lineTo(xs,bot); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle=col("--muted"); ctx.font="12px 'Alegreya Sans', sans-serif"; const t=`${fmt(lo+1)} à ${fmt(hi-1)} °C`; ctx.fillText(t,2,10); }
+  $("#chartnote").textContent = alt!=null && (lat!==CENTER[0]||lon!==CENTER[1])
+    ? `Au point cliqué, ramené à ${fmt(alt)} m d’altitude. La bande verte marque les 20 jours pris pour la température.`
+    : `${Z.lieu}. Cliquez sur une maille analysée pour voir sa météo. La bande verte marque les 20 jours pris pour la température.`;
+  const st=W.pts.map(p=>pointStats(p,S.day)), w=blendWeather(ww,st,alt);
+  const rows=[["Pluie des 26 derniers jours",`${fmt(w.P26)} mm`],["Bilan pluie moins évaporation",`${w.WB>=0?"+":""}${fmt(w.WB)} mm`],
+    ["Eau du sol (9 à 27 cm)",isNaN(w.SM)?"—":`${fmt(w.SM*100)} % vol.`],["Température moyenne, 20 j",`${fmt(w.T20,1)} °C`],
+    ["Maximales, 7 j",`${fmt(w.Tmax7,1)} °C`],["Humidité de l’air, 3 j",isNaN(w.RH)?"—":`${fmt(w.RH)} %`],
+    ["Déficit de saturation (jour)",isNaN(w.VPD)?"—":`${fmt(w.VPD,1)} kPa`],["Sol : variation sur 10 j",isNaN(w.soilDrop)?"—":`${w.soilDrop>0?"−":"+"}${fmt(Math.abs(w.soilDrop),1)} °C`]];
+  $("#wx").innerHTML=rows.map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join("");
+  $("#chartnote").textContent += " " + weatherSourceNote();
+}
+function weatherSourceNote(){
+  const mf = W.src && W.src.total ? W.src.mf/W.src.total : 0;
+  let t = mf>0.5 ? "Modèles Météo-France AROME et ARPÈGE." : "Modèle par défaut d’Open-Meteo (Météo-France indisponible).";
+  t += W.obsUntil ? ` Pluie mesurée à ${W.nStations} station${W.nStations>1?"s":""} Météo-France jusqu’au ${W.obsUntil}, modélisée ensuite.` : " Pluie modélisée (stations non chargées).";
+  return t;
+}
+function onDayChange(){
+  S.day=Number($("#day").value); $("#daylabel").innerHTML=dayLabel(S.day);
+  if(chartTarget) drawCharts(chartTarget.lat,chartTarget.lon,chartTarget.alt);
+  const pm=S.month; S.month=monthOfDay(); if(pm!==S.month) buildSpecies();
+  render();
+}
+
+/* ============================================================
+   Démarrage
+   ============================================================ */
+document.querySelectorAll('input[name="mode"]').forEach(r=>r.addEventListener("change",e=>{S.mode=e.target.value; render();}));
+$("#go").addEventListener("click", analyze);
+window.addEventListener("resize",()=>{ if(chartTarget) drawCharts(chartTarget.lat,chartTarget.lon,chartTarget.alt); });
+
+/* ============================================================
+   Météo sur place
+   ============================================================ */
+const WMO = {0:"Ciel dégagé",1:"Plutôt dégagé",2:"Partiellement nuageux",3:"Couvert",45:"Brouillard",48:"Brouillard givrant",
+  51:"Bruine faible",53:"Bruine",55:"Bruine forte",56:"Bruine verglaçante",57:"Bruine verglaçante forte",61:"Pluie faible",63:"Pluie",65:"Pluie forte",
+  66:"Pluie verglaçante",67:"Pluie verglaçante forte",71:"Neige faible",73:"Neige",75:"Neige forte",77:"Grains de neige",80:"Averses faibles",81:"Averses",
+  82:"Averses violentes",85:"Averses de neige",86:"Fortes averses de neige",95:"Orage",96:"Orage avec grêle",99:"Orage avec forte grêle"};
+let wxPoint = null, lastClickLL = null;
+function setTab(which){
+  const carte = which==="carte";
+  $("#tab-carte").hidden = !carte; $("#tab-meteo").hidden = carte;
+  $("#tb-carte").setAttribute("aria-selected", carte); $("#tb-meteo").setAttribute("aria-selected", !carte);
+  setTimeout(refreshMap, 30);
+  if(!carte){
+    const mode = document.querySelector('input[name="wxwhere"]:checked').value;
+    if(mode==="gps") useGPS(); else showPlaceWeather(lastClickLL ? [lastClickLL.lat,lastClickLL.lng] : CENTER);
+  }
+}
+$("#tb-carte").addEventListener("click", ()=>setTab("carte"));
+$("#tb-meteo").addEventListener("click", ()=>setTab("meteo"));
+document.querySelectorAll('input[name="wxwhere"]').forEach(r=>r.addEventListener("change",e=>{
+  if(e.target.value==="gps") useGPS(); else showPlaceWeather(lastClickLL ? [lastClickLL.lat,lastClickLL.lng] : CENTER);
+}));
+map.on("click", e=>{ lastClickLL=e.latlng; if(!$("#tab-meteo").hidden){ document.querySelector('input[value="map"]').checked=true; showPlaceWeather([e.latlng.lat,e.latlng.lng]); } });
+function useGPS(){
+  if(!navigator.geolocation){ $("#wxwherenote").textContent="Ce navigateur ne donne pas accès à la position. Choisissez un point sur la carte."; return; }
+  $("#wxwherenote").textContent="Recherche de votre position…";
+  navigator.geolocation.getCurrentPosition(
+    pos=>{ const ll=[pos.coords.latitude,pos.coords.longitude]; map.setView(ll, Math.max(map.getZoom(),13)); showPlaceWeather(ll, true); },
+    err=>{ $("#wxwherenote").textContent="Position indisponible ("+(err.code===1?"accès refusé":"signal introuvable")+"). Choisissez un point sur la carte."; },
+    {enableHighAccuracy:true, timeout:15000, maximumAge:120000});
+}
+let wxMarker=null;
+async function placeName(lat, lon){
+  try{
+    const js = await fetchJSON(`https://data.geopf.fr/geocodage/reverse?lon=${lon}&lat=${lat}&index=poi&limit=1`, {}, 10000);
+    const f = js.features && js.features[0]; if(f){ const p=f.properties||{}; const n = (p.toponym||p.name||p.label||""); const c = p.city||(Array.isArray(p.city)?p.city[0]:""); if(n||c) return [n, c].filter(Boolean).join(", "); }
+  }catch(e){}
+  try{
+    const js = await fetchJSON(`https://data.geopf.fr/geocodage/reverse?lon=${lon}&lat=${lat}&index=address&limit=1`, {}, 10000);
+    const f = js.features && js.features[0]; if(f){ const p=f.properties||{}; return p.city || p.label || null; }
+  }catch(e){}
+  return null;
+}
+async function showPlaceWeather(ll, fromGPS=false){
+  const [lat,lon]=ll; wxPoint=ll;
+  if(wxMarker) map.removeLayer(wxMarker);
+  wxMarker = L.circleMarker(ll,{radius:7,color:"#B07A1E",weight:3,fillColor:"#fff",fillOpacity:1}).addTo(map);
+  $("#wxwherenote").textContent = fromGPS ? "Votre position." : "Point choisi sur la carte. Cliquez ailleurs pour changer.";
+  const box=$("#wxnow"); box.innerHTML='<p class="chartnote">Chargement…</p>';
+  const base = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&timezone=Europe%2FParis`
+    + `&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_gusts_10m`
+    + `&hourly=temperature_2m,precipitation,relative_humidity_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum`
+    + `&past_days=3&forecast_days=3`;
+  let js=null, src="Météo-France AROME et ARPÈGE";
+  try{ js = await fetchJSON(base+"&models=meteofrance_seamless", {}, 30000); if(!js.current || js.current.temperature_2m==null || !js.hourly) throw new Error("vide"); }
+  catch(e){ try{ js = await fetchJSON(base, {}, 30000); src="modèle par défaut d’Open-Meteo"; } catch(e2){ box.innerHTML='<p class="chartnote" style="color:var(--danger)">La météo n’a pas pu être chargée. Vérifiez la connexion et réessayez.</p>'; return; } }
+  const [name, alt] = await Promise.all([placeName(lat,lon), altiBatch([[lat,lon]]).then(z=>{ const v=z&&z[0]; const n=(v&&typeof v==="object")?v.z:v; return (n==null||n<-1000)?null:n; }).catch(()=>null)]);
+  if(wxPoint!==ll) return;
+  const c=js.current, h=js.hourly, d=js.daily;
+  if(!c || !h || !d){ box.innerHTML='<p class="chartnote" style="color:var(--danger)">Réponse météo incomplète pour ce point. Réessayez dans un instant.</p>'; return; }
+  const nowIdx = h.time.findIndex(t=>t>=c.time.slice(0,13)+":00");
+  const i0 = nowIdx<0?0:nowIdx;
+  const sumRange=(a,b)=>h.precipitation.slice(Math.max(0,a),Math.max(0,b)).reduce((s,v)=>s+(v||0),0);
+  const r24=sumRange(i0-24,i0), r72=sumRange(i0-72,i0), next12=sumRange(i0,i0+12);
+  const firstRain = h.precipitation.slice(i0,i0+24).findIndex(v=>v>=0.2);
+  let verdict;
+  if(next12>=5) verdict=`Pluie attendue dans les 12 prochaines heures (${fmt(next12)} mm) : prévoyez l’imperméable, et sachez que les sols vont se recharger.`;
+  else if(firstRain>=0) verdict=`Un peu de pluie possible ${firstRain===0?"dès maintenant":`d’ici ${firstRain} h`}.`;
+  else verdict="Pas de pluie annoncée dans les 24 prochaines heures.";
+  if(r72>=20) verdict+=` Il est tombé ${fmt(r72)} mm ces 3 derniers jours : les champignons sortiront surtout dans 1 à 3 semaines si la douceur se maintient.`;
+  const dayNames = d.time.map(t=>new Date(t+"T12:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"numeric"}));
+  const di = d.time.indexOf(c.time.slice(0,10));
+  box.innerHTML = `
+    <p class="place">${esc(name || `${fmt(lat,4)}, ${fmt(lon,4)}`)}<small>${alt!=null?`${fmt(alt)} m d’altitude. `:""}Source : ${src}.</small></p>
+    <div class="now"><span class="big">${fmt(c.temperature_2m)}°</span><span class="sky">${esc(WMO[c.weather_code]||"")}<br><small style="font-family:var(--sans);font-size:14px;color:var(--muted)">ressenti ${fmt(c.apparent_temperature)}°</small></span></div>
+    <dl class="wx">
+      <dt>Humidité de l’air</dt><dd>${fmt(c.relative_humidity_2m)} %</dd>
+      <dt>Vent</dt><dd>${fmt(c.wind_speed_10m)} km/h, rafales ${fmt(c.wind_gusts_10m)}</dd>
+      <dt>Pluie ces dernières 24 h</dt><dd>${fmt(r24,1)} mm</dd>
+      <dt>Pluie ces 3 derniers jours</dt><dd>${fmt(r72,1)} mm</dd>
+      <dt>Pluie prévue, 12 h</dt><dd>${fmt(next12,1)} mm</dd>
+    </dl>
+    <canvas class="chart" id="hourly" aria-label="Prochaines 24 heures"></canvas>
+    <div class="keys"><span><i style="background:var(--water)"></i>pluie par heure</span><span><i class="l" style="background:var(--moss)"></i>température</span></div>
+    <div class="days">${d.time.map((t,i)=>i<di?"":`<div><b>${i===di?"Aujourd’hui":esc(dayNames[i])}</b>${esc(WMO[d.weather_code[i]]||"")}<br>${fmt(d.temperature_2m_min[i])}° / ${fmt(d.temperature_2m_max[i])}°<br>${fmt(d.precipitation_sum[i],1)} mm</div>`).join("")}</div>
+    <p class="verdict">${esc(verdict)}</p>`;
+  // Graphique des 24 prochaines heures
+  const cv=$("#hourly"); const {ctx,Wd,Ht}=prepCanvas(cv);
+  const cs=getComputedStyle(document.documentElement), col=n=>cs.getPropertyValue(n).trim();
+  const P=h.precipitation.slice(i0,i0+24), T=h.temperature_2m.slice(i0,i0+24), n=P.length, bw=Wd/n, top=14, bot=Ht-16, hh=bot-top;
+  const maxP=Math.max(2,...P); P.forEach((v,i)=>{ const bh=(v||0)/maxP*hh; ctx.fillStyle=col("--water"); ctx.fillRect(i*bw+1,bot-bh,Math.max(1,bw-2),bh); });
+  const lo=Math.min(...T)-1, hi=Math.max(...T)+1; drawLine(ctx,T,i=>i*bw+bw/2,v=>bot-(v-lo)/(hi-lo)*hh,col("--moss"));
+  ctx.fillStyle=col("--muted"); ctx.font="12px 'Alegreya Sans', sans-serif";
+  ctx.fillText(`${fmt(maxP,1)} mm/h`,2,11); const tl=`${fmt(lo+1)} à ${fmt(hi-1)} °C`; ctx.fillText(tl,Wd-ctx.measureText(tl).width-2,11);
+  for(let i=0;i<n;i+=6){ ctx.fillText(h.time[i0+i].slice(11,13)+" h", i*bw+2, Ht-3); }
+}
+
+const DIAG = [
+  ["Plan IGN", ()=>wmts("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2","image/png").replace("{z}","12").replace("{y}","1490").replace("{x}","2108"), "img"],
+  ["Photos aériennes IGN", ()=>wmts("ORTHOIMAGERY.ORTHOPHOTOS","image/jpeg").replace("{z}","12").replace("{y}","1490").replace("{x}","2108"), "img"],
+  ["OpenTopoMap", ()=>"https://a.tile.opentopomap.org/12/2108/1490.png", "img"],
+  ["OpenStreetMap", ()=>"https://tile.openstreetmap.org/12/2108/1490.png", "img"],
+  ["Géologie BRGM", ()=>"https://geoservices.brgm.fr/geologie?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=SCAN_H_GEOL50&STYLES=&CRS=EPSG:4326&BBOX=43.7,3.7,43.8,3.8&WIDTH=64&HEIGHT=64&FORMAT=image/png&TRANSPARENT=true", "img"],
+  ["Forêts publiques (ONF)", ()=>`${PUB_WMS}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=FORETS.PUBLIQUES&STYLES=&CRS=EPSG:4326&BBOX=43.7,3.7,43.8,3.8&WIDTH=64&HEIGHT=64&FORMAT=image/png&TRANSPARENT=true`, "fetch"],
+  ["Peuplements (BD Forêt)", ()=>"https://data.geopf.fr/wfs/ows?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=LANDCOVER.FORESTINVENTORY.V2:formation_vegetale&OUTPUTFORMAT=application/json&COUNT=1", "fetch"],
+  ["Altitudes IGN", ()=>`${ALTI_URL}?lon=3.81&lat=43.78&resource=ign_rge_alti_wld&zonly=true`, "fetch"],
+  ["Géologie détaillée (interrogation BRGM)", ()=>`${BRGM_WMS}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&LAYERS=SCAN_H_GEOL50&QUERY_LAYERS=SCAN_H_GEOL50&STYLES=&CRS=EPSG:4326&BBOX=43.78,3.80,43.79,3.81&WIDTH=101&HEIGHT=101&I=50&J=50&INFO_FORMAT=text/plain`, "fetch"],
+  ["Forêts anciennes (IGN)", ()=>`${PUB_WMS}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=IGNF_FORETS-ANCIENNES&STYLES=&CRS=EPSG:4326&BBOX=43.7,3.7,43.8,3.8&WIDTH=64&HEIGHT=64&FORMAT=image/png&TRANSPARENT=true`, "fetch"],
+  ["Sols (SoilGrids)", ()=>"https://maps.isric.org/mapserv?map=/map/phh2o.map&SERVICE=WCS&VERSION=2.0.1&REQUEST=GetCapabilities", "fetch"],
+  ["Météo (Open-Meteo, Météo-France)", ()=>"https://api.open-meteo.com/v1/forecast?latitude=43.78&longitude=3.81&current=temperature_2m&models=meteofrance_seamless", "fetch"],
+  ["Stations Météo-France (data.gouv)", ()=>"https://www.data.gouv.fr/api/2/datasets/6569b51ae64326786e4e8e1a/", "fetch"]
+];
+function testImg(url){ return new Promise(res=>{ const im=new Image(); const t=setTimeout(()=>res(false),15000); im.onload=()=>{clearTimeout(t);res(true);}; im.onerror=()=>{clearTimeout(t);res(false);}; im.src=url+(url.includes("?")?"&":"?")+"_t="+Date.now(); }); }
+async function testFetch(url){ try{ const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),15000); const r=await fetch(url,{signal:ctl.signal}); clearTimeout(t); return r.ok; }catch(e){ return false; } }
+async function testLidar(){ try{ const l=await discoverMNH(); const r=await fetch(`${PUB_WMS}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=${encodeURIComponent(l)}&STYLES=&CRS=EPSG:4326&BBOX=43.77,3.80,43.78,3.81&WIDTH=8&HEIGHT=8&FORMAT=${encodeURIComponent("image/x-bil;bits=32")}`); return r.ok && (await r.arrayBuffer()).byteLength===256; }catch(e){ return false; } }
+async function runDiag(){
+  const ul=$("#diag"); ul.innerHTML=DIAG.map(([n])=>`<li><b>…</b>${esc(n)}</li>`).join("");
+  const res = await Promise.all(DIAG.map(([n,u,k])=>(k==="img"?testImg(u()):testFetch(u()))));
+  const lid = await testLidar();
+  ul.innerHTML = `<li><b style="color:${lid?"var(--moss)":"var(--danger)"}">${lid?"✓":"✗"}</b>Hauteur des arbres (LiDAR HD)</li>` + DIAG.map(([n],i)=>`<li><b style="color:${res[i]?"var(--moss)":"var(--danger)"}">${res[i]?"✓":"✗"}</b>${esc(n)}</li>`).join("")
+    + `<li style="color:var(--muted);margin-top:6px">${esc(navigator.userAgent.match(/Chrome\/[\d.]+|Firefox\/[\d.]+|Version\/[\d.]+ Safari/)?.[0]||navigator.userAgent)}</li>`;
+}
+$("#diagbtn").addEventListener("click", runDiag);
+$("#heatop").addEventListener("input", e=>{ if(heatLayer) heatLayer.setOpacity(Number(e.target.value)); });
+
+async function setZone(id, offline=false){
+  Z = {...ZONES[id], id}; CENTER = Z.center; CENTER_ALT = Z.alt; ZONE_KM = Z.km; SPECIES = Z.species;
+  document.querySelectorAll('input[name="zone"]').forEach(r=>r.checked = r.value===id);
+  if(location.hash.slice(1)!==id) history.replaceState(null,"","#"+id);
+  $("#zonesub").textContent = Z.sub;
+  S.grid=null; S.forest=[]; S.species="all"; if(heatLayer){ map.removeLayer(heatLayer); heatLayer=null; } forestLayer.clearLayers(); map.closePopup();
+  drawZones(); map.setView(CENTER, 11); setTimeout(refreshMap, 50);
+  setStatus("Zoomez sur un secteur (15 km de côté au plus), puis lancez l’analyse.");
+  W.ok=false; buildSpecies(); $("#sporder").textContent="Classées par saison. Lancez une analyse pour les classer de la plus probable à la moins probable.";
+  $("#daylabel").textContent="Chargement de la météo…"; $("#wx").innerHTML=""; $("#chartnote").textContent="";
+  const meteoRadio=document.querySelector('input[value="meteo"]'); meteoRadio.disabled=false; $("#lab-meteo").classList.remove("disabled");
+  if(offline) return;
+  try{
+    await loadWeather();
+    const sl=$("#day"); sl.min=25; sl.max=W.days.length-1; sl.value=W.todayIdx; sl.disabled=false;
+    S.day=W.todayIdx; S.month=monthOfDay(); $("#daylabel").innerHTML=dayLabel(S.day); buildSpecies(); drawCharts(CENTER[0],CENTER[1],CENTER_ALT);
+    if(!W.hasSM) $("#chartnote").textContent += " L’humidité du sol n’est pas fournie ici : l’indice d’eau repose sur la pluie et le bilan hydrique.";
+    loadStationRain().then(()=>{ if(S.grid) computeWaterBalance(S.grid.cells); if(chartTarget) drawCharts(chartTarget.lat,chartTarget.lon,chartTarget.alt); render(); })
+      .catch(e=>{ console.warn("Stations Météo-France", e); if(chartTarget) drawCharts(chartTarget.lat,chartTarget.lon,chartTarget.alt); });
+  }catch(e){
+    console.error(e); W.ok=false; S.mode="terrain";
+    document.querySelector('input[value="terrain"]').checked=true; meteoRadio.disabled=true; $("#lab-meteo").classList.add("disabled");
+    $("#daylabel").textContent="Météo indisponible";
+    try{ if(localStorage.getItem(TRIP_KEY)) setStatus("Pas de réseau ? Utilisez « Ouvrir la sortie enregistrée » pour retrouver votre dernière analyse.", true); }catch(e2){}
+    $("#chartnote").textContent="Open-Meteo n’a pas répondu. Le calcul se fait sur le terrain seul ; rechargez la page pour réessayer.";
+  }
+}
+$("#day").addEventListener("input", ()=>{ if(W.ok) onDayChange(); });
+document.querySelectorAll('input[name="land"]').forEach(r=>r.addEventListener("change",e=>{
+  S.land=e.target.value;
+  if(S.grid && !S.pubOk && S.land!=="tous") setStatus("Les forêts publiques n’ont pas pu être chargées pour ce secteur : relancez l’analyse pour réessayer.", true);
+  render();
+}));
+document.querySelectorAll('input[name="zone"]').forEach(r=>r.addEventListener("change",e=>setZone(e.target.value)));
+window.addEventListener("hashchange",()=>{ const h=location.hash.slice(1); if(ZONES[h] && (!Z || Z.id!==h)) setZone(h); });
+
+/* ============================================================
+   Téléphone : volet coulissant, position GPS, sortie hors ligne
+   ============================================================ */
+const panel = $("#panel"), handle = $("#handle");
+const SHEET = { peek: 168, half: () => Math.round(window.innerHeight*0.5), full: () => Math.round(window.innerHeight*0.88) };
+let sheetState = "peek";
+function setSheet(state, px){
+  if(!window.matchMedia("(max-width:760px)").matches) return;
+  sheetState = state;
+  const h = px!=null ? px : state==="peek" ? SHEET.peek : state==="half" ? SHEET.half() : SHEET.full();
+  document.documentElement.style.setProperty("--sheet", h+"px");
+  if(state==="peek") panel.scrollTop = 0;
+  setTimeout(refreshMap, 280);
+}
+handle.addEventListener("click", ()=>setSheet(sheetState==="peek" ? "half" : sheetState==="half" ? "full" : "peek"));
+handle.addEventListener("keydown", e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); handle.click(); } });
+(function(){ // glisser la poignée
+  let y0=null, h0=0, moved=false;
+  handle.addEventListener("pointerdown", e=>{ y0=e.clientY; h0=panel.getBoundingClientRect().height; moved=false; panel.classList.add("dragging"); handle.setPointerCapture(e.pointerId); });
+  handle.addEventListener("pointermove", e=>{ if(y0==null) return; const dy=y0-e.clientY; if(Math.abs(dy)>6) moved=true; if(moved) document.documentElement.style.setProperty("--sheet", clamp(h0+dy, 120, SHEET.full())+"px"); });
+  const end = e=>{ if(y0==null) return; panel.classList.remove("dragging"); const h=panel.getBoundingClientRect().height; y0=null;
+    if(!moved) return; const opts=[["peek",SHEET.peek],["half",SHEET.half()],["full",SHEET.full()]]; opts.sort((a,b)=>Math.abs(a[1]-h)-Math.abs(b[1]-h)); setSheet(opts[0][0]);
+    handle.addEventListener("click", stop, {capture:true, once:true}); };
+  const stop = ev=>{ ev.stopImmediatePropagation(); };
+  handle.addEventListener("pointerup", end); handle.addEventListener("pointercancel", end);
+})();
+window.addEventListener("resize", ()=>setSheet(sheetState));
+setSheet("peek");
+// Sur téléphone, un clic sur la carte replie le volet pour laisser voir la fenêtre d’information
+map.on("popupopen", ()=>{ if(sheetState==="full") setSheet("half"); });
+
+/* Position GPS */
+let meMarker=null, meCircle=null, watchId=null;
+function showMe(pos){
+  const ll=[pos.coords.latitude, pos.coords.longitude];
+  if(!meMarker){ meMarker=L.marker(ll,{icon:L.divIcon({className:"",html:'<div class="me"></div>',iconSize:[22,22],iconAnchor:[11,11]}),interactive:false,zIndexOffset:1000}).addTo(map);
+    meCircle=L.circle(ll,{radius:pos.coords.accuracy,color:"#2E7BD6",weight:1,fillOpacity:0.08,interactive:false}).addTo(map); }
+  else { meMarker.setLatLng(ll); meCircle.setLatLng(ll).setRadius(pos.coords.accuracy); }
+  return ll;
+}
+$("#follow").addEventListener("click", ()=>{
+  const b=$("#follow");
+  if(watchId!=null){ navigator.geolocation.clearWatch(watchId); watchId=null; b.classList.remove("on"); b.setAttribute("aria-pressed","false"); b.textContent="Suivre ma position"; return; }
+  if(!navigator.geolocation){ setStatus("Ce navigateur ne donne pas accès à la position.", true); return; }
+  let first=true;
+  watchId = navigator.geolocation.watchPosition(pos=>{ const ll=showMe(pos); if(first){ map.setView(ll, Math.max(map.getZoom(),14)); first=false; } },
+    err=>{ setStatus("Position indisponible : "+(err.code===1?"autorisez la localisation pour ce site dans les réglages de Safari.":"signal GPS introuvable."), true); },
+    {enableHighAccuracy:true, maximumAge:10000, timeout:30000});
+  b.classList.add("on"); b.setAttribute("aria-pressed","true"); b.textContent="Arrêter le suivi";
+});
+$("#aroundme").addEventListener("click", ()=>{
+  if(!navigator.geolocation){ setStatus("Ce navigateur ne donne pas accès à la position.", true); return; }
+  setStatus("Recherche de votre position…");
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const ll=showMe(pos);
+    // choisir le secteur le plus proche, puis analyser 5 km autour
+    let best=null, bd=1e9; for(const [id,z] of Object.entries(ZONES)){ const d=Math.hypot(z.center[0]-ll[0], (z.center[1]-ll[1])*0.72); if(d<bd){ bd=d; best=id; } }
+    const go = ()=>{ map.setView(ll, 13); setTimeout(()=>{ setSheet("peek"); analyze(); }, 400); };
+    if(best && (!Z || Z.id!==best)) setZone(best).then(go); else go();
+  }, err=>setStatus("Position indisponible : "+(err.code===1?"autorisez la localisation pour ce site dans les réglages de Safari.":"signal GPS introuvable."), true),
+  {enableHighAccuracy:true, timeout:20000, maximumAge:60000});
+});
+
+/* Préparer la sortie : enregistrer l’analyse et précharger le fond de carte */
+const TRIP_KEY="sortie-v1";
+function tripSummary(t){ return `${ZONES[t.zone]?ZONES[t.zone].court:""}, enregistrée le ${new Date(t.savedAt).toLocaleString("fr-FR",{day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"})}`; }
+function refreshTripButton(){
+  try{ const raw=localStorage.getItem(TRIP_KEY); const ob=$("#opentrip"); if(raw){ const t=JSON.parse(raw); ob.hidden=false; ob.textContent="Ouvrir la sortie : "+tripSummary(t); } else ob.hidden=true; }catch(e){}
+}
+const r2 = v => v==null||isNaN(v) ? null : Math.round(v*100)/100;
+function packCells(cells){
+  return cells.map(c=>({r:c.r,c:c.c,lat:r2(c.lat*1000)/1000,lon:r2(c.lon*1000)/1000,alt:c.alt==null?null:Math.round(c.alt),mapped:c.mapped,keys:[...c.keys],ouvert:c.ouvert,forest:c.forest,label:c.label,
+    ph:r2(c.ph),sand:r2(c.sand),clay:r2(c.clay),soc:r2(c.soc),cfvo:r2(c.cfvo),pub:c.pub,geo:c.geo,h:r2(c.h),cover:r2(c.cover),anc:c.anc,
+    edge:c.edge,slope:r2(c.slope),aspect:r2(c.aspect),tpi:r2(c.tpi),awc:r2(c.awc),relW:c.relW?Array.from(c.relW,v=>Math.round(v*100)/100):null}));
+}
+function unpackCells(arr){
+  return arr.map(c=>({...c, lat:c.lat, lon:c.lon, keys:new Set(c.keys), relW:c.relW?Float32Array.from(c.relW):null, ww:null}));
+}
+function tileList(b, zmin, zmax){
+  const out=[];
+  for(let z=zmin; z<=zmax; z++){
+    const n=2**z, x0=Math.floor((b.w+180)/360*n), x1=Math.floor((b.e+180)/360*n);
+    const ty=lat=>Math.floor((1-Math.log(Math.tan(lat*Math.PI/180)+1/Math.cos(lat*Math.PI/180))/Math.PI)/2*n);
+    const y0=ty(b.n), y1=ty(b.s);
+    for(let x=x0;x<=x1;x++) for(let y=y0;y<=y1;y++) out.push([z,x,y]);
+  }
+  return out;
+}
+$("#savetrip").addEventListener("click", async ()=>{
+  const btn=$("#savetrip"), note=$("#tripnote");
+  if(!S.grid){ note.textContent="Lancez d’abord une analyse sur le secteur de votre sortie."; return; }
+  btn.disabled=true;
+  try{
+    const trip = {zone:Z.id, savedAt:Date.now(), b:S.grid.b, rows:S.grid.rows, cols:S.grid.cols, cells:packCells(S.grid.cells),
+      W:{days:W.days, todayIdx:W.todayIdx, hasSM:W.hasSM, obsUntil:W.obsUntil, nStations:W.nStations, src:W.src,
+         pts:W.pts.map(p=>({lat:p.lat,lon:p.lon,elev:p.elev,rain:p.rain.map(r2),tmin:p.tmin.map(r2),tmax:p.tmax.map(r2),tmean:p.tmean.map(r2),et0:p.et0.map(r2),sm:p.sm.map(v=>isNaN(v)?null:Math.round(v*1000)/1000),rh:p.rh.map(r2),vpd:p.vpd.map(r2),tsoil:p.tsoil.map(r2)}))},
+      day:S.day, mode:S.mode, land:S.land};
+    localStorage.setItem(TRIP_KEY, JSON.stringify(trip));
+  }catch(e){ note.textContent="Enregistrement impossible : la mémoire du navigateur est pleine. Réduisez la zone analysée et réessayez."; btn.disabled=false; return; }
+  // Préchargement du Plan IGN (le seul fond que l’IGN autorise à charger en masse) du zoom 11 au 16
+  const tiles=tileList(S.grid.b, 11, 16), tpl=wmts("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2","image/png");
+  let done=0, fail=0;
+  const queue=tiles.slice();
+  async function worker(){ while(queue.length){ const [z,x,y]=queue.shift(); try{ const r=await fetch(tpl.replace("{z}",z).replace("{x}",x).replace("{y}",y),{mode:"cors"}); if(!r.ok) fail++; }catch(e){ fail++; } done++; if(done%10===0) note.textContent=`Fond de carte : ${done} tuiles sur ${tiles.length}…`; } }
+  note.textContent=`Fond de carte : 0 tuile sur ${tiles.length}…`;
+  await Promise.all([worker(),worker(),worker(),worker()]);
+  const swOk = navigator.serviceWorker && navigator.serviceWorker.controller;
+  note.textContent = `Sortie enregistrée : analyse et ${tiles.length-fail} tuiles du Plan IGN.` + (swOk ? "" : " Attention : le mode hors ligne n’est actif qu’une fois l’application ajoutée à l’écran d’accueil et rouverte.");
+  refreshTripButton(); btn.disabled=false;
+});
+async function openTrip(){
+  let t; try{ t=JSON.parse(localStorage.getItem(TRIP_KEY)); }catch(e){}
+  if(!t){ $("#tripnote").textContent="Aucune sortie enregistrée."; return; }
+  if(!Z || Z.id!==t.zone){ await setZone(t.zone, true); }
+  W.days=t.W.days; W.todayIdx=t.W.todayIdx; W.hasSM=t.W.hasSM; W.obsUntil=t.W.obsUntil; W.nStations=t.W.nStations; W.src=t.W.src;
+  const nn=a=>a.map(v=>v==null?NaN:v);
+  W.pts=t.W.pts.map(p=>({...p, rain:p.rain.map(v=>v||0), et0:p.et0.map(v=>v||0), tmin:nn(p.tmin), tmax:nn(p.tmax), tmean:nn(p.tmean), sm:nn(p.sm), rh:nn(p.rh), vpd:nn(p.vpd), tsoil:nn(p.tsoil)}));
+  W.ok=true;
+  S.grid={cells:unpackCells(t.cells), rows:t.rows, cols:t.cols, b:t.b}; S.forest=[];
+  document.querySelector('input[value="meteo"]').disabled=false; $("#lab-meteo").classList.remove("disabled");
+  S.mode=t.mode; S.land=t.land; document.querySelectorAll('input[name="mode"]').forEach(r=>r.checked=r.value===S.mode); document.querySelectorAll('input[name="land"]').forEach(r=>r.checked=r.value===S.land);
+  const sl=$("#day"); sl.min=25; sl.max=W.days.length-1; S.day=Math.min(t.day, W.days.length-1); sl.value=S.day; sl.disabled=false;
+  S.month=monthOfDay(); $("#daylabel").innerHTML=dayLabel(S.day); buildSpecies();
+  map.fitBounds([[t.b.s,t.b.w],[t.b.n,t.b.e]]);
+  render(); drawCharts(CENTER[0],CENTER[1],CENTER_ALT);
+  setStatus(`Sortie hors ligne : ${tripSummary(t)}. La météo est celle du jour de l’enregistrement.`);
+}
+$("#opentrip").addEventListener("click", openTrip);
+refreshTripButton();
+
+/* Service worker : application et tuiles disponibles hors ligne */
+if("serviceWorker" in navigator && location.protocol.startsWith("http")){
+  navigator.serviceWorker.register("./sw.js").catch(e=>console.warn("Service worker", e));
+}
+
+(function start(){
+  let trip=null; try{ trip=JSON.parse(localStorage.getItem(TRIP_KEY)); }catch(e){}
+  if(!navigator.onLine && trip){ openTrip(); return; }
+  setZone(ZONES[location.hash.slice(1)] ? location.hash.slice(1) : "pic-saint-loup");
+})();
+window.__pousses = {classifyForest, geomContains, hostFactor, soilFactor, weatherParts, terrainParts, waterIndex, pointStats, blendWeather, SPECIES, W};
+</script>
+</body>
+</html>
