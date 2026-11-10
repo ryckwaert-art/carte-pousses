@@ -183,7 +183,11 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
   #sec-calcul{order:1} #sec-especes{order:2} #sec-jour{order:3} #tab-carte .caution{order:4} #tab-carte .fine{order:5}
   .leaflet-top{top:env(safe-area-inset-top,0px)}
   .leaflet-bottom{bottom:var(--sheet,180px)}
-  .leaflet-popup-content{min-width:200px;max-width:260px;font-size:13.5px}
+  .leaflet-popup-content{font-size:13.5px;margin:14px 16px 12px}
+  .pop-mobile .leaflet-popup-content-wrapper{border-radius:14px}
+  .pop-mobile .leaflet-popup-scrolled{overflow-y:auto;-webkit-overflow-scrolling:touch;border:0}
+  .pop-mobile .pop h3{padding-right:34px}
+  .pop-mobile a.leaflet-popup-close-button{width:36px;height:36px;font:24px/34px var(--sans);color:var(--ink);top:4px;right:4px;background:var(--moss-soft);border-radius:50%;text-align:center}
   .modes label,.tabs button,button.primary{min-height:44px}
   .sprow{padding:9px 0}
   input[type=range]{height:28px}
@@ -1509,10 +1513,12 @@ map.on("click", e=>{
   } else html+=`<p>Aucune espèce de la liste ne trouve ici de conditions favorables${S.mode==="meteo"?" pour ce jour":""}.</p>`;
   html+=`</div>`;
   if(window.matchMedia("(max-width:760px)").matches){
-    $("#zonebody").innerHTML = html; $("#zoneinfo").hidden = false;
-    if(zoneMark) map.removeLayer(zoneMark);
-    zoneMark = L.circleMarker(e.latlng,{radius:9,color:"#2B2620",weight:3,fillColor:"#E2AF4F",fillOpacity:0.9,interactive:false}).addTo(map);
-    setSheet("half"); panel.scrollTop = 0;
+    // Fenêtre sur la carte, tenue à l’écart des boutons du haut (zoom, couches) et du volet du bas
+    setSheet("peek");
+    const sheetH = SHEET.peek, top = 84, bottom = sheetH + 16;
+    L.popup({maxWidth:Math.min(300, window.innerWidth-40), minWidth:200, maxHeight:Math.max(180, window.innerHeight - top - bottom - 40),
+      autoPanPaddingTopLeft:[14, top], autoPanPaddingBottomRight:[14, bottom], className:"pop-mobile"})
+      .setLatLng(e.latlng).setContent(html).openOn(map);
   } else {
     L.popup({maxWidth:320}).setLatLng(e.latlng).setContent(html).openOn(map);
   }
@@ -1872,7 +1878,7 @@ handle.addEventListener("keydown", e=>{ if(e.key==="Enter"||e.key===" "){ e.prev
 window.addEventListener("resize", ()=>setSheet(sheetState));
 setSheet("peek");
 // Sur téléphone, un clic sur la carte replie le volet pour laisser voir la fenêtre d’information
-map.on("popupopen", ()=>{ if(sheetState==="full") setSheet("half"); });
+map.on("popupopen", ()=>{ if(sheetState!=="peek") setSheet("peek"); });
 
 /* Position GPS */
 let meMarker=null, meCircle=null, watchId=null;
