@@ -104,6 +104,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--ochre);outline-
 .details p{margin:4px 0}
 .details .warn{color:var(--danger)}
 .details .src{color:var(--muted);font-size:13px}
+.photo{margin:4px 0 8px}
+.photo img{display:block;width:100%;max-height:220px;object-fit:cover;border-radius:10px;background:var(--moss-soft)}
+.photo figcaption{font-size:12px;color:var(--muted);margin-top:3px}
+.photo figcaption a{color:inherit}
 .tag{display:inline-block;font-size:12px;border:1px solid var(--line);border-radius:999px;padding:1px 8px;margin:0 4px 4px 0;color:var(--muted)}
 .legend{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-top:8px}
 .ramp{flex:1;height:10px;border-radius:5px;background:linear-gradient(90deg,#F2E6A0,#E3A63A,#C4572A,#7A1E3A)}
@@ -116,6 +120,13 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--ochre);outline-
 .map-banner{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 10px;max-width:340px;font-size:14px;box-shadow:0 1px 4px rgba(0,0,0,.2)}
 .leaflet-control-layers-toggle{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232B2620' stroke-width='1.8' stroke-linejoin='round'%3E%3Cpath d='M12 3 2 8l10 5 10-5-10-5Z'/%3E%3Cpath d='m2 13 10 5 10-5'/%3E%3Cpath d='m2 17.5 10 5 10-5' opacity='.5'/%3E%3C/svg%3E")!important;background-size:24px 24px!important;background-repeat:no-repeat;background-position:center}
 .diag li{list-style:none;margin:2px 0}
+.trips{list-style:none;padding:0;margin:8px 0 0}
+.trips li{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:6px 0;display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center}
+.trips li b{font-family:var(--serif);font-weight:500;font-size:16px;display:block}
+.trips li small{color:var(--muted);font-size:12.5px}
+.trips button{font:inherit;font-size:14px;font-weight:700;border-radius:999px;padding:6px 12px;min-height:36px;border:1px solid var(--ink);background:transparent;color:var(--ink)}
+.trips button.del{border-color:var(--danger);color:var(--danger)}
+.trips .empty{grid-template-columns:1fr;color:var(--muted);font-size:14px}
 .diag li b{display:inline-block;width:1.4em}
 .leaflet-popup-content{font-size:14px;line-height:1.35;min-width:240px}
 .pop h3{font-family:var(--serif);font-size:17px;margin:0 0 4px}
@@ -128,7 +139,20 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--ochre);outline-
 .pop .rk span:last-child{white-space:nowrap;text-align:right}
 .pop .why{font-size:12.5px;color:#6B675C;margin:2px 0 6px}
 .handle{display:none}
+#loader{position:fixed;left:50%;top:38%;transform:translate(-50%,-50%);z-index:1500;background:var(--panel);border:1px solid var(--line);border-radius:18px;
+  padding:16px 22px 12px;text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.2);min-width:200px;max-width:80vw;pointer-events:none}
+#loader[hidden]{display:none}
+#loader p{margin:4px 0 0}
+#loadpct{font-family:var(--serif);font-size:24px;font-weight:700}
+#loadstep{font-size:13px;color:var(--muted)}
+#fillrect{transition:y .35s ease}
+@media (prefers-reduced-motion: reduce){ #fillrect{transition:none} }
 .mstatus{display:none}
+#zoneinfo{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:10px 0;background:var(--paper)}
+.zi-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-family:var(--serif);font-size:17px}
+.zi-head button{font:inherit;font-size:14px;font-weight:700;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:6px 12px;min-height:34px}
+#zonebody .pop td:first-child{color:var(--muted)}
+#zonebody .pop .why{color:var(--muted)}
 .quick{display:flex;gap:8px;margin:10px 0 4px}
 .quick button{flex:1;font:inherit;font-size:15px;font-weight:700;padding:10px 8px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
 .quick button.on{background:var(--water);color:#fff;border-color:var(--water)}
@@ -147,6 +171,8 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
   #panel.dragging{transition:none}
   .handle{display:block;position:sticky;top:0;z-index:2;background:var(--panel);padding:8px 0 4px;margin:0 -16px;touch-action:none;cursor:grab}
   .handle span{display:block;width:44px;height:5px;border-radius:3px;background:var(--line);margin:0 auto}
+  .handle{min-height:36px}
+  .sheetbtn{position:absolute;right:12px;top:4px;font:inherit;font-size:14px;font-weight:700;color:var(--ink);background:var(--moss-soft);border:0;border-radius:999px;padding:7px 14px;min-height:34px}
   h1{display:none}
   .zones{margin:2px 0 6px}
   .quick{margin:6px 0 2px}
@@ -166,7 +192,7 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
 </head>
 <body>
 <aside id="panel">
-  <div class="handle" id="handle" role="button" aria-label="Agrandir ou réduire le panneau" tabindex="0"><span></span></div>
+  <div class="handle" id="handle" role="button" aria-label="Agrandir ou réduire le panneau" tabindex="0"><span></span><button class="sheetbtn" id="sheetbtn" type="button">Agrandir</button></div>
   <h1>Carte des pousses</h1>
   <div class="modes zones" role="radiogroup" aria-label="Secteur">
     <label><input type="radio" name="zone" value="aigoual">Aigoual</label>
@@ -178,6 +204,10 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
     <button id="follow" aria-pressed="false">Suivre ma position</button>
   </div>
   <p class="mstatus" id="mstatus"></p>
+  <div id="zoneinfo" hidden>
+    <div class="zi-head"><b>Détail de la zone touchée</b><button type="button" id="zoneclose">Fermer</button></div>
+    <div id="zonebody"></div>
+  </div>
   <p class="sub" id="zonesub"></p>
   <div class="tabs" role="tablist">
     <button role="tab" id="tb-carte" aria-selected="true" aria-controls="tab-carte">Carte des pousses</button>
@@ -223,11 +253,11 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
       <label><input type="radio" name="land" value="public">Forêts publiques</label>
       <label><input type="radio" name="land" value="prive">Privés</label>
     </div>
-    <h3>Préparer la sortie</h3>
+    <h3>Mes sorties</h3>
     <p class="chartnote">À faire en wifi avant de partir : enregistre l’analyse et le fond de carte de la zone, pour les retrouver en forêt sans réseau. Le GPS fonctionne sans réseau.</p>
-    <button class="secondary" id="savetrip">Enregistrer pour la sortie</button>
-    <button class="secondary" id="opentrip" hidden>Ouvrir la sortie enregistrée</button>
+    <button class="secondary" id="savetrip">Enregistrer cette analyse comme sortie</button>
     <p class="chartnote" id="tripnote"></p>
+    <ul class="trips" id="triplist"></ul>
     <p class="chartnote" id="landnote">Forêts publiques : domaniales, communales et autres forêts gérées par l’ONF, où la cueillette familiale est en général tolérée. Le reste est le plus souvent privé : il faut l’accord du propriétaire.</p>
   </section>
 
@@ -283,6 +313,24 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
   </div>
 </aside>
 <main id="map" aria-label="Carte"></main>
+<div id="loader" hidden aria-live="polite">
+  <svg viewBox="0 0 100 112" width="120" height="134" aria-hidden="true">
+    <defs><clipPath id="fillclip"><rect id="fillrect" x="0" y="112" width="100" height="112"/></clipPath>
+      <g id="cepe">
+        <path d="M38 54 C34 70 30 84 33 96 C36 106 64 106 67 96 C70 84 66 70 62 54 Z"/>
+        <path d="M8 52 C8 26 28 10 50 10 C72 10 92 26 92 52 C80 58 20 58 8 52 Z"/>
+      </g></defs>
+    <use href="#cepe" fill="#E7E1D2" stroke="#8C7A5B" stroke-width="2"/>
+    <g clip-path="url(#fillclip)">
+      <path d="M38 54 C34 70 30 84 33 96 C36 106 64 106 67 96 C70 84 66 70 62 54 Z" fill="#EFE3C2" stroke="#8C7A5B" stroke-width="2"/>
+      <path d="M40 66 l6 4 m4 -6 l6 5 m-14 8 l7 4 m3 -7 l7 5 m-16 9 l6 3 m4 -6 l6 4" stroke="#C9B48A" stroke-width="1.6" fill="none"/>
+      <path d="M8 52 C8 26 28 10 50 10 C72 10 92 26 92 52 C80 58 20 58 8 52 Z" fill="#7A4A26" stroke="#5B3519" stroke-width="2"/>
+      <path d="M22 30 C30 20 42 16 52 17" stroke="#9C6A3E" stroke-width="4" fill="none" stroke-linecap="round"/>
+    </g>
+  </svg>
+  <p id="loadpct">0 %</p>
+  <p id="loadstep">Préparation…</p>
+</div>
 
 <script src="lib/leaflet.js"></script>
 <script src="lib/geotiff.js"></script>
@@ -1271,6 +1319,14 @@ function computeWaterBalance(cells){
   }
 }
 
+function setProgress(p, step){
+  const L_=document.getElementById("loader"); if(!L_) return;
+  if(p==null){ L_.hidden=true; return; }
+  L_.hidden=false; p=clamp(p,0,1);
+  document.getElementById("fillrect").setAttribute("y", String(112 - 112*p));
+  document.getElementById("loadpct").textContent = Math.round(p*100)+" %";
+  if(step) document.getElementById("loadstep").textContent = step;
+}
 async function analyze(){
   const bnd = map.getBounds();
   const b = {s:bnd.getSouth(), n:bnd.getNorth(), w:bnd.getWest(), e:bnd.getEast()};
@@ -1284,40 +1340,41 @@ async function analyze(){
     const dLon=(b.e-b.w)/cols, dLat=(b.n-b.s)/rows, cells=[];
     for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) cells.push({r,c,lat:b.s+(r+0.5)*dLat, lon:b.w+(c+0.5)*dLon});
 
-    setStatus("Peuplements forestiers : chargement…");
+    setProgress(0.03,"Peuplements forestiers"); setStatus("Peuplements forestiers : chargement…");
     const forest = await loadForest(b, n=>setStatus(`Peuplements forestiers : ${fmt(n)} polygones…`));
     S.forest = forest;
 
-    setStatus("Forêts publiques : chargement…");
+    setProgress(0.12,"Forêts publiques"); setStatus("Forêts publiques : chargement…");
     let pubMask=null;
     try{ pubMask = await loadPublicMask(b, cols, rows); S.pubOk=true; } catch(e){ console.warn("Forêts publiques", e); S.pubOk=false; }
     cells.forEach((x,i)=>x.pub = pubMask ? pubMask[i] : null);
 
-    setStatus("Géologie : lecture de la carte du BRGM…");
+    setProgress(0.16,"Géologie"); setStatus("Géologie : lecture de la carte du BRGM…");
     let geo=null;
-    try{ geo = await loadGeology(b, cols, rows, (i,n)=>setStatus(`Géologie : identification des formations, ${i} sur ${n}…`)); S.geoOk = geo.some(g=>g && !g.coarse) ? "50k" : "1M"; }
+    try{ geo = await loadGeology(b, cols, rows, (i,n)=>{ setProgress(0.16+0.29*i/n,"Géologie : identification des roches"); setStatus(`Géologie : identification des formations, ${i} sur ${n}…`); }); S.geoOk = geo.some(g=>g && !g.coarse) ? "50k" : "1M"; }
     catch(e){ console.warn("Géologie BRGM", e); S.geoOk=false; }
     cells.forEach((x,i)=>x.geo = geo ? geo[i] : null);
 
-    setStatus("Hauteur des arbres (LiDAR HD) : chargement…");
+    setProgress(0.46,"Hauteur des arbres (LiDAR)"); setStatus("Hauteur des arbres (LiDAR HD) : chargement…");
     let can=null;
     try{ can = await loadCanopy(b, cols, rows); S.lidarOk=true; } catch(e){ console.warn("LiDAR HD", e); S.lidarOk=false; }
     cells.forEach((x,i)=>{ const v = can ? can[i] : null; x.h = v ? v.h : null; x.cover = v ? v.cover : null; });
 
-    setStatus("Forêts anciennes : chargement…");
+    setProgress(0.53,"Forêts anciennes"); setStatus("Forêts anciennes : chargement…");
     let anc=null;
     try{ anc = await loadAncient(b, cols, rows); S.ancOk = anc.some(Boolean); } catch(e){ console.warn("Forêts anciennes", e); S.ancOk=false; }
     cells.forEach((x,i)=>x.anc = anc ? anc[i] : null);
 
-    setStatus("Sol : chargement du pH et de la texture…");
+    setProgress(0.58,"Sols"); setStatus("Sol : chargement du pH et de la texture…");
     let soil = null;
     try{ soil = await loadSoil(b); S.soilOk = true; }
     catch(e){ console.warn("SoilGrids", e); S.soilOk = false; }
 
     setStatus("Altitudes : 0 %");
-    const alts = await loadAltitudes(cells.map(x=>[x.lat,x.lon]), (d,t)=>setStatus(`Altitudes : ${fmt(100*d/t)} %`));
+    setProgress(0.66,"Altitudes et relief");
+    const alts = await loadAltitudes(cells.map(x=>[x.lat,x.lon]), (d,t)=>{ setProgress(0.66+0.22*d/t,"Altitudes et relief"); setStatus(`Altitudes : ${fmt(100*d/t)} %`); });
 
-    setStatus("Calcul des mailles…");
+    setProgress(0.9,"Calcul des chances"); setStatus("Calcul des mailles…");
     for(let i=0;i<cells.length;i++){
       const x = cells[i]; x.alt = alts[i];
       let hit=null;
@@ -1346,13 +1403,13 @@ async function analyze(){
     }
     if(W.ok){ cells.forEach(x=>x.ww=nearestWeights(x.lat,x.lon)); setStatus("Bilan d’eau de chaque maille…"); computeWaterBalance(cells); }
     S.grid={cells,rows,cols,b};
-    drawForest(); render();
+    drawForest(); render(); setProgress(1,"Terminé"); setTimeout(()=>setProgress(null), 600);
     const nf=cells.filter(x=>x.forest).length;
     setStatus(`${fmt(cells.length)} mailles de ${fmt(cellM)} m analysées${S.altiSrc && S.altiSrc!=="IGN" ? ` (altitudes : ${S.altiSrc})` : ""}, dont ${fmt(100*nf/cells.length)} % en forêt. ${S.soilOk?"pH et sable : SoilGrids.":"SoilGrids n’a pas répondu : pH estimé d’après les arbres."} ${S.pubOk?`${fmt(100*cells.filter(x=>x.pub===1).length/cells.length)} % en forêt publique.`:"Les forêts publiques n’ont pas pu être chargées : le filtre des terrains est inactif."} ${S.geoOk==="50k"?"Géologie : BRGM 1/50 000.":S.geoOk==="1M"?"Géologie : carte simplifiée au millionième seulement.":"Géologie détaillée indisponible."} ${S.lidarOk?"Hauteur des arbres : LiDAR HD.":"LiDAR HD indisponible ici."} Cliquez sur la carte pour le détail.`);
   }catch(e){
     console.error(e);
     setStatus("L’analyse a échoué : "+e.message+". Vérifiez la connexion et relancez ; si le problème persiste, essayez un autre navigateur.", true);
-  }finally{ btn.disabled=false; }
+  }finally{ btn.disabled=false; if(document.getElementById("loadpct").textContent!=="100 %") setProgress(null); }
 }
 
 function forestColor(info){
@@ -1451,13 +1508,23 @@ map.on("click", e=>{
     html += `<p class="why">${why}.</p>`;
   } else html+=`<p>Aucune espèce de la liste ne trouve ici de conditions favorables${S.mode==="meteo"?" pour ce jour":""}.</p>`;
   html+=`</div>`;
-  L.popup({maxWidth:320}).setLatLng(e.latlng).setContent(html).openOn(map);
+  if(window.matchMedia("(max-width:760px)").matches){
+    $("#zonebody").innerHTML = html; $("#zoneinfo").hidden = false;
+    if(zoneMark) map.removeLayer(zoneMark);
+    zoneMark = L.circleMarker(e.latlng,{radius:9,color:"#2B2620",weight:3,fillColor:"#E2AF4F",fillOpacity:0.9,interactive:false}).addTo(map);
+    setSheet("half"); panel.scrollTop = 0;
+  } else {
+    L.popup({maxWidth:320}).setLatLng(e.latlng).setContent(html).openOn(map);
+  }
   publicInfo(e.latlng.lat, e.latlng.lng).then(info=>{
     const el=document.getElementById("pubinfo"); if(!el) return;
     el.textContent = info ? `${info.name}${info.kind?` (${info.kind.toLowerCase()})`:""} : forêt publique` : "hors forêt publique, le plus souvent privé : accord du propriétaire nécessaire";
   }).catch(()=>{});
   if(W.ok) drawCharts(c.lat,c.lon,c.alt);
 });
+
+let zoneMark = null;
+document.addEventListener("click", e=>{ if(e.target && e.target.id==="zoneclose"){ $("#zoneinfo").hidden=true; if(zoneMark){ map.removeLayer(zoneMark); zoneMark=null; } setSheet("peek"); } });
 
 /* ============================================================
    Liste des espèces
@@ -1475,6 +1542,7 @@ function buildSpecies(){
       <div class="rank"><div class="bar"><span style="width:0"></span></div><small></small></div>
       <button class="more" aria-expanded="false">Fiche</button>
       <div class="details">
+        <figure class="photo" data-latin="${esc(sp.latin)}" data-nom="${esc(sp.nom)}"></figure>
         <p><span class="tag">${esc(sp.comest)}</span><span class="tag">sol ${esc(sp.sol)}</span><span class="tag">${fmt(sp.alt[0])} à ${fmt(sp.alt[1])} m</span></p>
         <p>${esc(sp.habitat)}</p>
         <p>Période : ${sp.mois.map(x=>MOIS[x-1]).join(", ")}. Pluie visée sur 26 jours : ${sp.pluie[0]} à ${sp.pluie[1]} mm. Température moyenne sur 20 jours : ${sp.temp[0]} à ${sp.temp[1]} °C ; la chaleur freine au-delà de ${sp.tmax} °C de maximales.</p>
@@ -1487,7 +1555,28 @@ function buildSpecies(){
   box.querySelectorAll(".more").forEach(btn=>btn.addEventListener("click",()=>{
     const det=btn.nextElementSibling, open=det.classList.toggle("open");
     btn.setAttribute("aria-expanded",open); btn.textContent=open?"Fermer":"Fiche";
+    if(open) loadPhoto(det.querySelector(".photo"));
   }));
+}
+const photoCache = {};
+async function wikiSummary(lang, title){
+  const r = await fetch(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title.replace(/ /g,"_"))}`);
+  if(!r.ok) return null;
+  const js = await r.json();
+  return (js && js.thumbnail && js.thumbnail.source) ? {src: js.thumbnail.source, page: js.content_urls && js.content_urls.mobile ? js.content_urls.mobile.page : (js.content_urls && js.content_urls.desktop ? js.content_urls.desktop.page : ""), lang} : null;
+}
+async function loadPhoto(fig){
+  if(!fig || fig.dataset.done) return; fig.dataset.done = "1";
+  const latin = fig.dataset.latin.replace(/\s+spp\.?$/,""), nom = fig.dataset.nom;
+  fig.innerHTML = '<figcaption>Recherche d’une photo…</figcaption>';
+  let res = photoCache[latin];
+  if(res === undefined){
+    res = null;
+    for(const [lang,t] of [["fr",latin],["fr",nom],["en",latin]]){ try{ res = await wikiSummary(lang,t); }catch(e){} if(res) break; }
+    photoCache[latin] = res;
+  }
+  if(!res){ fig.innerHTML = '<figcaption>Pas de photo disponible hors connexion ou sur Wikipédia.</figcaption>'; return; }
+  fig.innerHTML = `<img src="${esc(res.src)}" alt="Photo de ${esc(nom)}" loading="lazy"><figcaption>Photo : Wikipédia${res.page?` (<a href="${esc(res.page)}" target="_blank" rel="noopener">voir la page</a>)`:""}. Une photo ne suffit jamais à identifier un champignon.</figcaption>`;
 }
 function updateSpeciesBars(per,total){
   // Indice de chance pour la zone : moyenne des 10 % de meilleures mailles, plus la part de zone favorable
@@ -1739,7 +1828,7 @@ async function setZone(id, offline=false){
     console.error(e); W.ok=false; S.mode="terrain";
     document.querySelector('input[value="terrain"]').checked=true; meteoRadio.disabled=true; $("#lab-meteo").classList.add("disabled");
     $("#daylabel").textContent="Météo indisponible";
-    try{ if(localStorage.getItem(TRIP_KEY)) setStatus("Pas de réseau ? Utilisez « Ouvrir la sortie enregistrée » pour retrouver votre dernière analyse.", true); }catch(e2){}
+    setStatus("Pas de réseau ? Ouvrez une sortie enregistrée dans « Mes sorties », section Calcul.", true);
     $("#chartnote").textContent="Open-Meteo n’a pas répondu. Le calcul se fait sur le terrain seul ; rechargez la page pour réessayer.";
   }
 }
@@ -1764,9 +1853,11 @@ function setSheet(state, px){
   const h = px!=null ? px : state==="peek" ? SHEET.peek : state==="half" ? SHEET.half() : SHEET.full();
   document.documentElement.style.setProperty("--sheet", h+"px");
   if(state==="peek") panel.scrollTop = 0;
+  const sb=document.getElementById("sheetbtn"); if(sb) sb.textContent = state==="peek" ? "Agrandir" : "Réduire";
   setTimeout(refreshMap, 280);
 }
-handle.addEventListener("click", ()=>setSheet(sheetState==="peek" ? "half" : sheetState==="half" ? "full" : "peek"));
+handle.addEventListener("click", ()=>setSheet(sheetState==="peek" ? "half" : "peek"));
+$("#sheetbtn").addEventListener("click", e=>{ e.stopPropagation(); setSheet(sheetState==="peek" ? "full" : "peek"); });
 handle.addEventListener("keydown", e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); handle.click(); } });
 (function(){ // glisser la poignée
   let y0=null, h0=0, moved=false;
@@ -1815,21 +1906,50 @@ $("#aroundme").addEventListener("click", ()=>{
   {enableHighAccuracy:true, timeout:20000, maximumAge:60000});
 });
 
-/* Préparer la sortie : enregistrer l’analyse et précharger le fond de carte */
-const TRIP_KEY="sortie-v1";
-function tripSummary(t){ return `${ZONES[t.zone]?ZONES[t.zone].court:""}, enregistrée le ${new Date(t.savedAt).toLocaleString("fr-FR",{day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"})}`; }
-function refreshTripButton(){
-  try{ const raw=localStorage.getItem(TRIP_KEY); const ob=$("#opentrip"); if(raw){ const t=JSON.parse(raw); ob.hidden=false; ob.textContent="Ouvrir la sortie : "+tripSummary(t); } else ob.hidden=true; }catch(e){}
+/* Mes sorties : plusieurs analyses enregistrées sur l’appareil (base IndexedDB, plus spacieuse que le stockage simple) */
+const OLD_TRIP_KEY="sortie-v1";
+const DB = {
+  db:null,
+  open(){ if(this.db) return Promise.resolve(this.db); return new Promise((res,rej)=>{ const r=indexedDB.open("pousses",1);
+    r.onupgradeneeded=()=>{ if(!r.result.objectStoreNames.contains("sorties")) r.result.createObjectStore("sorties",{keyPath:"id"}); };
+    r.onsuccess=()=>{ this.db=r.result; res(r.result); }; r.onerror=()=>rej(r.error); }); },
+  async run(mode, fn){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction("sorties",mode); const q=fn(t.objectStore("sorties"));
+    t.oncomplete=()=>res(q ? q.result : undefined); t.onerror=()=>rej(t.error); t.onabort=()=>rej(t.error); }); },
+  put(o){ return this.run("readwrite", st=>st.put(o)); },
+  del(id){ return this.run("readwrite", st=>st.delete(id)); },
+  get(id){ return this.run("readonly", st=>st.get(id)); },
+  all(){ return this.run("readonly", st=>st.getAll()); }
+};
+const dateFr = t => new Date(t).toLocaleString("fr-FR",{day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"});
+function tripSummary(t){ return `${t.name || (ZONES[t.zone]?ZONES[t.zone].court:"")}, enregistrée le ${dateFr(t.savedAt)}`; }
+async function migrateOldTrip(){
+  try{ const raw=localStorage.getItem(OLD_TRIP_KEY); if(!raw) return; const t=JSON.parse(raw);
+    t.id = t.savedAt || Date.now(); t.name = t.name || `${ZONES[t.zone]?ZONES[t.zone].court:"Sortie"}, ${new Date(t.id).toLocaleDateString("fr-FR",{day:"numeric",month:"short"})}`;
+    await DB.put(t); localStorage.removeItem(OLD_TRIP_KEY); }catch(e){}
 }
+async function refreshTripList(){
+  const ul=$("#triplist"); let list=[];
+  try{ list = (await DB.all()) || []; }catch(e){ ul.innerHTML='<li class="empty">Les sorties ne peuvent pas être enregistrées dans ce mode de navigation (navigation privée ?).</li>'; return; }
+  list.sort((a,b)=>b.savedAt-a.savedAt);
+  if(!list.length){ ul.innerHTML='<li class="empty">Aucune sortie enregistrée pour l’instant.</li>'; return; }
+  ul.innerHTML = list.map(t=>`<li data-id="${t.id}"><div><b>${esc(t.name||"Sortie")}</b><small>${esc(ZONES[t.zone]?ZONES[t.zone].court:"")}, ${esc(dateFr(t.savedAt))}${t.tiles?`, ${t.tiles} tuiles de carte`:""}</small></div>
+    <button type="button" class="open">Ouvrir</button><button type="button" class="del" aria-label="Supprimer ${esc(t.name||"la sortie")}">Supprimer</button></li>`).join("");
+}
+$("#triplist").addEventListener("click", async e=>{
+  const li=e.target.closest("li[data-id]"); if(!li) return; const id=Number(li.dataset.id);
+  if(e.target.classList.contains("open")) openTrip(id);
+  if(e.target.classList.contains("del")){
+    const t=await DB.get(id).catch(()=>null);
+    if(confirm(`Supprimer la sortie « ${t&&t.name?t.name:"sans nom"} » ? Cette action est définitive.`)){ await DB.del(id).catch(()=>{}); $("#tripnote").textContent="Sortie supprimée."; refreshTripList(); }
+  }
+});
 const r2 = v => v==null||isNaN(v) ? null : Math.round(v*100)/100;
 function packCells(cells){
-  return cells.map(c=>({r:c.r,c:c.c,lat:r2(c.lat*1000)/1000,lon:r2(c.lon*1000)/1000,alt:c.alt==null?null:Math.round(c.alt),mapped:c.mapped,keys:[...c.keys],ouvert:c.ouvert,forest:c.forest,label:c.label,
+  return cells.map(c=>({r:c.r,c:c.c,lat:Math.round(c.lat*1e5)/1e5,lon:Math.round(c.lon*1e5)/1e5,alt:c.alt==null?null:Math.round(c.alt),mapped:c.mapped,keys:[...c.keys],ouvert:c.ouvert,forest:c.forest,label:c.label,
     ph:r2(c.ph),sand:r2(c.sand),clay:r2(c.clay),soc:r2(c.soc),cfvo:r2(c.cfvo),pub:c.pub,geo:c.geo,h:r2(c.h),cover:r2(c.cover),anc:c.anc,
     edge:c.edge,slope:r2(c.slope),aspect:r2(c.aspect),tpi:r2(c.tpi),awc:r2(c.awc),relW:c.relW?Array.from(c.relW,v=>Math.round(v*100)/100):null}));
 }
-function unpackCells(arr){
-  return arr.map(c=>({...c, lat:c.lat, lon:c.lon, keys:new Set(c.keys), relW:c.relW?Float32Array.from(c.relW):null, ww:null}));
-}
+function unpackCells(arr){ return arr.map(c=>({...c, keys:new Set(c.keys), relW:c.relW?Float32Array.from(c.relW):null, ww:null})); }
 function tileList(b, zmin, zmax){
   const out=[];
   for(let z=zmin; z<=zmax; z++){
@@ -1843,27 +1963,30 @@ function tileList(b, zmin, zmax){
 $("#savetrip").addEventListener("click", async ()=>{
   const btn=$("#savetrip"), note=$("#tripnote");
   if(!S.grid){ note.textContent="Lancez d’abord une analyse sur le secteur de votre sortie."; return; }
+  const def = `${Z.court}, ${new Date().toLocaleDateString("fr-FR",{day:"numeric",month:"short"})}`;
+  const name = prompt("Nom de la sortie :", def); if(name===null) return;
   btn.disabled=true;
-  try{
-    const trip = {zone:Z.id, savedAt:Date.now(), b:S.grid.b, rows:S.grid.rows, cols:S.grid.cols, cells:packCells(S.grid.cells),
-      W:{days:W.days, todayIdx:W.todayIdx, hasSM:W.hasSM, obsUntil:W.obsUntil, nStations:W.nStations, src:W.src,
-         pts:W.pts.map(p=>({lat:p.lat,lon:p.lon,elev:p.elev,rain:p.rain.map(r2),tmin:p.tmin.map(r2),tmax:p.tmax.map(r2),tmean:p.tmean.map(r2),et0:p.et0.map(r2),sm:p.sm.map(v=>isNaN(v)?null:Math.round(v*1000)/1000),rh:p.rh.map(r2),vpd:p.vpd.map(r2),tsoil:p.tsoil.map(r2)}))},
-      day:S.day, mode:S.mode, land:S.land};
-    localStorage.setItem(TRIP_KEY, JSON.stringify(trip));
-  }catch(e){ note.textContent="Enregistrement impossible : la mémoire du navigateur est pleine. Réduisez la zone analysée et réessayez."; btn.disabled=false; return; }
-  // Préchargement du Plan IGN (le seul fond que l’IGN autorise à charger en masse) du zoom 11 au 16
+  const trip = {id:Date.now(), name:(name.trim()||def).slice(0,60), zone:Z.id, savedAt:Date.now(), b:S.grid.b, rows:S.grid.rows, cols:S.grid.cols, cells:packCells(S.grid.cells),
+    W:{days:W.days, todayIdx:W.todayIdx, hasSM:W.hasSM, obsUntil:W.obsUntil, nStations:W.nStations, src:W.src,
+       pts:W.pts.map(p=>({lat:p.lat,lon:p.lon,elev:p.elev,rain:p.rain.map(r2),tmin:p.tmin.map(r2),tmax:p.tmax.map(r2),tmean:p.tmean.map(r2),et0:p.et0.map(r2),sm:p.sm.map(v=>isNaN(v)?null:Math.round(v*1000)/1000),rh:p.rh.map(r2),vpd:p.vpd.map(r2),tsoil:p.tsoil.map(r2)}))},
+    day:S.day, mode:S.mode, land:S.land, tiles:0};
+  try{ await DB.put(trip); }
+  catch(e){ note.textContent="Enregistrement impossible : la mémoire de l’appareil est pleine ou ce mode de navigation l’interdit. Supprimez une ancienne sortie et réessayez."; btn.disabled=false; return; }
+  refreshTripList();
+  // Préchargement du Plan IGN (le service de tuiles de l’IGN n’est pas limité en nombre de requêtes) du zoom 11 au 16
   const tiles=tileList(S.grid.b, 11, 16), tpl=wmts("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2","image/png");
-  let done=0, fail=0;
-  const queue=tiles.slice();
+  let done=0, fail=0; const queue=tiles.slice();
   async function worker(){ while(queue.length){ const [z,x,y]=queue.shift(); try{ const r=await fetch(tpl.replace("{z}",z).replace("{x}",x).replace("{y}",y),{mode:"cors"}); if(!r.ok) fail++; }catch(e){ fail++; } done++; if(done%10===0) note.textContent=`Fond de carte : ${done} tuiles sur ${tiles.length}…`; } }
   note.textContent=`Fond de carte : 0 tuile sur ${tiles.length}…`;
   await Promise.all([worker(),worker(),worker(),worker()]);
+  trip.tiles = tiles.length-fail; try{ await DB.put(trip); }catch(e){}
   const swOk = navigator.serviceWorker && navigator.serviceWorker.controller;
-  note.textContent = `Sortie enregistrée : analyse et ${tiles.length-fail} tuiles du Plan IGN.` + (swOk ? "" : " Attention : le mode hors ligne n’est actif qu’une fois l’application ajoutée à l’écran d’accueil et rouverte.");
-  refreshTripButton(); btn.disabled=false;
+  note.textContent = `Sortie « ${trip.name} » enregistrée, avec ${trip.tiles} tuiles du Plan IGN.` + (swOk ? "" : " Le mode hors ligne s’active une fois l’application ajoutée à l’écran d’accueil et rouverte.");
+  refreshTripList(); btn.disabled=false;
 });
-async function openTrip(){
-  let t; try{ t=JSON.parse(localStorage.getItem(TRIP_KEY)); }catch(e){}
+async function openTrip(id){
+  let t=null;
+  try{ if(id!=null) t=await DB.get(id); else { const all=(await DB.all())||[]; all.sort((a,b)=>b.savedAt-a.savedAt); t=all[0]||null; } }catch(e){}
   if(!t){ $("#tripnote").textContent="Aucune sortie enregistrée."; return; }
   if(!Z || Z.id!==t.zone){ await setZone(t.zone, true); }
   W.days=t.W.days; W.todayIdx=t.W.todayIdx; W.hasSM=t.W.hasSM; W.obsUntil=t.W.obsUntil; W.nStations=t.W.nStations; W.src=t.W.src;
@@ -1877,19 +2000,22 @@ async function openTrip(){
   S.month=monthOfDay(); $("#daylabel").innerHTML=dayLabel(S.day); buildSpecies();
   map.fitBounds([[t.b.s,t.b.w],[t.b.n,t.b.e]]);
   render(); drawCharts(CENTER[0],CENTER[1],CENTER_ALT);
-  setStatus(`Sortie hors ligne : ${tripSummary(t)}. La météo est celle du jour de l’enregistrement.`);
+  setSheet("peek");
+  setStatus(`Sortie « ${t.name||""} » (${dateFr(t.savedAt)}). La météo est celle du jour de l’enregistrement.`);
 }
-$("#opentrip").addEventListener("click", openTrip);
-refreshTripButton();
+migrateOldTrip().then(refreshTripList);
 
 /* Service worker : application et tuiles disponibles hors ligne */
 if("serviceWorker" in navigator && location.protocol.startsWith("http")){
   navigator.serviceWorker.register("./sw.js").catch(e=>console.warn("Service worker", e));
 }
 
-(function start(){
-  let trip=null; try{ trip=JSON.parse(localStorage.getItem(TRIP_KEY)); }catch(e){}
-  if(!navigator.onLine && trip){ openTrip(); return; }
+(async function start(){
+  if(!navigator.onLine){
+    await migrateOldTrip();
+    let n=0; try{ n=((await DB.all())||[]).length; }catch(e){}
+    if(n){ await openTrip(); setStatus("Pas de réseau : dernière sortie ouverte. Les autres sont dans « Mes sorties ».", false); return; }
+  }
   setZone(ZONES[location.hash.slice(1)] ? location.hash.slice(1) : "pic-saint-loup");
 })();
 window.__pousses = {classifyForest, geomContains, hostFactor, soilFactor, weatherParts, terrainParts, waterIndex, pointStats, blendWeather, SPECIES, W};
