@@ -129,6 +129,26 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--ochre);outline-
 .scanbtn.busy svg{animation:hop .7s steps(2) infinite}
 @keyframes hop{0%{transform:translateY(0)}100%{transform:translateY(-3px)}}
 @media (prefers-reduced-motion: reduce){ .scanbtn.busy svg{animation:none} }
+.searchbtn{width:44px;height:44px;margin-left:8px !important;margin-top:8px !important;border-radius:50%;border:2px solid var(--ink);background:var(--panel);color:var(--ink);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.25);cursor:pointer}
+#searchbox{position:fixed;left:10px;right:10px;top:calc(env(safe-area-inset-top,0px) + 10px);z-index:1600;max-width:480px;margin:0 auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,.25);padding:8px}
+#searchbox[hidden]{display:none}
+.sb-row{display:flex;gap:6px}
+#sb-input{flex:1;font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink)}
+#sb-close{width:42px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);font-size:16px}
+#sb-results{list-style:none;margin:6px 0 0;padding:0;max-height:50vh;overflow-y:auto}
+#sb-results li{padding:10px 8px;border-top:1px solid var(--line);cursor:pointer}
+#sb-results li b{font-family:var(--serif);font-weight:500;font-size:16px}
+#sb-results li small{display:block;color:var(--muted);font-size:12.5px}
+#sb-results li.msg{color:var(--muted);cursor:default;font-size:14px}
+.pop .scanhere{font:inherit;font-size:14px;font-weight:700;border:0;background:var(--ink);color:var(--panel);border-radius:999px;padding:8px 16px;margin-top:6px;min-height:38px}
+.daybar{display:flex;align-items:center;gap:6px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:6px 8px;box-shadow:0 2px 8px rgba(0,0,0,.18);width:340px;max-width:calc(100vw - 20px)}
+.daybar[hidden]{display:none}
+.daybar .dmid{flex:1;display:flex;flex-direction:column;min-width:0}
+.daybar #mdlabel{font-family:var(--serif);font-size:15px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.daybar #mdlabel small{font-family:var(--sans);font-size:12px;color:var(--muted)}
+.daybar input{width:100%;margin:2px 0 0;accent-color:var(--moss);height:24px}
+.dstep{flex:none;width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--paper);color:var(--ink);font-size:22px;line-height:1;cursor:pointer}
+body.hiking .daybar{display:none}
 .map-banner{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 10px;max-width:340px;font-size:14px;box-shadow:0 1px 4px rgba(0,0,0,.2)}
 .leaflet-control-layers-toggle{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232B2620' stroke-width='1.8' stroke-linejoin='round'%3E%3Cpath d='M12 3 2 8l10 5 10-5-10-5Z'/%3E%3Cpath d='m2 13 10 5 10-5'/%3E%3Cpath d='m2 17.5 10 5 10-5' opacity='.5'/%3E%3C/svg%3E")!important;background-size:24px 24px!important;background-repeat:no-repeat;background-position:center}
 .diag li{list-style:none;margin:2px 0}
@@ -190,6 +210,7 @@ body.hiking .leaflet-bottom{bottom:150px}
 #pk-list label:has(input:checked){border-color:var(--moss);background:var(--moss-soft)}
 #pk-list input{width:20px;height:20px;accent-color:var(--moss);margin:0}
 #pk-list .sep{font-size:12.5px;color:var(--muted);margin:8px 2px 0}
+#pk-list .allrow{border-style:dashed}
 #repform{position:fixed;inset:0;z-index:2000;background:rgba(20,20,15,.45);display:flex;align-items:flex-end;justify-content:center}
 #repform[hidden]{display:none}
 .rf-box{background:var(--panel);color:var(--ink);width:100%;max-width:520px;max-height:92%;overflow-y:auto;border-radius:16px 16px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px))}
@@ -204,6 +225,22 @@ body.hiking .leaflet-bottom{bottom:150px}
 #rf-preview img{max-width:100%;max-height:180px;border-radius:8px;margin-top:8px}
 .rf-btns{display:flex;gap:8px;margin-top:14px}
 .rf-btns button{flex:1;margin:0}
+.rf-l select{display:block;width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:9px 10px;margin-top:4px}
+#repform[data-type="todo"] .rf-ok{display:none}
+#repform[data-type="ok"] .rf-todo{display:none}
+.folder{margin:12px 0 0}
+.folder > summary{font-family:var(--serif);font-size:17px;cursor:pointer;padding:4px 0;border-bottom:1px solid var(--line)}
+.folder > summary small{font-family:var(--sans);color:var(--muted);font-size:13px;margin-left:6px}
+.rep{display:grid;grid-template-columns:30px 1fr auto;gap:8px;align-items:start;padding:9px 0;border-bottom:1px solid var(--line)}
+.rep .ic{width:26px;height:26px;display:flex;align-items:center;justify-content:center}
+.rep b{font-family:var(--serif);font-weight:500;font-size:16px;display:block}
+.rep small{color:var(--muted);font-size:12.5px;display:block}
+.rep img{width:52px;height:52px;object-fit:cover;border-radius:8px}
+.rep .acts{grid-column:2 / 4;display:flex;gap:6px;flex-wrap:wrap}
+.rep .acts button{font:inherit;font-size:13.5px;font-weight:700;border-radius:999px;padding:5px 11px;min-height:34px;border:1px solid var(--ink);background:transparent;color:var(--ink)}
+.rep .acts button.del{border-color:var(--danger);color:var(--danger)}
+.rep .acts button.done{border-color:var(--moss);color:var(--moss)}
+.rep-pin{filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.45))}
 .reps li{grid-template-columns:1fr auto}
 .reps .acts{display:flex;gap:6px;flex-wrap:wrap;grid-column:1 / -1}
 .reps img{width:64px;height:64px;object-fit:cover;border-radius:8px}
@@ -244,6 +281,12 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
   .handle{display:block;position:sticky;top:0;z-index:2;background:var(--panel);padding:8px 0 4px;margin:0 -16px;touch-action:none;cursor:grab}
   .handle span{display:block;width:44px;height:5px;border-radius:3px;background:var(--line);margin:0 auto}
   .handle{min-height:36px}
+  #panel.closed{transform:translateY(110%);pointer-events:none}
+  #sheetopen{position:fixed;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 74px);z-index:1100;display:flex;align-items:center;gap:4px;padding:9px 14px 9px 10px;border-radius:999px;border:1px solid var(--ink);background:var(--panel);color:var(--ink);font:inherit;font-weight:700;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+  #sheetopen[hidden]{display:none}
+  body.hiking #sheetopen{display:none}
+  .leaflet-bottom.leaflet-right{margin-bottom:66px}
+  .leaflet-control-scale{display:none}
   .sheetbtn{position:absolute;right:12px;top:4px;font:inherit;font-size:14px;font-weight:700;color:var(--ink);background:var(--moss-soft);border:0;border-radius:999px;padding:7px 14px;min-height:34px}
   h1{display:none}
   .zones{margin:2px 0 6px}
@@ -269,7 +312,7 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
 </head>
 <body>
 <aside id="panel">
-  <div class="handle" id="handle" role="button" aria-label="Agrandir ou réduire le panneau" tabindex="0"><span></span><button class="sheetbtn" id="sheetbtn" type="button">Agrandir</button></div>
+  <div class="handle" id="handle" role="button" aria-label="Agrandir ou réduire le panneau" tabindex="0"><span></span><button class="sheetbtn" id="sheetbtn" type="button" aria-label="Fermer le menu"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></div>
   <h1>Carte des pousses</h1>
   <div class="quick">
     <button id="aroundme">Analyser autour de moi</button>
@@ -297,14 +340,18 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
   </div>
   <div id="tab-carnet" role="tabpanel" hidden>
     <h2>Mes repères</h2>
-    <p class="chartnote">Tes cueillettes et coins notés, avec leurs coordonnées GPS. Ils restent sur cet appareil : pense à les exporter de temps en temps pour les garder en sécurité.</p>
-    <button class="primary" id="addrep-gps">Ajouter un repère à ma position</button>
     <div class="quick">
-      <button id="exp-gpx">Exporter en GPX</button>
-      <button id="exp-csv">Exporter en tableur</button>
+      <button id="addrep-gps">Repère à ma position</button>
     </div>
+    <p class="chartnote">Pour un autre endroit, touche la carte puis « Ajouter un repère ici ». Tout reste sur ton téléphone.</p>
+    <div class="modes" role="radiogroup" aria-label="Type de repères">
+      <label><input type="radio" name="rtype" value="todo" checked>À chercher</label>
+      <label><input type="radio" name="rtype" value="ok">Vérifiés</label>
+      <label><input type="radio" name="rtype" value="all">Tous</label>
+    </div>
+    <label class="rf-l" style="margin-top:4px">Dossier<select id="rfolder"><option value="">Tous les dossiers</option></select></label>
     <p class="chartnote" id="repnote"></p>
-    <ul class="trips reps" id="replist"></ul>
+    <div id="replist"></div>
   </div>
   <div id="tab-carte" role="tabpanel">
 
@@ -414,16 +461,27 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
   <div class="rf-box">
     <h2 id="rf-title">Nouveau repère</h2>
     <p class="chartnote" id="rf-coords"></p>
+    <div class="modes" role="radiogroup" aria-label="Type de repère">
+      <label><input type="radio" name="rf-type" value="todo">À chercher</label>
+      <label><input type="radio" name="rf-type" value="ok">Vérifié</label>
+    </div>
     <label class="rf-l">Titre<input type="text" id="rf-name" maxlength="80"></label>
-    <fieldset class="rf-sp"><legend>Champignons trouvés</legend><div id="rf-species"></div>
-      <label class="rf-l">Autre espèce<input type="text" id="rf-other" maxlength="80" placeholder="Nom, si absent de la liste"></label></fieldset>
-    <label class="rf-l">Quantité<input type="text" id="rf-qty" maxlength="60" placeholder="Par exemple : 1,2 kg ou une quinzaine"></label>
-    <label class="rf-l">Notes<textarea id="rf-note" rows="3" maxlength="1000" placeholder="Arbre voisin, état, accès, météo…"></textarea></label>
-    <label class="rf-l">Photo<input type="file" id="rf-photo" accept="image/*"></label>
-    <div id="rf-preview"></div>
+    <label class="rf-l">Dossier<input type="text" id="rf-folder" maxlength="40" list="rf-folders" placeholder="Par exemple : Larzac, Cèpes, Sorties d’automne"></label>
+    <datalist id="rf-folders"></datalist>
+    <label class="rf-l rf-todo">Source<select id="rf-src"><option value="appli">Repéré sur l’appli</option><option value="ami">On m’en a parlé</option><option value="autre">Autre</option></select></label>
+    <fieldset class="rf-sp"><legend id="rf-splegend">Champignons</legend><div id="rf-species"></div></fieldset>
+    <label class="rf-l rf-ok">Quantité<input type="text" id="rf-qty" maxlength="60" placeholder="Par exemple : 1,2 kg"></label>
+    <label class="rf-l">Notes<textarea id="rf-note" rows="2" maxlength="600" placeholder="Accès, arbre voisin, qui t’en a parlé…"></textarea></label>
+    <label class="rf-l rf-ok">Photo<input type="file" id="rf-photo" accept="image/*"></label>
+    <div id="rf-preview" class="rf-ok"></div>
     <div class="rf-btns"><button type="button" id="rf-cancel" class="secondary">Annuler</button><button type="button" id="rf-save" class="primary">Enregistrer</button></div>
   </div>
 </div>
+<div id="searchbox" hidden role="dialog" aria-label="Rechercher un lieu">
+  <div class="sb-row"><input type="search" id="sb-input" placeholder="Ville, village, lieu-dit…" autocomplete="off" enterkeyhint="search"><button type="button" id="sb-close" aria-label="Fermer la recherche">✕</button></div>
+  <ul id="sb-results"></ul>
+</div>
+<button type="button" id="sheetopen" hidden aria-label="Ouvrir le menu"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg><span>Menu</span></button>
 <div id="bgtask" hidden aria-live="polite"><span class="spin" aria-hidden="true"></span><span id="bgtxt"></span></div>
 <div id="loader" hidden aria-live="polite">
   <div class="lbar"><div class="lfill" id="lfill"></div></div>
@@ -997,9 +1055,12 @@ async function loadStationRain(){
 const win = (arr, a, b) => arr.slice(Math.max(0,a), b+1);
 function pointStats(p, d){
   const sum = a => a.reduce((s,v)=>s+(isNaN(v)?0:v),0);
-  const P26 = sum(win(p.rain, d-25, d)), E26 = sum(win(p.et0, d-25, d));
+  const P26raw = sum(win(p.rain, d-25, d)), E26 = sum(win(p.et0, d-25, d));
+  // Une pluie des trois derniers jours n’a pas encore eu le temps de faire sortir les champignons : elle compte à moitié
+  const P26 = sum(win(p.rain, d-25, d-3)) + 0.5*sum(win(p.rain, d-2, d));
+  let lastBig = null; for(let k=d; k>=Math.max(0,d-44); k--){ if(p.rain[k] >= 10){ lastBig = d-k; break; } }
   return {
-    P26, WB: P26 - E26,
+    P26, P26raw, lastBig, WB: P26raw - E26,
     T20: mean(win(p.tmean, d-19, d)), Tmax7: mean(win(p.tmax, d-6, d)),
     SM: mean(win(p.sm, d-6, d)), RH: mean(win(p.rh, d-2, d)), VPD: mean(win(p.vpd, d-2, d)),
     frost: win(p.tmin, d-4, d).filter(v=>v < -1).length,
@@ -1014,15 +1075,20 @@ function nearestWeights(lat, lon){
   return w.map(([i,v])=>[i,v/tot]);
 }
 function blendWeather(ww, stats, alt){
-  const o = {P26:0,WB:0,T20:0,Tmax7:0,SM:0,RH:0,VPD:0,frost:0,soilDrop:0}, wsum={SM:0,RH:0,VPD:0,soilDrop:0};
+  const o = {P26:0,P26raw:0,WB:0,T20:0,Tmax7:0,SM:0,RH:0,VPD:0,frost:0,soilDrop:0,lastBig:null}, wsum={SM:0,RH:0,VPD:0,soilDrop:0};
+  let lb=0, lbw=0;
   for(const [i,w] of ww){
     const s = stats[i], p = W.pts[i], dz = alt==null ? 0 : alt - p.elev;
-    o.P26 += w*s.P26; o.WB += w*s.WB;
+    o.P26 += w*s.P26; o.P26raw += w*(s.P26raw!=null?s.P26raw:s.P26); o.WB += w*s.WB;
     o.T20 += w*(s.T20 - 0.0065*dz); o.Tmax7 += w*(s.Tmax7 - 0.0065*dz);
-    o.frost += w*(s.frost + (dz>300?1:0));
+    // Gelées des 5 derniers jours, recalculées à l’altitude exacte de l’endroit
+    let fr=0; for(let k=Math.max(0,S.day-4); k<=S.day; k++){ const t=p.tmin[k]; if(!isNaN(t) && t - 0.0065*dz < -1) fr++; }
+    o.frost += w*fr;
+    if(s.lastBig!=null){ lb += w*s.lastBig; lbw += w; }
     for(const k of ["SM","RH","VPD","soilDrop"]) if(!isNaN(s[k])){ o[k] += w*s[k]; wsum[k] += w; }
   }
   for(const k of ["SM","RH","VPD","soilDrop"]) o[k] = wsum[k] ? o[k]/wsum[k] : NaN;
+  o.lastBig = lbw>0.5 ? Math.round(lb/lbw) : null;
   return o;
 }
 
@@ -1188,7 +1254,7 @@ const ScanCtl = L.Control.extend({ options:{position:"topleft"},
       const ok = ev.detail===0 || (down && Date.now()-down.t < 800 && Math.hypot(ev.clientX-down.x, ev.clientY-down.y) < 12);
       down=null; if(!ok || b.classList.contains("busy")) return;
       b.classList.add("busy"); b.setAttribute("aria-busy","true");
-      if(!S.species.length){ b.classList.remove("busy"); b.removeAttribute("aria-busy"); openPicker(()=>{ b.classList.add("busy"); analyze(USER_SCAN).finally(()=>b.classList.remove("busy")); }); return; }
+      if(!hasChoice()){ b.classList.remove("busy"); b.removeAttribute("aria-busy"); openPicker(()=>{ b.classList.add("busy"); analyze(USER_SCAN).finally(()=>b.classList.remove("busy")); }); return; }
       try{ await analyze(USER_SCAN); } finally{ b.classList.remove("busy"); b.removeAttribute("aria-busy"); } });
     return b;
   } });
@@ -1196,9 +1262,29 @@ const RefreshCtl = L.Control.extend({ options:{position:"topleft"},
   onAdd(){ const b=L.DomUtil.create("button","refreshbtn"); b.type="button"; b.title="Actualiser la météo de la zone scannée"; b.setAttribute("aria-label","Actualiser la météo de la zone scannée");
     b.innerHTML='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>';
     L.DomEvent.disableClickPropagation(b); L.DomEvent.on(b,"click",async ev=>{ L.DomEvent.stop(ev); if(b.classList.contains("busy")) return; b.classList.add("busy"); try{ await refreshWeather(); } finally{ b.classList.remove("busy"); } }); return b; } });
+const DayCtl = L.Control.extend({ options:{position:"bottomleft"},
+  onAdd(){ const d=L.DomUtil.create("div","daybar"); d.hidden=true;
+    d.innerHTML='<button type="button" class="dstep" data-k="-1" aria-label="Jour précédent">‹</button><div class="dmid"><span id="mdlabel"></span><input type="range" id="mday" aria-label="Jour étudié"></div><button type="button" class="dstep" data-k="1" aria-label="Jour suivant">›</button>';
+    L.DomEvent.disableClickPropagation(d); L.DomEvent.disableScrollPropagation(d); return d; } });
+const dayCtl = new DayCtl().addTo(map);
+function setDayFromMap(v){ const sl=$("#day"); v=clamp(v, Number(sl.min), Number(sl.max)); sl.value=v; if(W.ok) onDayChange(); }
+document.addEventListener("input", e=>{ if(e.target && e.target.id==="mday") setDayFromMap(Number(e.target.value)); });
+document.addEventListener("click", e=>{ const b=e.target.closest && e.target.closest(".dstep"); if(b) setDayFromMap(Number($("#day").value)+Number(b.dataset.k)); });
+function syncMapDay(){
+  const bar=document.querySelector(".daybar"), md=$("#mday"), sl=$("#day"); if(!bar||!md) return;
+  if(!W.ok){ bar.hidden=true; return; }
+  md.min=sl.min; md.max=sl.max; md.value=sl.value; bar.hidden=false;
+  const d=new Date(W.days[S.day]+"T12:00:00"), rel = S.day===W.todayIdx ? "aujourd’hui" : S.day>W.todayIdx ? "prévision" : `il y a ${W.todayIdx-S.day} j`;
+  $("#mdlabel").innerHTML = `${d.toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"})} <small>${rel}</small>`;
+}
 map.zoomControl.remove();
 new ScanCtl().addTo(map);
 new RefreshCtl().addTo(map);
+const SearchCtl = L.Control.extend({ options:{position:"topleft"},
+  onAdd(){ const b=L.DomUtil.create("button","searchbtn"); b.type="button"; b.title="Rechercher une ville ou un lieu"; b.setAttribute("aria-label","Rechercher une ville ou un lieu");
+    b.innerHTML='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>';
+    L.DomEvent.disableClickPropagation(b); L.DomEvent.on(b,"click",ev=>{ L.DomEvent.stop(ev); openSearch(); }); return b; } });
+new SearchCtl().addTo(map);
 L.control.zoom({position:"topleft"}).addTo(map);
 watchBase(basePlan, "Le Plan IGN", baseOrtho);
 function watchOverlay(layer, name){
@@ -1474,11 +1560,15 @@ function computeWaterBalance(cells){
     const inter = forest ? 0.8 : 0.95, run = (c.slope!=null && c.slope>20) ? 0.9 : 1;
     const sw = c.slope!=null ? Math.min(1,c.slope/15) : 0, south = c.aspect!=null ? -Math.cos(c.aspect*Math.PI/180) : 0;
     const etF = (1 + 0.15*south*sw) * (forest ? 0.85 : 0.7);
-    let Wt = 0.5*c.awc; const rel = new Float32Array(nd);
+    let Wt = 0.5*c.awc, snow = 0; const rel = new Float32Array(nd);
     for(let d=0; d<nd; d++){
-      let P=0, E=0;
-      for(const [i,w] of c.ww){ P += w*W.pts[i].rain[d]; E += w*W.pts[i].et0[d]; }
-      Wt = Math.min(c.awc, Wt + P*inter*run);
+      let P=0, E=0, T=0;
+      for(const [i,w] of c.ww){ const pt=W.pts[i]; P += w*pt.rain[d]; E += w*pt.et0[d]; T += w*((isNaN(pt.tmean[d])?5:pt.tmean[d]) - 0.0065*((c.alt??pt.elev)-pt.elev)); }
+      // En altitude, la précipitation tombe en neige quand il gèle : elle n’humidifie le sol qu’à la fonte
+      let inflow = P;
+      if(T < 0.5){ snow += P; inflow = 0; E = 0; }
+      else if(snow > 0){ const melt = Math.min(snow, (T-0.5)*3); snow -= melt; inflow += melt; if(snow>5) E *= 0.3; }
+      Wt = Math.min(c.awc, Wt + inflow*inter*run);
       Wt = Math.max(0, Wt - E*etF*Math.min(1, Wt/(0.5*c.awc)));
       rel[d] = Wt/c.awc;
     }
@@ -1780,27 +1870,87 @@ async function refreshWeather(){
     setProgress(1,"Météo actualisée"); setTimeout(()=>setProgress(null),600); setStatus("Météo actualisée : les chances tiennent compte des dernières données."); }
   catch(e){ setProgress(null); setStatus("Actualisation impossible pour le moment : "+e.message, true); }
 }
+/* Recherche d’un lieu (géocodage de l’IGN), limitée aux six départements couverts */
+let sbTimer=null, sbMarker=null, sbSeq=0;
+function openSearch(){ $("#searchbox").hidden=false; $("#sb-results").innerHTML=""; const i=$("#sb-input"); i.value=""; setTimeout(()=>i.focus(),50); }
+function closeSearch(){ $("#searchbox").hidden=true; $("#sb-input").blur(); }
+$("#sb-close").addEventListener("click", closeSearch);
+async function geocode(q){
+  const bases = ["https://data.geopf.fr/geocodage/search","https://api-adresse.data.gouv.fr/search/"];
+  const queries = [["address","&type=municipality"],["poi",""],["address",""]];
+  const out=[], seen=new Set();
+  const one = async (base, idx, extra) => { try{
+      const url = `${base}?q=${encodeURIComponent(q)}&limit=6${base.includes("geopf")?`&index=${idx}`:""}${extra}`;
+      const js = await fetchJSON(url, {}, 10000); return js.features || [];
+    }catch(e){ return null; } };
+  let feats = (await Promise.all(queries.map(([i,x])=>one(bases[0],i,x)))).filter(Boolean).flat();
+  if(!feats.length) feats = (await one(bases[1],"","&type=municipality")) || [];
+  for(const f of feats){
+    const [lon,lat] = f.geometry && f.geometry.coordinates || []; if(lat==null) continue;
+    const d = deptAt(lat, lon); if(!d) continue;
+    const pr=f.properties||{}, nm = Array.isArray(pr.name) ? pr.name[0] : (pr.name || pr.toponym || pr.label || pr.city || "");
+    const key = norm(nm)+"|"+lat.toFixed(2)+"|"+lon.toFixed(2); if(!nm || seen.has(key)) continue; seen.add(key);
+    const kind = pr.type==="municipality" || pr._type==="municipality" ? "commune" : (pr.category ? String(Array.isArray(pr.category)?pr.category[0]:pr.category).toLowerCase() : (pr.type==="street"?"rue":pr.type==="locality"?"lieu-dit":""));
+    out.push({nm, lat, lon, ctx:[kind, pr.city && pr.city!==nm ? (Array.isArray(pr.city)?pr.city[0]:pr.city) : "", d.nom].filter(Boolean).join(", "), muni: kind==="commune"});
+  }
+  out.sort((a,b)=>b.muni-a.muni);
+  return out.slice(0,8);
+}
+$("#sb-input").addEventListener("input", e=>{
+  clearTimeout(sbTimer); const q=e.target.value.trim(); const ul=$("#sb-results");
+  if(q.length<2){ ul.innerHTML=""; return; }
+  ul.innerHTML='<li class="msg">Recherche…</li>';
+  const my=++sbSeq;
+  sbTimer=setTimeout(async ()=>{
+    const res = await geocode(q); if(my!==sbSeq) return;
+    ul.innerHTML = res.length ? res.map((r,i)=>`<li data-i="${i}"><b>${esc(r.nm)}</b><small>${esc(r.ctx)}</small></li>`).join("")
+      : '<li class="msg">Aucun lieu trouvé dans l’Aude, l’Aveyron, le Gard, l’Hérault, la Lozère ou le Tarn.</li>';
+    ul._res = res;
+  }, 300);
+});
+$("#sb-input").addEventListener("keydown", e=>{ if(e.key==="Enter"){ const first=$("#sb-results li[data-i]"); if(first) first.click(); } });
+$("#sb-results").addEventListener("click", e=>{
+  const li=e.target.closest("li[data-i]"); if(!li) return; const r=$("#sb-results")._res[Number(li.dataset.i)]; closeSearch();
+  map.setView([r.lat, r.lon], 13);
+  if(sbMarker) map.removeLayer(sbMarker);
+  sbMarker = L.circleMarker([r.lat,r.lon],{radius:7,color:"#2B2620",weight:3,fillColor:"#E2AF4F",fillOpacity:1}).addTo(map);
+  setTimeout(()=>L.popup({autoPanPaddingTopLeft:[14,84], autoPanPaddingBottomRight:[14, (sheetState==="closed"?0:SHEET.peek)+76]}).setLatLng([r.lat,r.lon])
+    .setContent(`<div class="pop"><h3>${esc(r.nm)}</h3><p class="why">${esc(r.ctx)}</p><button type="button" class="scanhere">Scanner ici</button></div>`).openOn(map), 350);
+});
+function startScan(){
+  const b=document.querySelector(".scanbtn");
+  const go=()=>{ if(b) b.classList.add("busy"); analyze(USER_SCAN).finally(()=>{ if(b) b.classList.remove("busy"); }); };
+  if(!hasChoice()) openPicker(go); else go();
+}
+document.addEventListener("click", e=>{ if(e.target.closest && e.target.closest(".scanhere")){ map.closePopup(); if(sbMarker){ map.removeLayer(sbMarker); sbMarker=null; } startScan(); } });
 /* Choix des champignons : obligatoire avant le premier scan, mémorisé ensuite */
-function saveMySpecies(){ try{ localStorage.setItem("mySpecies", JSON.stringify(S.species)); }catch(e){} }
-function loadMySpecies(){ try{ const v=JSON.parse(localStorage.getItem("mySpecies")); if(Array.isArray(v)) S.species=v.slice(0,3); }catch(e){} }
+function saveMySpecies(){ try{ localStorage.setItem("mySpecies", JSON.stringify(S.allMode && !S.species.length ? {all:true} : S.species)); }catch(e){} }
+function loadMySpecies(){ try{ const v=JSON.parse(localStorage.getItem("mySpecies")); if(Array.isArray(v)){ S.species=v.slice(0,3); S.allMode=false; } else if(v && v.all){ S.species=[]; S.allMode=true; } }catch(e){} }
+const hasChoice = () => S.species.length>0 || !!S.allMode;
+const countLabel = () => S.species.length ? `${S.species.length} sur 3 choisis` : (S.allMode ? "tous les champignons" : "");
 let pickThen = null;
 function openPicker(then){
   pickThen = then || null;
   const m=monthOfDay(), sel=new Set(S.species), list=[...SPECIES].sort((a,b)=>prio(a.id)-prio(b.id));
   const top = list.filter(sp=>prio(sp.id)<16), rest = list.filter(sp=>prio(sp.id)>=16);
   const row = sp => `<label><input type="checkbox" value="${sp.id}" ${sel.has(sp.id)?"checked":""}>${esc(sp.nom)}${sp.mois.includes(m)?' <span class="season" title="de saison"></span>':""}<em>${esc(sp.comest)}</em></label>`;
-  $("#pk-list").innerHTML = top.map(row).join("") + `<p class="sep">Espèces plus communes ou moins recherchées</p>` + rest.map(row).join("");
+  $("#pk-list").innerHTML = `<label class="allrow"><input type="checkbox" value="__all" ${S.allMode && !S.species.length ? "checked":""}>Tous les champignons<em>découvrir la zone</em></label><p class="sep">Ou jusqu’à trois espèces précises</p>`
+    + top.map(row).join("") + `<p class="sep">Espèces plus communes ou moins recherchées</p>` + rest.map(row).join("");
   $("#pk-ok").textContent = then ? "Scanner" : "Valider";
   updatePickOk(); $("#sppick").hidden=false;
 }
 function updatePickOk(){ const n=document.querySelectorAll("#pk-list input:checked").length; $("#pk-ok").disabled = n===0; $("#pk-ok").textContent = (pickThen?"Scanner":"Valider") + (n?` (${n})`:""); }
 $("#pk-list").addEventListener("change", e=>{
-  if(document.querySelectorAll("#pk-list input:checked").length>3){ e.target.checked=false; banner.show("Trois champignons au maximum."); }
+  const all = document.querySelector('#pk-list input[value="__all"]');
+  if(e.target===all){ if(all.checked) document.querySelectorAll('#pk-list input:not([value="__all"])').forEach(i=>i.checked=false); }
+  else { if(e.target.checked) all.checked=false;
+    if(document.querySelectorAll('#pk-list input:not([value="__all"]):checked').length>3){ e.target.checked=false; banner.show("Trois champignons au maximum."); } }
   updatePickOk();
 });
 $("#pk-cancel").addEventListener("click", ()=>{ $("#sppick").hidden=true; pickThen=null; });
 $("#pk-ok").addEventListener("click", ()=>{
-  S.species=[...document.querySelectorAll("#pk-list input:checked")].map(i=>i.value).slice(0,3); saveMySpecies();
+  S.species=[...document.querySelectorAll('#pk-list input:not([value="__all"]):checked')].map(i=>i.value).slice(0,3);
+  S.allMode = !S.species.length; saveMySpecies();
   $("#sppick").hidden=true; buildSpecies(); render();
   const f=pickThen; pickThen=null; if(f) f();
 });
@@ -2026,7 +2176,7 @@ function drawGrid(g, which){
   return {per, shown};
 }
 function render(){
-  const hc=document.getElementById("sp-count"); if(hc) hc.textContent = S.species.length ? `${S.species.length} sur 3 choisis` : "";
+  const hc=document.getElementById("sp-count"); if(hc) hc.textContent = countLabel();
   let res=null;
   if(S.zoneGrid){ const r=drawGrid(S.zoneGrid,"zone"); if(!S.grid) res=r; }
   if(S.grid) res=drawGrid(S.grid,"fine");
@@ -2093,7 +2243,8 @@ map.on("click", e=>{
     <tr><td>Lisière</td><td>${c.edge?"oui":"non"}</td></tr>
     <tr><td>Accès</td><td><span class="acc ${accessText(c).cls}">${esc(accessText(c).txt)}</span><span id="pubinfo"></span></td></tr>`;
   if(w && S.mode==="meteo"){
-    html+=`<tr><td>Pluie 26 j</td><td>${fmt(w.P26)} mm, bilan ${w.WB>=0?"+":""}${fmt(w.WB)} mm</td></tr>
+    html+=`<tr><td>Pluie 26 j</td><td>${fmt(w.P26raw)} mm (utile ${fmt(w.P26)} mm), bilan ${w.WB>=0?"+":""}${fmt(w.WB)} mm</td></tr>
+      <tr><td>Bonne pluie</td><td>${w.lastBig==null?"aucune de 10 mm ou plus depuis plus de 6 semaines":w.lastBig===0?"aujourd’hui":`il y a ${w.lastBig} j (10 mm ou plus)`}</td></tr>
       <tr><td>Eau du sol</td><td>${isNaN(w.SM)?"—":fmt(w.SM*100)+" % vol."} (modèle régional)</td></tr>
       <tr><td>Temp. 20 j</td><td>${fmt(w.T20,1)} °C à cette altitude</td></tr>
       <tr><td>Air</td><td>${isNaN(w.RH)?"—":fmt(w.RH)+" % d’humidité"}${isNaN(w.VPD)?"":`, déficit ${fmt(w.VPD,1)} kPa`}</td></tr>`;
@@ -2116,8 +2267,8 @@ map.on("click", e=>{
     if(tI>0 && eI>8 && end>eI){ html = html.slice(0,tI) + html.slice(eI,end) + `<details class="terrain"><summary>Détail du terrain et de la météo</summary>${html.slice(tI,eI)}</details></div>`; } }
   if(window.matchMedia("(max-width:760px)").matches){
     // Fenêtre sur la carte, tenue à l’écart des boutons du haut (zoom, couches) et du volet du bas
-    setSheet("peek");
-    const sheetH = SHEET.peek, top = 84, bottom = sheetH + 16;
+    if(sheetState==="half" || sheetState==="full") setSheet("peek");
+    const sheetH = sheetState==="closed" ? 0 : SHEET.peek, top = 84, bottom = sheetH + 76;
     L.popup({maxWidth:Math.min(300, window.innerWidth-40), minWidth:200, maxHeight:Math.max(180, window.innerHeight - top - bottom - 40),
       autoPanPaddingTopLeft:[14, top], autoPanPaddingBottomRight:[14, bottom], className:"pop-mobile"})
       .setLatLng(e.latlng).setContent(html).openOn(map);
@@ -2165,7 +2316,8 @@ function buildSpecies(){
     } else S.species = S.species.filter(x=>x!==v);
     box.querySelectorAll('input[name="sp"]').forEach(c=>{ c.checked = S.species.includes(c.value); });
     saveMySpecies();
-    const h=$("#sp-count"); if(h) h.textContent = S.species.length ? `${S.species.length} sur 3 choisis` : "";
+    S.allMode = !S.species.length; saveMySpecies();
+    const h=$("#sp-count"); if(h) h.textContent = countLabel();
     render();
   }));
   box.querySelectorAll(".more").forEach(btn=>btn.addEventListener("click",()=>{
@@ -2268,7 +2420,7 @@ function drawCharts(lat, lon, alt){
     ? `Au point cliqué, ramené à ${fmt(alt)} m d’altitude. La bande verte marque les 20 jours pris pour la température.`
     : `${Z.lieu}. Cliquez sur une maille analysée pour voir sa météo. La bande verte marque les 20 jours pris pour la température.`;
   const st=W.pts.map(p=>pointStats(p,S.day)), w=blendWeather(ww,st,alt);
-  const rows=[["Pluie des 26 derniers jours",`${fmt(w.P26)} mm`],["Bilan pluie moins évaporation",`${w.WB>=0?"+":""}${fmt(w.WB)} mm`],
+  const rows=[["Pluie des 26 derniers jours",`${fmt(w.P26raw)} mm`],["Dernière bonne pluie (10 mm et plus)", w.lastBig==null?"plus de 6 semaines":w.lastBig===0?"aujourd’hui":`il y a ${w.lastBig} j`],["Bilan pluie moins évaporation",`${w.WB>=0?"+":""}${fmt(w.WB)} mm`],
     ["Eau du sol (9 à 27 cm)",isNaN(w.SM)?"—":`${fmt(w.SM*100)} % vol.`],["Température moyenne, 20 j",`${fmt(w.T20,1)} °C`],
     ["Maximales, 7 j",`${fmt(w.Tmax7,1)} °C`],["Humidité de l’air, 3 j",isNaN(w.RH)?"—":`${fmt(w.RH)} %`],
     ["Déficit de saturation (jour)",isNaN(w.VPD)?"—":`${fmt(w.VPD,1)} kPa`],["Sol : variation sur 10 j",isNaN(w.soilDrop)?"—":`${w.soilDrop>0?"−":"+"}${fmt(Math.abs(w.soilDrop),1)} °C`]];
@@ -2284,7 +2436,7 @@ function weatherSourceNote(){
 let renderTimer=null;
 function renderSoon(){ clearTimeout(renderTimer); renderTimer=setTimeout(render, 120); }
 function onDayChange(){
-  S.day=Number($("#day").value); $("#daylabel").innerHTML=dayLabel(S.day);
+  S.day=Number($("#day").value); $("#daylabel").innerHTML=dayLabel(S.day); syncMapDay();
   if(chartTarget) drawCharts(chartTarget.lat,chartTarget.lon,chartTarget.alt);
   const pm=S.month; S.month=monthOfDay(); if(pm!==S.month) buildSpecies();
   renderSoon();
@@ -2431,7 +2583,7 @@ async function setArea(lat, lon){
   try{
     await loadWeather();
     const sl=$("#day"); sl.min=25; sl.max=W.days.length-1; sl.value=W.todayIdx; sl.disabled=false;
-    S.day=W.todayIdx; S.month=monthOfDay(); $("#daylabel").innerHTML=dayLabel(S.day); buildSpecies(); drawCharts(CENTER[0],CENTER[1],CENTER_ALT);
+    S.day=W.todayIdx; S.month=monthOfDay(); $("#daylabel").innerHTML=dayLabel(S.day); syncMapDay(); buildSpecies(); drawCharts(CENTER[0],CENTER[1],CENTER_ALT);
     if(!W.hasSM) $("#chartnote").textContent += " L’humidité du sol n’est pas fournie ici : l’indice d’eau repose sur la pluie et le bilan hydrique.";
     loadStationRain().then(()=>{ if(S.grid) computeWaterBalance(S.grid.cells); if(chartTarget) drawCharts(chartTarget.lat,chartTarget.lon,chartTarget.alt); render(); })
       .catch(e=>{ console.warn("Stations Météo-France", e); if(chartTarget) drawCharts(chartTarget.lat,chartTarget.lon,chartTarget.alt); });
@@ -2460,21 +2612,23 @@ let sheetState = "peek";
 function setSheet(state, px){
   if(!window.matchMedia("(max-width:760px)").matches) return;
   sheetState = state;
-  const h = px!=null ? px : state==="peek" ? SHEET.peek : state==="half" ? SHEET.half() : SHEET.full();
+  const h = px!=null ? px : state==="closed" ? 0 : state==="peek" ? SHEET.peek : state==="half" ? SHEET.half() : SHEET.full();
+  panel.classList.toggle("closed", state==="closed"); $("#sheetopen").hidden = state!=="closed";
   document.documentElement.style.setProperty("--sheet", h+"px");
   if(state==="peek") panel.scrollTop = 0;
-  const sb=document.getElementById("sheetbtn"); if(sb) sb.textContent = state==="peek" ? "Agrandir" : "Réduire";
+
   setTimeout(refreshMap, 280);
 }
 handle.addEventListener("click", ()=>setSheet(sheetState==="peek" ? "half" : "peek"));
-$("#sheetbtn").addEventListener("click", e=>{ e.stopPropagation(); setSheet(sheetState==="peek" ? "full" : "peek"); });
+$("#sheetbtn").addEventListener("click", e=>{ e.stopPropagation(); setSheet("closed"); });
+$("#sheetopen").addEventListener("click", ()=>setSheet("peek"));
 handle.addEventListener("keydown", e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); handle.click(); } });
 (function(){ // glisser la poignée
   let y0=null, h0=0, moved=false;
   handle.addEventListener("pointerdown", e=>{ y0=e.clientY; h0=panel.getBoundingClientRect().height; moved=false; panel.classList.add("dragging"); handle.setPointerCapture(e.pointerId); });
-  handle.addEventListener("pointermove", e=>{ if(y0==null) return; const dy=y0-e.clientY; if(Math.abs(dy)>6) moved=true; if(moved) document.documentElement.style.setProperty("--sheet", clamp(h0+dy, 120, SHEET.full())+"px"); });
+  handle.addEventListener("pointermove", e=>{ if(y0==null) return; const dy=y0-e.clientY; if(Math.abs(dy)>6) moved=true; if(moved) document.documentElement.style.setProperty("--sheet", clamp(h0+dy, 40, SHEET.full())+"px"); });
   const end = e=>{ if(y0==null) return; panel.classList.remove("dragging"); const h=panel.getBoundingClientRect().height; y0=null;
-    if(!moved) return; const opts=[["peek",SHEET.peek],["half",SHEET.half()],["full",SHEET.full()]]; opts.sort((a,b)=>Math.abs(a[1]-h)-Math.abs(b[1]-h)); setSheet(opts[0][0]);
+    if(!moved) return; const opts=[["closed",0],["peek",SHEET.peek],["half",SHEET.half()],["full",SHEET.full()]]; opts.sort((a,b)=>Math.abs(a[1]-h)-Math.abs(b[1]-h)); setSheet(opts[0][0]);
     handle.addEventListener("click", stop, {capture:true, once:true}); };
   const stop = ev=>{ ev.stopImmediatePropagation(); };
   handle.addEventListener("pointerup", end); handle.addEventListener("pointercancel", end);
@@ -2482,7 +2636,7 @@ handle.addEventListener("keydown", e=>{ if(e.key==="Enter"||e.key===" "){ e.prev
 window.addEventListener("resize", ()=>setSheet(sheetState));
 setSheet("peek");
 // Sur téléphone, un clic sur la carte replie le volet pour laisser voir la fenêtre d’information
-map.on("popupopen", ()=>{ if(sheetState!=="peek") setSheet("peek"); });
+map.on("popupopen", ()=>{ if(sheetState==="half" || sheetState==="full") setSheet("peek"); });
 
 /* Position GPS */
 let meMarker=null, meCircle=null, watchId=null;
@@ -2498,7 +2652,7 @@ $("#aroundme").addEventListener("click", ()=>{
   setStatus("Recherche de votre position…");
   navigator.geolocation.getCurrentPosition(pos=>{
     const ll=showMe(pos);
-    map.setView(ll, 13); setTimeout(()=>{ setSheet("peek"); if(S.species.length) analyze(USER_SCAN); else openPicker(()=>analyze(USER_SCAN)); }, 400);
+    map.setView(ll, 13); setTimeout(()=>{ setSheet("peek"); if(hasChoice()) analyze(USER_SCAN); else openPicker(()=>analyze(USER_SCAN)); }, 400);
   }, err=>setStatus("Position indisponible : "+(err.code===1?"autorisez la localisation pour ce site dans les réglages de Safari.":"signal GPS introuvable."), true),
   {enableHighAccuracy:true, timeout:20000, maximumAge:60000});
 });
@@ -2598,7 +2752,7 @@ async function openTrip(id){
   S.grid={cells:unpackCells(t.cells), rows:t.rows, cols:t.cols, b:t.b, cellM:t.cellM}; S.forest=[];
   document.querySelector('input[value="meteo"]').disabled=false; $("#lab-meteo").classList.remove("disabled");
   S.mode=t.mode; S.land=(t.land==="public"?"public":"tous"); document.querySelectorAll('input[name="mode"]').forEach(r=>r.checked=r.value===S.mode); document.querySelectorAll('input[name="land"]').forEach(r=>r.checked=r.value===S.land);
-  const sl=$("#day"); sl.min=25; sl.max=W.days.length-1; S.day=Math.min(t.day, W.days.length-1); sl.value=S.day; sl.disabled=false;
+  const sl=$("#day"); sl.min=25; sl.max=W.days.length-1; S.day=Math.min(t.day, W.days.length-1); sl.value=S.day; sl.disabled=false; setTimeout(syncMapDay,0);
   S.month=monthOfDay(); $("#daylabel").innerHTML=dayLabel(S.day); buildSpecies();
   map.fitBounds([[t.b.s,t.b.w],[t.b.n,t.b.e]]);
   render(); drawCharts(CENTER[0],CENTER[1],CENTER_ALT);
@@ -2765,34 +2919,49 @@ async function stopHike(){
 $("#hike").addEventListener("click", ()=>{ H.on ? stopHike() : startHike(); });
 $("#hud-stop").addEventListener("click", stopHike);
 $("#hud-center").addEventListener("click", ()=>{ H.follow=true; if(H.last) map.setView(H.last, Math.max(map.getZoom(),15)); });
-$("#hud-rep").addEventListener("click", ()=>openRepForm({gps:true}));
+$("#hud-rep").addEventListener("click", ()=>openRepForm({gps:true, type:"ok"}));
 map.on("dragstart", ()=>{ if(H.on) H.follow=false; });
 
 /* ============================================================
-   Carnet : points repères des cueillettes
+   Carnet : repères « à chercher » (loupe) et « vérifiés » (amanite), rangés en dossiers
    ============================================================ */
 const repLayer = repLayerRef.addTo(map);
 let repEdit = null, repPhoto = null;
+const LOUPE_SVG = '<svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><circle cx="10" cy="10" r="6.5" fill="#FFFFFF" stroke="#2E5A88" stroke-width="2.6"/><path d="M15 15l5.5 5.5" stroke="#2E5A88" stroke-width="3.2" stroke-linecap="round"/></svg>';
+const AMA_PIN = AMANITA_SVG.replace('width="40" height="40"','width="26" height="26"');
+const repType = r => r.type || "ok"; // les anciens repères étaient des cueillettes
 function repContext(lat, lon){
   const c = cellAt({lat,lng:lon}), g = gridOf({lat,lng:lon}), ctx = {zone: (deptAt(lat,lon)||{}).nom || ""};
   if(c){ ctx.alt = c.alt!=null ? Math.round(c.alt) : null; ctx.roche = c.geo ? c.geo.label : null; ctx.foret = essenceName(c.label);
-    if(g){ const ta=treesAround(c,g); ctx.arbres = ta.list.map(([n,f])=>`${n} ${Math.round(f*100)} %`).join(", "); } }
-  try{ const st=currentStats(); if(st && c){ const w=cellWx(c,st); ctx.meteo = `pluie 26 j : ${fmt(w.P26)} mm, temp. 20 j : ${fmt(w.T20,1)} °C`; } }catch(e){}
+    if(g){ const ta=treesAround(c,g); ctx.arbres = ta.list.map(([n,f])=>`${n} ${Math.round(f*100)} %`).join(", "); }
+    try{ const st=currentStats(); if(st){ const w=cellWx(c,st); ctx.meteo = `pluie 26 j : ${fmt(w.P26)} mm, temp. 20 j : ${fmt(w.T20,1)} °C`; }
+      const m=monthOfDay(); ctx.scores = Object.fromEntries(SPECIES.map(sp=>[sp.id, Math.round(scoreCell(sp,c,st,m).score*100)])); }catch(e){}
+  }
   return ctx;
 }
-function openRepForm(opt){
+async function allReps(){ try{ return (await REP.all())||[]; }catch(e){ return null; } }
+async function folderList(){ const l=(await allReps())||[]; return [...new Set(l.map(r=>r.folder).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"fr")); }
+function setFormType(t){ $("#repform").dataset.type=t; document.querySelectorAll('input[name="rf-type"]').forEach(r=>r.checked=r.value===t); $("#rf-splegend").textContent = t==="ok" ? "Champignons trouvés" : "Champignons espérés"; }
+document.querySelectorAll('input[name="rf-type"]').forEach(r=>r.addEventListener("change",e=>setFormType(e.target.value)));
+async function openRepForm(opt){
   const f=$("#repform"); repEdit=null; repPhoto=null;
+  const folders = await folderList();
+  $("#rf-folders").innerHTML = folders.map(n=>`<option value="${esc(n)}">`).join("");
   const fill = (lat, lon, acc, rec)=>{
+    const t = rec ? repType(rec) : (opt.type || "todo");
     repEdit = rec || {id:Date.now(), date:Date.now(), lat, lon, acc, ctx:repContext(lat,lon)};
     $("#rf-title").textContent = rec ? "Modifier le repère" : "Nouveau repère";
-    $("#rf-coords").textContent = `${repEdit.lat.toFixed(5)}, ${repEdit.lon.toFixed(5)}${repEdit.acc?` (précision ${fmt(repEdit.acc)} m)`:""}${repEdit.ctx&&repEdit.ctx.alt!=null?`, ${repEdit.ctx.alt} m`:""}`;
-    $("#rf-name").value = rec ? rec.name : `Cueillette du ${new Date().toLocaleDateString("fr-FR",{day:"numeric",month:"short"})}`;
-    const chosen = new Set(rec ? rec.species||[] : []);
-    $("#rf-species").innerHTML = [...SPECIES].sort((a,b)=>a.nom.localeCompare(b.nom,"fr")).map(sp=>`<label><input type="checkbox" value="${esc(sp.nom)}" ${chosen.has(sp.nom)?"checked":""}>${esc(sp.nom)}</label>`).join("");
-    $("#rf-other").value = rec ? rec.other||"" : ""; $("#rf-qty").value = rec ? rec.qty||"" : ""; $("#rf-note").value = rec ? rec.note||"" : "";
+    $("#rf-coords").textContent = `${repEdit.lat.toFixed(5)}, ${repEdit.lon.toFixed(5)}${repEdit.ctx&&repEdit.ctx.alt!=null?`, ${repEdit.ctx.alt} m`:""}${repEdit.ctx&&repEdit.ctx.zone?`, ${repEdit.ctx.zone}`:""}`;
+    setFormType(t);
+    $("#rf-name").value = rec ? rec.name : (t==="ok" ? `Cueillette du ${new Date().toLocaleDateString("fr-FR",{day:"numeric",month:"short"})}` : "Coin à explorer");
+    $("#rf-folder").value = rec ? (rec.folder||"") : (S.lastFolder||"");
+    $("#rf-src").value = rec && rec.src ? rec.src : (opt.fromMap ? "appli" : "ami");
+    const chosen = new Set(rec ? rec.species||[] : S.species.map(id=>(SPECIES.find(x=>x.id===id)||{}).nom).filter(Boolean));
+    $("#rf-species").innerHTML = [...SPECIES].sort((a,b)=>prio(a.id)-prio(b.id)).map(sp=>`<label><input type="checkbox" value="${esc(sp.nom)}" ${chosen.has(sp.nom)?"checked":""}>${esc(sp.nom)}</label>`).join("");
+    $("#rf-qty").value = rec ? rec.qty||"" : ""; $("#rf-note").value = rec ? rec.note||"" : "";
     $("#rf-photo").value=""; repPhoto = rec && rec.photo ? rec.photo : null;
     $("#rf-preview").innerHTML = repPhoto ? `<img src="${URL.createObjectURL(repPhoto)}" alt="Photo du repère">` : "";
-    f.hidden=false; $("#rf-name").focus();
+    f.hidden=false;
   };
   if(opt.rec) return fill(null,null,null,opt.rec);
   if(opt.lat!=null) return fill(opt.lat, opt.lon, null, null);
@@ -2817,63 +2986,74 @@ $("#rf-photo").addEventListener("change", async e=>{
 $("#rf-cancel").addEventListener("click", ()=>{ $("#repform").hidden=true; });
 $("#rf-save").addEventListener("click", async ()=>{
   if(!repEdit) return;
-  const r = {...repEdit, name: $("#rf-name").value.trim() || "Repère", species: [...document.querySelectorAll("#rf-species input:checked")].map(i=>i.value),
-    other: $("#rf-other").value.trim(), qty: $("#rf-qty").value.trim(), note: $("#rf-note").value.trim(), photo: repPhoto || null};
+  const t = $("#repform").dataset.type || "todo", folder = $("#rf-folder").value.trim();
+  const r = {...repEdit, type:t, name: $("#rf-name").value.trim() || (t==="ok"?"Cueillette":"Coin à explorer"), folder,
+    src: t==="todo" ? $("#rf-src").value : (repEdit.src||null),
+    species: [...document.querySelectorAll("#rf-species input:checked")].map(i=>i.value),
+    qty: t==="ok" ? $("#rf-qty").value.trim() : "", note: $("#rf-note").value.trim(), photo: t==="ok" ? (repPhoto || null) : null};
+  if(t==="ok" && repType(repEdit)==="todo") r.verifiedAt = Date.now();
   try{ await REP.put(r); }catch(e){ alert("Enregistrement impossible : mémoire pleine ou navigation privée."); return; }
+  S.lastFolder = folder;
   $("#repform").hidden=true; $("#repnote").textContent=`Repère « ${r.name} » enregistré.`; refreshRepList(); drawReps();
 });
-function repSpecies(r){ return [...(r.species||[]), r.other].filter(Boolean).join(", "); }
+const SRC_TXT = {appli:"repéré sur l’appli", ami:"on m’en a parlé", autre:"autre source"};
+function repLine(r){ return [(r.species||[]).join(", "), r.qty, repType(r)==="todo" && r.src ? SRC_TXT[r.src] : null].filter(Boolean).join(" · "); }
 async function drawReps(){
-  repLayer.clearLayers(); let list=[]; try{ list=(await REP.all())||[]; }catch(e){ return; }
+  repLayer.clearLayers(); const list = await allReps(); if(!list) return;
   for(const r of list){
-    L.marker([r.lat,r.lon],{icon:L.divIcon({className:"",html:'<div class="rep-ic">🍄</div>',iconSize:[24,24],iconAnchor:[12,20]}),title:r.name})
+    const todo = repType(r)==="todo";
+    L.marker([r.lat,r.lon],{icon:L.divIcon({className:"rep-pin",html:todo?LOUPE_SVG:AMA_PIN,iconSize:[26,26],iconAnchor:[13,24]}),title:r.name, zIndexOffset: todo?0:100})
       .on("click", ev=>{ L.DomEvent.stopPropagation(ev);
         const img = r.photo ? `<img src="${URL.createObjectURL(r.photo)}" alt="" style="width:100%;max-height:140px;object-fit:cover;border-radius:8px;margin:4px 0">` : "";
-        L.popup({maxWidth:260, autoPanPaddingTopLeft:[14,84], autoPanPaddingBottomRight:[14, SHEET.peek+16]}).setLatLng([r.lat,r.lon]).setContent(`<div class="pop"><h3>${esc(r.name)}</h3><p class="why">${new Date(r.date).toLocaleString("fr-FR",{day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"})}</p>${img}${repSpecies(r)?`<p>${esc(repSpecies(r))}${r.qty?`, ${esc(r.qty)}`:""}</p>`:""}${r.note?`<p>${esc(r.note)}</p>`:""}<p class="why">${r.lat.toFixed(5)}, ${r.lon.toFixed(5)}</p><button type="button" class="addrep editrep" data-id="${r.id}">Modifier</button></div>`).openOn(map); })
+        L.popup({maxWidth:260, autoPanPaddingTopLeft:[14,84], autoPanPaddingBottomRight:[14, SHEET.peek+60]}).setLatLng([r.lat,r.lon]).setContent(
+          `<div class="pop"><h3>${esc(r.name)}</h3><p class="why">${todo?"À chercher":"Vérifié"}${r.folder?` · ${esc(r.folder)}`:""} · ${new Date(r.verifiedAt||r.date).toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})}</p>${img}${repLine(r)?`<p>${esc(repLine(r))}</p>`:""}${r.note?`<p>${esc(r.note)}</p>`:""}
+          <button type="button" class="addrep editrep" data-id="${r.id}">Modifier</button>${todo?` <button type="button" class="addrep markok" data-id="${r.id}">Vérifié ✓</button>`:""}</div>`).openOn(map); })
       .addTo(repLayer);
   }
 }
 async function refreshRepList(){
-  const ul=$("#replist"); let list=[];
-  try{ list=(await REP.all())||[]; }catch(e){ ul.innerHTML='<li class="empty">Le carnet ne fonctionne pas dans ce mode de navigation (navigation privée ?).</li>'; return; }
-  list.sort((a,b)=>b.date-a.date);
-  if(!list.length){ ul.innerHTML='<li class="empty">Aucun repère pour l’instant. Ajoute-en un à ta position, ou touche la carte puis « Ajouter un repère ici ».</li>'; return; }
-  ul.innerHTML = list.map(r=>`<li data-id="${r.id}"><div><b>${esc(r.name)}</b><small>${new Date(r.date).toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})}${repSpecies(r)?` · ${esc(repSpecies(r))}`:""}${r.qty?` · ${esc(r.qty)}`:""}<br>${r.lat.toFixed(5)}, ${r.lon.toFixed(5)}${r.ctx&&r.ctx.zone?` · ${esc(r.ctx.zone)}`:""}</small></div>
-    ${r.photo?`<img data-photo="${r.id}" alt="">`:"<span></span>"}
-    <div class="acts"><button type="button" class="see">Voir</button><button type="button" class="edit">Modifier</button><button type="button" class="copy">Copier les coordonnées</button><button type="button" class="del">Supprimer</button></div></li>`).join("");
-  for(const r of list) if(r.photo){ const im=ul.querySelector(`img[data-photo="${r.id}"]`); if(im) im.src=URL.createObjectURL(r.photo); }
+  const box=$("#replist"); const list = await allReps();
+  if(!list){ box.innerHTML='<p class="chartnote">Le carnet ne fonctionne pas dans ce mode de navigation (navigation privée ?).</p>'; return; }
+  const t = (document.querySelector('input[name="rtype"]:checked')||{}).value || "todo";
+  const folders = [...new Set(list.map(r=>r.folder).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"fr"));
+  const sel=$("#rfolder"), cur=sel.value;
+  sel.innerHTML = `<option value="">Tous les dossiers</option>` + folders.map(f=>`<option value="${esc(f)}" ${f===cur?"selected":""}>${esc(f)}</option>`).join("") + (list.some(r=>!r.folder)?`<option value="__none" ${cur==="__none"?"selected":""}>Sans dossier</option>`:"");
+  const nTodo=list.filter(r=>repType(r)==="todo").length, nOk=list.length-nTodo;
+  document.querySelectorAll('input[name="rtype"]').forEach(r=>{ const lab=r.parentElement; lab.lastChild.textContent = r.value==="todo"?`À chercher (${nTodo})`:r.value==="ok"?`Vérifiés (${nOk})`:`Tous (${list.length})`; });
+  let items = list.filter(r=>t==="all" || repType(r)===t);
+  if(sel.value==="__none") items=items.filter(r=>!r.folder); else if(sel.value) items=items.filter(r=>r.folder===sel.value);
+  if(!items.length){ box.innerHTML = `<p class="chartnote">${t==="todo"?"Aucun coin à chercher pour l’instant : touche la carte puis « Ajouter un repère ici ».":t==="ok"?"Aucun coin vérifié pour l’instant.":"Aucun repère pour l’instant."}</p>`; return; }
+  items.sort((a,b)=>(b.verifiedAt||b.date)-(a.verifiedAt||a.date));
+  const groups = new Map(); for(const r of items){ const k=r.folder||"Sans dossier"; if(!groups.has(k)) groups.set(k,[]); groups.get(k).push(r); }
+  const keys=[...groups.keys()].sort((a,b)=>(a==="Sans dossier")-(b==="Sans dossier") || a.localeCompare(b,"fr"));
+  box.innerHTML = keys.map(k=>`<details class="folder" open><summary>${esc(k)}<small>${groups.get(k).length}</small></summary>${groups.get(k).map(r=>{
+    const todo=repType(r)==="todo";
+    return `<div class="rep" data-id="${r.id}"><span class="ic">${todo?LOUPE_SVG:AMA_PIN}</span><div><b>${esc(r.name)}</b><small>${new Date(r.verifiedAt||r.date).toLocaleDateString("fr-FR",{day:"numeric",month:"short",year:"numeric"})}${repLine(r)?` · ${esc(repLine(r))}`:""}</small>${r.note?`<small>${esc(r.note)}</small>`:""}</div>${r.photo?`<img data-photo="${r.id}" alt="">`:"<span></span>"}
+      <div class="acts"><button type="button" class="see">Voir</button>${todo?`<button type="button" class="done">Vérifié ✓</button>`:""}<button type="button" class="edit">Modifier</button><button type="button" class="del">Supprimer</button></div></div>`; }).join("")}</details>`).join("");
+  for(const r of items) if(r.photo){ const im=box.querySelector(`img[data-photo="${r.id}"]`); if(im) im.src=URL.createObjectURL(r.photo); }
 }
+async function markVerified(id){ const r=await REP.get(id).catch(()=>null); if(!r) return; map.closePopup(); openRepForm({rec:{...r, type:"ok"}}); setFormType("ok"); }
+document.querySelectorAll('input[name="rtype"]').forEach(r=>r.addEventListener("change", refreshRepList));
+$("#rfolder").addEventListener("change", refreshRepList);
 $("#replist").addEventListener("click", async e=>{
-  const li=e.target.closest("li[data-id]"); if(!li) return; const id=Number(li.dataset.id); const r=await REP.get(id).catch(()=>null); if(!r) return;
+  const it=e.target.closest(".rep[data-id]"); if(!it || e.target.tagName!=="BUTTON") return; const id=Number(it.dataset.id); const r=await REP.get(id).catch(()=>null); if(!r) return;
   if(e.target.classList.contains("see")){ setSheet("peek"); map.setView([r.lat,r.lon], 16); }
   if(e.target.classList.contains("edit")) openRepForm({rec:r});
-  if(e.target.classList.contains("copy")){ const t=`${r.lat.toFixed(6)}, ${r.lon.toFixed(6)}`; try{ await navigator.clipboard.writeText(t); $("#repnote").textContent="Coordonnées copiées : "+t; }catch(err){ prompt("Coordonnées :", t); } }
+  if(e.target.classList.contains("done")) markVerified(id);
   if(e.target.classList.contains("del") && confirm(`Supprimer le repère « ${r.name} » ? Cette action est définitive.`)){ await REP.del(id).catch(()=>{}); refreshRepList(); drawReps(); }
 });
 document.addEventListener("click", async e=>{
   const b=e.target.closest && e.target.closest(".addrep"); if(!b) return;
+  if(b.classList.contains("markok")){ markVerified(Number(b.dataset.id)); return; }
   if(b.classList.contains("editrep")){ const r=await REP.get(Number(b.dataset.id)).catch(()=>null); map.closePopup(); if(r) openRepForm({rec:r}); return; }
-  map.closePopup(); openRepForm({lat:Number(b.dataset.lat), lon:Number(b.dataset.lon)});
+  map.closePopup(); openRepForm({lat:Number(b.dataset.lat), lon:Number(b.dataset.lon), type:"todo", fromMap:true});
 });
-$("#addrep-gps").addEventListener("click", ()=>openRepForm({gps:true}));
+$("#addrep-gps").addEventListener("click", ()=>openRepForm({gps:true, type:"ok"}));
 async function shareFile(name, type, text){
   const file = new File([text], name, {type});
   try{ if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:name}); return; } }catch(e){ if(e && e.name==="AbortError") return; }
   const a=document.createElement("a"); a.href=URL.createObjectURL(file); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 2000);
 }
-const xmlEsc = t => String(t||"").replace(/[<>&"]/g, c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]));
-$("#exp-gpx").addEventListener("click", async ()=>{
-  const list=(await REP.all().catch(()=>[]))||[]; if(!list.length){ $("#repnote").textContent="Aucun repère à exporter."; return; }
-  const w = list.map(r=>`<wpt lat="${r.lat.toFixed(6)}" lon="${r.lon.toFixed(6)}">${r.ctx&&r.ctx.alt!=null?`<ele>${r.ctx.alt}</ele>`:""}<time>${new Date(r.date).toISOString()}</time><name>${xmlEsc(r.name)}</name><desc>${xmlEsc([repSpecies(r), r.qty, r.note].filter(Boolean).join(" | "))}</desc></wpt>`).join("");
-  await shareFile(`reperes-champignons-${new Date().toISOString().slice(0,10)}.gpx`, "application/gpx+xml", `<?xml version="1.0" encoding="UTF-8"?><gpx version="1.1" creator="Carte des pousses" xmlns="http://www.topografix.com/GPX/1/1">${w}</gpx>`);
-});
-$("#exp-csv").addEventListener("click", async ()=>{
-  const list=(await REP.all().catch(()=>[]))||[]; if(!list.length){ $("#repnote").textContent="Aucun repère à exporter."; return; }
-  const q = v => `"${String(v==null?"":v).replace(/"/g,'""')}"`;
-  const rows = [["Date","Titre","Latitude","Longitude","Altitude (m)","Espèces","Quantité","Notes","Secteur","Peuplements autour","Roche","Météo"]]
-    .concat(list.sort((a,b)=>a.date-b.date).map(r=>[new Date(r.date).toLocaleString("fr-FR"), r.name, r.lat.toFixed(6), r.lon.toFixed(6), r.ctx&&r.ctx.alt!=null?r.ctx.alt:"", repSpecies(r), r.qty, r.note, r.ctx&&r.ctx.zone, r.ctx&&r.ctx.arbres, r.ctx&&r.ctx.roche, r.ctx&&r.ctx.meteo]));
-  await shareFile(`reperes-champignons-${new Date().toISOString().slice(0,10)}.csv`, "text/csv", "\ufeff"+rows.map(r=>r.map(q).join(";")).join("\r\n"));
-});
 drawReps();
 
 /* Service worker : application et tuiles disponibles hors ligne */
