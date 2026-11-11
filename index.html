@@ -129,6 +129,13 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--ochre);outline-
 .map-banner{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 10px;max-width:340px;font-size:14px;box-shadow:0 1px 4px rgba(0,0,0,.2)}
 .leaflet-control-layers-toggle{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232B2620' stroke-width='1.8' stroke-linejoin='round'%3E%3Cpath d='M12 3 2 8l10 5 10-5-10-5Z'/%3E%3Cpath d='m2 13 10 5 10-5'/%3E%3Cpath d='m2 17.5 10 5 10-5' opacity='.5'/%3E%3C/svg%3E")!important;background-size:24px 24px!important;background-repeat:no-repeat;background-position:center}
 .diag li{list-style:none;margin:2px 0}
+#bgtask{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 12px);z-index:1400;pointer-events:none;
+  display:flex;align-items:center;gap:7px;max-width:calc(100% - 170px);padding:5px 11px;border-radius:999px;background:var(--panel);color:var(--muted);
+  border:1px solid var(--line);box-shadow:0 1px 5px rgba(0,0,0,.12);font-size:12px}
+#bgtask[hidden]{display:none}
+#bgtxt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spin{flex:none;width:12px;height:12px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--moss);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 .trips{list-style:none;padding:0;margin:8px 0 0}
 .trips li{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:6px 0;display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center}
 .trips li b{font-family:var(--serif);font-weight:500;font-size:16px;display:block}
@@ -367,6 +374,7 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
     <div class="rf-btns"><button type="button" id="rf-cancel" class="secondary">Annuler</button><button type="button" id="rf-save" class="primary">Enregistrer</button></div>
   </div>
 </div>
+<div id="bgtask" hidden aria-live="polite"><span class="spin" aria-hidden="true"></span><span id="bgtxt"></span></div>
 <div id="loader" hidden aria-live="polite">
   <div class="lbar"><div class="lfill" id="lfill"></div></div>
   <div class="lbox"><svg class="ios-spin" viewBox="0 0 100 100" width="46" height="46" aria-hidden="true"><rect x="46" y="6" width="8" height="24" rx="4" fill="#fff" opacity="1.00" transform="rotate(0 50 50)"/><rect x="46" y="6" width="8" height="24" rx="4" fill="#fff" opacity="0.93" transform="rotate(-30 50 50)"/><rect x="46" y="6" width="8" height="24" rx="4" fill="#fff" opacity="0.85" transform="rotate(-60 50 50)"/><rect x="46" y="6" width="8" height="24" rx="4" fill="#fff" opacity="0.78" transform="rotate(-90 50 50)"/><rect x="46" y="6" width="8" height="24" rx="4" fill="#fff" opacity="0.70" transform="rotate(-120 50 50)"/><rect x="46" y="6" width="8" height="24" rx="4" fill="#fff" opacity="0.62" transform="rotate(-150 50 50)"/><rect x="46" y="6" width="8" height="24" rx="4" fill="#fff" opacity="0.55" transform="rotate(-180 50 50)"/><rect x="46" y="6" width="8" height="24" rx="4" fill="#fff" opacity="0.47" transform="rotate(-210 50 50)"/><rect x="46" y="6" width="8" height="24" rx="4" fill="#fff" opacity="0.40" transform="rotate(-240 50 50)"/><rect x="46" y="6" width="8" height="24" rx="4" fill="#fff" opacity="0.33" transform="rotate(-270 50 50)"/><rect x="46" y="6" width="8" height="24" rx="4" fill="#fff" opacity="0.25" transform="rotate(-300 50 50)"/><rect x="46" y="6" width="8" height="24" rx="4" fill="#fff" opacity="0.18" transform="rotate(-330 50 50)"/></svg>
@@ -1402,9 +1410,9 @@ const OVERPASS = ["https://overpass-api.de/api/interpreter","https://overpass.ku
 const CLOSED_LANDUSE = /^(military|residential|farmyard|industrial|quarry|landfill|construction|railway|garages|cemetery)$/;
 const WHY_LANDUSE = {military:"zone militaire", residential:"zone habitée (maisons et jardins)", farmyard:"cour de ferme", industrial:"site industriel", quarry:"carrière",
   landfill:"décharge", construction:"chantier", railway:"emprise ferroviaire", garages:"garages", cemetery:"cimetière"};
-async function loadAccess(b){
+async function loadAccess(b, timeoutS=40){
   const bb = `${b.s.toFixed(5)},${b.w.toFixed(5)},${b.n.toFixed(5)},${b.e.toFixed(5)}`;
-  const q = `[out:json][timeout:40];(
+  const q = `[out:json][timeout:${timeoutS}];(
     way["barrier"~"^(fence|wall|city_wall|retaining_wall|guard_rail)$"](${bb});
     way["access"~"^(private|no)$"]["highway"!~"."](${bb});
     relation["access"~"^(private|no)$"](${bb});
@@ -1413,13 +1421,13 @@ async function loadAccess(b){
     way["military"](${bb}); relation["military"](${bb});
   );out geom;`;
   let lastErr;
-  for(const url of OVERPASS){
+  for(const url of OVERPASS.concat(OVERPASS)){
     try{
-      const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),60000);
+      const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),(timeoutS+30)*1000);
       const r = await fetch(url, {method:"POST", body:"data="+encodeURIComponent(q), headers:{"Content-Type":"application/x-www-form-urlencoded"}, signal:ctl.signal});
       clearTimeout(t); if(!r.ok) throw new Error("HTTP "+r.status);
       return await r.json();
-    }catch(e){ lastErr=e; }
+    }catch(e){ lastErr=e; await sleep(String(e.message).includes("429")||String(e.message).includes("504") ? 8000 : 1500); }
   }
   throw lastErr;
 }
@@ -1514,6 +1522,60 @@ function accessText(c){
   return {cls:"", txt:"Accessible, terrain sans clôture connue : respectez les panneaux et les cultures sur place."};
 }
 
+
+/* ============================================================
+   Clôtures d’un secteur entier : téléchargées une fois, gardées sur l’appareil
+   ============================================================ */
+const OSM_MAX_AGE_DAYS = 90;
+const osmKey = id => "osm-"+id;
+const OSM = {cache:{}};
+const r5 = v => Math.round(v*1e5)/1e5;
+async function getZoneAccess(id){
+  if(OSM.cache[id]!==undefined) return OSM.cache[id];
+  let rec=null; try{ rec = await ZDB.get(osmKey(id)); }catch(e){}
+  if(rec){ rec.areas.forEach(a=>{ const g={type:"Polygon",coordinates:a.rings}; a.geom=g; a.bbox=geomBBox(g); }); }
+  OSM.cache[id] = rec || null; return OSM.cache[id];
+}
+function subsetAccess(rec, b){
+  const hit = bb => !(bb[2]<b.w || bb[0]>b.e || bb[3]<b.s || bb[1]>b.n);
+  const fences = rec.fences.filter(f=>{ let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity; for(const [x,y] of f.line){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; } return hit([x0,y0,x1,y1]); });
+  return {areas: rec.areas.filter(a=>hit(a.bbox)), fences};
+}
+function inside(b, outer){ return b.s>=outer.s && b.n<=outer.n && b.w>=outer.w && b.e<=outer.e; }
+async function updateOsmState(){ /* plus d’affichage dédié : mise à jour automatique */ }
+function bgTask(txt){ const el=$("#bgtask"); if(!el) return; if(!txt){ el.hidden=true; return; } $("#bgtxt").textContent=txt; el.hidden=false; }
+async function downloadZoneAccess(zid){
+  const z=ZONES[zid], b=zoneBounds(z), n=Math.max(2, Math.ceil(2*z.km/20)), dLat=(b.n-b.s)/n, dLon=(b.e-b.w)/n;
+  const els=new Map(); let done=0;
+  for(let i=0;i<n;i++) for(let j=0;j<n;j++){
+    const tb={s:b.s+i*dLat, n:b.s+(i+1)*dLat, w:b.w+j*dLon, e:b.w+(j+1)*dLon};
+    bgTask(`Clôtures, ${z.court} : ${Math.round(100*done/(n*n))} %`);
+    const js = await loadAccess(tb, 90);
+    for(const el of (js.elements||[])) els.set(el.type+el.id, el);
+    done++; await sleep(1500);
+  }
+  const feat = accessFeatures({elements:[...els.values()]});
+  await ZDB.put({id:osmKey(zid), savedAt:Date.now(),
+    areas: feat.areas.map(a=>({why:a.why, rings:a.rings.map(r=>r.map(([x,y])=>[r5(x),r5(y)]))})),
+    fences: feat.fences.map(f=>({kind:f.kind, line:f.line.map(([x,y])=>[r5(x),r5(y)])}))});
+  delete OSM.cache[zid];
+}
+/* À l’ouverture : télécharge les secteurs jamais chargés ou vieux de plus de trois mois, le secteur affiché en premier */
+async function autoUpdateAccess(){
+  if(S.osmDl || !navigator.onLine) return;
+  S.osmDl=true;
+  try{
+    const order = [Z ? Z.id : null, ...Object.keys(ZONES)].filter((v,i,a)=>v && a.indexOf(v)===i);
+    for(const id of order){
+      const rec = await getZoneAccess(id);
+      if(rec && (Date.now()-rec.savedAt)/864e5 <= OSM_MAX_AGE_DAYS) continue;
+      try{ await downloadZoneAccess(id); }
+      catch(e){ console.warn("Clôtures du secteur "+id, e); break; } // on réessaiera à la prochaine ouverture
+    }
+  }finally{ S.osmDl=false; bgTask(null); }
+}
+
+
 const USER_SCAN = Symbol("scan demandé");
 async function analyze(origin){
   if(origin !== USER_SCAN) return; // aucun scan sans action explicite
@@ -1542,7 +1604,12 @@ async function analyze(origin){
     cells.forEach((x,i)=>x.pub = pubMask ? pubMask[i] : null);
 
     setProgress(0.135,"Clôtures et accès (OpenStreetMap)"); setStatus("Clôtures, murs et accès privés : chargement…");
-    try{ const feat = accessFeatures(await loadAccess(b)); classifyAccess(cells, rows, cols, b, feat); drawAccess(feat); S.osmOk=true; }
+    try{
+      const rec = await getZoneAccess(Z.id);
+      const feat = (rec && inside(b, zoneBounds(Z))) ? subsetAccess(rec, b) : accessFeatures(await loadAccess(b));
+      S.osmSrc = (rec && inside(b, zoneBounds(Z))) ? "enregistrées" : "en ligne";
+      classifyAccess(cells, rows, cols, b, feat); drawAccess(feat); S.osmOk=true;
+    }
     catch(e){ console.warn("OpenStreetMap", e); S.osmOk=false; cells.forEach(x=>{ x.priv=null; x.privWhy=null; }); accessLayer.clearLayers(); }
 
     setProgress(0.16,"Géologie"); setStatus("Géologie : lecture de la carte du BRGM…");
@@ -2519,6 +2586,7 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
     if(n){ await openTrip(); setStatus("Pas de réseau : dernière sortie ouverte. Les autres sont dans « Mes sorties ».", false); return; }
   }
   setZone(ZONES[location.hash.slice(1)] ? location.hash.slice(1) : "pic-saint-loup");
+  setTimeout(autoUpdateAccess, 4000);
 })();
 window.__pousses = {classifyForest, geomContains, hostFactor, soilFactor, weatherParts, terrainParts, waterIndex, pointStats, blendWeather, SPECIES, W};
 </script>
