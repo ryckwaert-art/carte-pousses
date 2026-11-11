@@ -117,6 +117,15 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--ochre);outline-
 .fine ol li{margin-bottom:4px}
 .caution{border-left:3px solid var(--danger);padding:6px 0 6px 10px;margin:14px 0;font-size:14px}
 .leaflet-container{font-family:var(--sans)}
+.scanbtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;width:60px;height:66px;padding:4px 0 3px;
+  background:var(--panel);border:2px solid var(--ink);border-radius:12px;box-shadow:0 2px 6px rgba(0,0,0,.25);cursor:pointer;color:var(--ink)}
+.scanbtn svg{image-rendering:pixelated}
+.scanbtn span{font:700 11px/1 ui-monospace,"Courier New",monospace;letter-spacing:.08em;text-transform:uppercase}
+.scanbtn:active{transform:translateY(1px)}
+.scanbtn.busy{cursor:progress}
+.scanbtn.busy svg{animation:hop .7s steps(2) infinite}
+@keyframes hop{0%{transform:translateY(0)}100%{transform:translateY(-3px)}}
+@media (prefers-reduced-motion: reduce){ .scanbtn.busy svg{animation:none} }
 .map-banner{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 10px;max-width:340px;font-size:14px;box-shadow:0 1px 4px rgba(0,0,0,.2)}
 .leaflet-control-layers-toggle{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232B2620' stroke-width='1.8' stroke-linejoin='round'%3E%3Cpath d='M12 3 2 8l10 5 10-5-10-5Z'/%3E%3Cpath d='m2 13 10 5 10-5'/%3E%3Cpath d='m2 17.5 10 5 10-5' opacity='.5'/%3E%3C/svg%3E")!important;background-size:24px 24px!important;background-repeat:no-repeat;background-position:center}
 .diag li{list-style:none;margin:2px 0}
@@ -216,6 +225,7 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
   #tab-carte{display:flex;flex-direction:column}
   #sec-calcul{order:1} #sec-especes{order:2} #sec-jour{order:3} #tab-carte .caution{order:4} #tab-carte .fine{order:5}
   .leaflet-top{top:env(safe-area-inset-top,0px)}
+  .leaflet-control-zoom{display:none}
   .leaflet-bottom{bottom:var(--sheet,180px)}
   .leaflet-popup-content{font-size:13.5px;margin:14px 16px 12px}
   .pop-mobile .leaflet-popup-content-wrapper{border-radius:14px}
@@ -294,7 +304,6 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
       <label><input type="radio" name="mode" value="terrain">Terrain seul</label>
     </div>
     <button class="primary" id="go">Analyser la zone visible</button>
-    <button class="secondary" id="rescan" hidden>Scanner tout le secteur</button>
     <p id="status">Zoomez sur un secteur (15 km de côté au plus), puis lancez l’analyse.</p>
     <div class="legend"><span>faible</span><div class="ramp"></div><span>forte</span></div>
     <label class="chartnote" style="display:flex;align-items:center;gap:8px;margin-top:6px">Opacité de la coloration<input type="range" id="heatop" min="0.2" max="1" step="0.05" value="0.7" style="flex:1"></label>
@@ -413,7 +422,7 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
 let CENTER, CENTER_ALT, ZONE_KM, Z;
 const MAX_AREA_KM2 = 230;
 const IS_MOBILE = window.matchMedia("(max-width:760px)").matches || /iPhone|iPad|Android/i.test(navigator.userAgent);
-const TARGET_CELLS = IS_MOBILE ? 1600 : 2400;
+const TARGET_CELLS = 2400;
 
 const FEUILLUS = ["hetre","chene","chene_vert","chataignier","bouleau","robinier","peuplier"];
 const CONIF = ["pin","pin_maritime","sapin","epicea","meleze","douglas","cedre"];
@@ -1129,6 +1138,20 @@ function watchBase(layer, name, fallback){
     }
   });
 }
+/* Bouton de scan : amanite tue-mouches en pixels, en haut à gauche */
+const AMANITA_SVG = `<svg viewBox="0 0 14 14" width="40" height="40" shape-rendering="crispEdges" aria-hidden="true"><rect x="4" y="0" width="1" height="1" fill="#3A1F14"/><rect x="5" y="0" width="1" height="1" fill="#3A1F14"/><rect x="6" y="0" width="1" height="1" fill="#3A1F14"/><rect x="7" y="0" width="1" height="1" fill="#3A1F14"/><rect x="8" y="0" width="1" height="1" fill="#3A1F14"/><rect x="9" y="0" width="1" height="1" fill="#3A1F14"/><rect x="2" y="1" width="1" height="1" fill="#3A1F14"/><rect x="3" y="1" width="1" height="1" fill="#3A1F14"/><rect x="4" y="1" width="1" height="1" fill="#D7262E"/><rect x="5" y="1" width="1" height="1" fill="#D7262E"/><rect x="6" y="1" width="1" height="1" fill="#FFF6E8"/><rect x="7" y="1" width="1" height="1" fill="#D7262E"/><rect x="8" y="1" width="1" height="1" fill="#D7262E"/><rect x="9" y="1" width="1" height="1" fill="#D7262E"/><rect x="10" y="1" width="1" height="1" fill="#3A1F14"/><rect x="11" y="1" width="1" height="1" fill="#3A1F14"/><rect x="1" y="2" width="1" height="1" fill="#3A1F14"/><rect x="2" y="2" width="1" height="1" fill="#D7262E"/><rect x="3" y="2" width="1" height="1" fill="#D7262E"/><rect x="4" y="2" width="1" height="1" fill="#D7262E"/><rect x="5" y="2" width="1" height="1" fill="#D7262E"/><rect x="6" y="2" width="1" height="1" fill="#D7262E"/><rect x="7" y="2" width="1" height="1" fill="#D7262E"/><rect x="8" y="2" width="1" height="1" fill="#D7262E"/><rect x="9" y="2" width="1" height="1" fill="#FFF6E8"/><rect x="10" y="2" width="1" height="1" fill="#D7262E"/><rect x="11" y="2" width="1" height="1" fill="#D7262E"/><rect x="12" y="2" width="1" height="1" fill="#3A1F14"/><rect x="1" y="3" width="1" height="1" fill="#3A1F14"/><rect x="2" y="3" width="1" height="1" fill="#D7262E"/><rect x="3" y="3" width="1" height="1" fill="#FFF6E8"/><rect x="4" y="3" width="1" height="1" fill="#D7262E"/><rect x="5" y="3" width="1" height="1" fill="#D7262E"/><rect x="6" y="3" width="1" height="1" fill="#D7262E"/><rect x="7" y="3" width="1" height="1" fill="#D7262E"/><rect x="8" y="3" width="1" height="1" fill="#D7262E"/><rect x="9" y="3" width="1" height="1" fill="#D7262E"/><rect x="10" y="3" width="1" height="1" fill="#D7262E"/><rect x="11" y="3" width="1" height="1" fill="#D7262E"/><rect x="12" y="3" width="1" height="1" fill="#3A1F14"/><rect x="0" y="4" width="1" height="1" fill="#3A1F14"/><rect x="1" y="4" width="1" height="1" fill="#D7262E"/><rect x="2" y="4" width="1" height="1" fill="#D7262E"/><rect x="3" y="4" width="1" height="1" fill="#D7262E"/><rect x="4" y="4" width="1" height="1" fill="#D7262E"/><rect x="5" y="4" width="1" height="1" fill="#D7262E"/><rect x="6" y="4" width="1" height="1" fill="#FFF6E8"/><rect x="7" y="4" width="1" height="1" fill="#D7262E"/><rect x="8" y="4" width="1" height="1" fill="#D7262E"/><rect x="9" y="4" width="1" height="1" fill="#D7262E"/><rect x="10" y="4" width="1" height="1" fill="#D7262E"/><rect x="11" y="4" width="1" height="1" fill="#FFF6E8"/><rect x="12" y="4" width="1" height="1" fill="#D7262E"/><rect x="13" y="4" width="1" height="1" fill="#3A1F14"/><rect x="0" y="5" width="1" height="1" fill="#3A1F14"/><rect x="1" y="5" width="1" height="1" fill="#D7262E"/><rect x="2" y="5" width="1" height="1" fill="#D7262E"/><rect x="3" y="5" width="1" height="1" fill="#FFF6E8"/><rect x="4" y="5" width="1" height="1" fill="#D7262E"/><rect x="5" y="5" width="1" height="1" fill="#D7262E"/><rect x="6" y="5" width="1" height="1" fill="#D7262E"/><rect x="7" y="5" width="1" height="1" fill="#D7262E"/><rect x="8" y="5" width="1" height="1" fill="#D7262E"/><rect x="9" y="5" width="1" height="1" fill="#D7262E"/><rect x="10" y="5" width="1" height="1" fill="#D7262E"/><rect x="11" y="5" width="1" height="1" fill="#D7262E"/><rect x="12" y="5" width="1" height="1" fill="#D7262E"/><rect x="13" y="5" width="1" height="1" fill="#3A1F14"/><rect x="0" y="6" width="1" height="1" fill="#3A1F14"/><rect x="1" y="6" width="1" height="1" fill="#3A1F14"/><rect x="2" y="6" width="1" height="1" fill="#3A1F14"/><rect x="3" y="6" width="1" height="1" fill="#3A1F14"/><rect x="4" y="6" width="1" height="1" fill="#3A1F14"/><rect x="5" y="6" width="1" height="1" fill="#3A1F14"/><rect x="6" y="6" width="1" height="1" fill="#3A1F14"/><rect x="7" y="6" width="1" height="1" fill="#3A1F14"/><rect x="8" y="6" width="1" height="1" fill="#3A1F14"/><rect x="9" y="6" width="1" height="1" fill="#3A1F14"/><rect x="10" y="6" width="1" height="1" fill="#3A1F14"/><rect x="11" y="6" width="1" height="1" fill="#3A1F14"/><rect x="12" y="6" width="1" height="1" fill="#3A1F14"/><rect x="13" y="6" width="1" height="1" fill="#3A1F14"/><rect x="4" y="7" width="1" height="1" fill="#3A1F14"/><rect x="5" y="7" width="1" height="1" fill="#F3EBD8"/><rect x="6" y="7" width="1" height="1" fill="#F3EBD8"/><rect x="7" y="7" width="1" height="1" fill="#F3EBD8"/><rect x="8" y="7" width="1" height="1" fill="#F3EBD8"/><rect x="9" y="7" width="1" height="1" fill="#3A1F14"/><rect x="3" y="8" width="1" height="1" fill="#3A1F14"/><rect x="4" y="8" width="1" height="1" fill="#D2C3A3"/><rect x="5" y="8" width="1" height="1" fill="#D2C3A3"/><rect x="6" y="8" width="1" height="1" fill="#D2C3A3"/><rect x="7" y="8" width="1" height="1" fill="#D2C3A3"/><rect x="8" y="8" width="1" height="1" fill="#D2C3A3"/><rect x="9" y="8" width="1" height="1" fill="#D2C3A3"/><rect x="10" y="8" width="1" height="1" fill="#3A1F14"/><rect x="4" y="9" width="1" height="1" fill="#3A1F14"/><rect x="5" y="9" width="1" height="1" fill="#F3EBD8"/><rect x="6" y="9" width="1" height="1" fill="#F3EBD8"/><rect x="7" y="9" width="1" height="1" fill="#F3EBD8"/><rect x="8" y="9" width="1" height="1" fill="#F3EBD8"/><rect x="9" y="9" width="1" height="1" fill="#3A1F14"/><rect x="4" y="10" width="1" height="1" fill="#3A1F14"/><rect x="5" y="10" width="1" height="1" fill="#F3EBD8"/><rect x="6" y="10" width="1" height="1" fill="#F3EBD8"/><rect x="7" y="10" width="1" height="1" fill="#F3EBD8"/><rect x="8" y="10" width="1" height="1" fill="#F3EBD8"/><rect x="9" y="10" width="1" height="1" fill="#3A1F14"/><rect x="3" y="11" width="1" height="1" fill="#3A1F14"/><rect x="4" y="11" width="1" height="1" fill="#F3EBD8"/><rect x="5" y="11" width="1" height="1" fill="#F3EBD8"/><rect x="6" y="11" width="1" height="1" fill="#F3EBD8"/><rect x="7" y="11" width="1" height="1" fill="#F3EBD8"/><rect x="8" y="11" width="1" height="1" fill="#F3EBD8"/><rect x="9" y="11" width="1" height="1" fill="#F3EBD8"/><rect x="10" y="11" width="1" height="1" fill="#3A1F14"/><rect x="3" y="12" width="1" height="1" fill="#3A1F14"/><rect x="4" y="12" width="1" height="1" fill="#F3EBD8"/><rect x="5" y="12" width="1" height="1" fill="#F3EBD8"/><rect x="6" y="12" width="1" height="1" fill="#F3EBD8"/><rect x="7" y="12" width="1" height="1" fill="#F3EBD8"/><rect x="8" y="12" width="1" height="1" fill="#F3EBD8"/><rect x="9" y="12" width="1" height="1" fill="#F3EBD8"/><rect x="10" y="12" width="1" height="1" fill="#3A1F14"/><rect x="4" y="13" width="1" height="1" fill="#3A1F14"/><rect x="5" y="13" width="1" height="1" fill="#3A1F14"/><rect x="6" y="13" width="1" height="1" fill="#3A1F14"/><rect x="7" y="13" width="1" height="1" fill="#3A1F14"/><rect x="8" y="13" width="1" height="1" fill="#3A1F14"/><rect x="9" y="13" width="1" height="1" fill="#3A1F14"/></svg>`;
+const ScanCtl = L.Control.extend({ options:{position:"topleft"},
+  onAdd(){
+    const b = L.DomUtil.create("button","scanbtn"); b.type="button"; b.title="Scanner la zone visible"; b.setAttribute("aria-label","Scanner la zone visible");
+    b.innerHTML = AMANITA_SVG + "<span>Scan</span>";
+    L.DomEvent.disableClickPropagation(b); L.DomEvent.disableScrollPropagation(b);
+    L.DomEvent.on(b, "click", async ev=>{ L.DomEvent.stop(ev); if(b.classList.contains("busy")) return; b.classList.add("busy"); b.setAttribute("aria-busy","true");
+      try{ await analyze(); } finally{ b.classList.remove("busy"); b.removeAttribute("aria-busy"); } });
+    return b;
+  } });
+map.zoomControl.remove();
+new ScanCtl().addTo(map);
+L.control.zoom({position:"topleft"}).addTo(map);
 watchBase(basePlan, "Le Plan IGN", baseTopo);
 watchBase(baseOrtho, "Les photos aériennes de l’IGN", baseTopo);
 watchBase(baseTopo, "OpenTopoMap", baseOSM);
@@ -1408,11 +1431,12 @@ async function analyze(){
   const b = {s:bnd.getSouth(), n:bnd.getNorth(), w:bnd.getWest(), e:bnd.getEast()};
   const midLat=(b.s+b.n)/2, kx=Math.cos(midLat*Math.PI/180);
   const wKm=(b.e-b.w)*111.32*kx, hKm=(b.n-b.s)*110.57;
-  if(wKm*hKm > MAX_AREA_KM2){ setStatus(`La zone visible fait environ ${fmt(wKm*hKm)} km². Zoomez jusqu’à ${MAX_AREA_KM2} km² au plus.`, true); return; }
+  if(wKm*hKm > MAX_AREA_KM2){ const m=`La zone visible fait environ ${fmt(wKm*hKm)} km². Zoomez jusqu’à ${MAX_AREA_KM2} km² au plus, puis relancez le scan.`; setStatus(m, true); banner.show(m); return; }
+  if(banner && banner._d) banner._d.hidden = true;
   if(S.scanning){ setStatus("Le scan du secteur est en cours : attendez la fin ou arrêtez-le avant d’analyser une zone.", true); return; }
   const btn=$("#go"); btn.disabled=true;
   try{
-    const cellM = Math.max(100, Math.sqrt(wKm*hKm*1e6/TARGET_CELLS));
+    const cellM = Math.max(80, Math.sqrt(wKm*hKm*1e6/TARGET_CELLS));
     const cols=Math.max(2,Math.ceil(wKm*1000/cellM)), rows=Math.max(2,Math.ceil(hKm*1000/cellM));
     const dLon=(b.e-b.w)/cols, dLat=(b.n-b.s)/rows, cells=[];
     for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) cells.push({r,c,lat:b.s+(r+0.5)*dLat, lon:b.w+(c+0.5)*dLon});
@@ -1799,7 +1823,6 @@ function onDayChange(){
    ============================================================ */
 document.querySelectorAll('input[name="mode"]').forEach(r=>r.addEventListener("change",e=>{S.mode=e.target.value; render();}));
 $("#go").addEventListener("click", analyze);
-$("#rescan").addEventListener("click", ()=>{ if(!S.scanning) scanZone(true); });
 window.addEventListener("resize",()=>{ if(chartTarget) drawCharts(chartTarget.lat,chartTarget.lon,chartTarget.alt); });
 
 /* ============================================================
@@ -1936,7 +1959,7 @@ async function setZone(id, offline=false){
   S.grid=null; S.zoneGrid=null; S.forest=[]; S.species="all"; if(heatLayer){ map.removeLayer(heatLayer); heatLayer=null; } if(zoneHeat){ map.removeLayer(zoneHeat); zoneHeat=null; } forestLayer.clearLayers(); map.closePopup();
   if(S.scanning) S.scanCancel = true;
   drawZones(); map.setView(CENTER, 11); setTimeout(refreshMap, 50);
-  setStatus("Zoomez sur un secteur (15 km de côté au plus), puis lancez l’analyse.");
+  setStatus("Zoomez sur le coin à étudier (15 km de côté au plus), puis touchez l’amanite « Scan » en haut à gauche.");
   W.ok=false; buildSpecies(); $("#sporder").textContent="Classées par saison. Lancez une analyse pour les classer de la plus probable à la moins probable.";
   $("#daylabel").textContent="Chargement de la météo…"; $("#wx").innerHTML=""; $("#chartnote").textContent="";
   const meteoRadio=document.querySelector('input[value="meteo"]'); meteoRadio.disabled=false; $("#lab-meteo").classList.remove("disabled");
@@ -1945,7 +1968,6 @@ async function setZone(id, offline=false){
     await loadWeather();
     const sl=$("#day"); sl.min=25; sl.max=W.days.length-1; sl.value=W.todayIdx; sl.disabled=false;
     S.day=W.todayIdx; S.month=monthOfDay(); $("#daylabel").innerHTML=dayLabel(S.day); buildSpecies(); drawCharts(CENTER[0],CENTER[1],CENTER_ALT);
-    const zid = Z.id; setTimeout(()=>{ if(Z && Z.id===zid) scanZone(); }, 300);
     if(!W.hasSM) $("#chartnote").textContent += " L’humidité du sol n’est pas fournie ici : l’indice d’eau repose sur la pluie et le bilan hydrique.";
     loadStationRain().then(()=>{ if(S.grid) computeWaterBalance(S.grid.cells); if(S.zoneGrid) computeWaterBalance(S.zoneGrid.cells); if(chartTarget) drawCharts(chartTarget.lat,chartTarget.lon,chartTarget.alt); render(); })
       .catch(e=>{ console.warn("Stations Météo-France", e); if(chartTarget) drawCharts(chartTarget.lat,chartTarget.lon,chartTarget.alt); });
