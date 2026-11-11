@@ -295,7 +295,7 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
     <button class="secondary" id="savetrip">Enregistrer cette analyse comme sortie</button>
     <p class="chartnote" id="tripnote"></p>
     <ul class="trips" id="triplist"></ul>
-    <p class="chartnote" id="landnote">« Privés fermés » : zones clôturées, murées, militaires, habitées ou marquées accès interdit sur OpenStreetMap. Tout le reste est classé accessible, y compris les forêts privées sans clôture connue, où l’on peut se promener mais où la cueillette demande l’accord du propriétaire. La carte des clôtures est incomplète : les panneaux sur place priment toujours.</p>
+    <p class="chartnote" id="landnote">« Privés fermés » : domaines et enclos clôturés ou murés, terrains militaires, carrières et propriétés marquées accès interdit sur OpenStreetMap. Tout le reste est classé accessible, y compris les forêts privées sans clôture connue, où l’on peut se promener mais où la cueillette demande l’accord du propriétaire. La carte des clôtures est incomplète : les panneaux sur place priment toujours.</p>
   </section>
 
   <section id="sec-especes">
@@ -1410,17 +1410,19 @@ function setProgress(p, step){
    Accès : clôtures, murs et zones fermées (OpenStreetMap, via Overpass)
    ============================================================ */
 const OVERPASS = ["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter"];
-const CLOSED_LANDUSE = /^(military|residential|farmyard|industrial|quarry|landfill|construction|railway|garages|cemetery)$/;
+const CLOSED_LANDUSE = /^(military|quarry|landfill)$/;
 const WHY_LANDUSE = {military:"zone militaire", residential:"zone habitée (maisons et jardins)", farmyard:"cour de ferme", industrial:"site industriel", quarry:"carrière",
   landfill:"décharge", construction:"chantier", railway:"emprise ferroviaire", garages:"garages", cemetery:"cimetière"};
 async function loadAccess(b, timeoutS=40){
   const bb = `${b.s.toFixed(5)},${b.w.toFixed(5)},${b.n.toFixed(5)},${b.e.toFixed(5)}`;
+  // Pas de villes ni de jardins : seulement les longues clôtures et murs (plus de 150 m, typiques des domaines et enclos en nature),
+  // les propriétés marquées accès privé ou interdit, les terrains militaires, carrières et décharges.
   const q = `[out:json][timeout:${timeoutS}];(
-    way["barrier"~"^(fence|wall|city_wall|retaining_wall|guard_rail)$"](${bb});
-    way["access"~"^(private|no)$"]["highway"!~"."](${bb});
+    way["barrier"~"^(fence|wall|city_wall)$"](${bb})(if: length() > 150);
+    way["access"~"^(private|no)$"]["highway"!~"."]["building"!~"."](${bb});
     relation["access"~"^(private|no)$"](${bb});
-    way["landuse"~"^(military|residential|farmyard|industrial|quarry|landfill|construction|railway|garages|cemetery)$"](${bb});
-    relation["landuse"~"^(military|residential|farmyard|industrial|quarry)$"](${bb});
+    way["landuse"~"^(military|quarry|landfill)$"](${bb});
+    relation["landuse"~"^(military|quarry)$"](${bb});
     way["military"](${bb}); relation["military"](${bb});
   );out geom;`;
   let lastErr;
@@ -1529,7 +1531,7 @@ function accessText(c){
 /* ============================================================
    Clôtures d’un secteur entier : téléchargées une fois, gardées sur l’appareil
    ============================================================ */
-const OSM_MAX_AGE_DAYS = 90;
+const OSM_MAX_AGE_DAYS = 182;
 const osmKey = id => "osm-"+id;
 const OSM = {cache:{}};
 const r5 = v => Math.round(v*1e5)/1e5;
@@ -1579,25 +1581,68 @@ async function autoUpdateAccess(){
 }
 
 
-/* Les clôtures sont chargées par carreaux de 0,2° (environ 20 km), gardés trois mois sur l’appareil :
+/* Les clôtures sont chargées par carreaux de 0,2° (environ 20 km), gardés six mois sur l’appareil :
    un nouveau scan dans un coin déjà visité ne redemande rien à OpenStreetMap. */
-async function accessForBounds(b){
-  const T=0.2, i0=Math.floor(b.s/T), i1=Math.floor(b.n/T), j0=Math.floor(b.w/T), j1=Math.floor(b.e/T);
-  const areas=[], fences=[];
-  for(let i=i0;i<=i1;i++) for(let j=j0;j<=j1;j++){
-    const id=`osmt-${i}-${j}`;
-    let rec = OSM.cache[id] || null;
-    if(!rec){ try{ rec = await ZDB.get(id); }catch(e){} }
-    if(!rec || (Date.now()-rec.savedAt)/864e5 > OSM_MAX_AGE_DAYS){
-      const f = accessFeatures(await loadAccess({s:i*T, n:(i+1)*T, w:j*T, e:(j+1)*T}, 60));
-      rec = {id, savedAt:Date.now(), areas:f.areas.map(a=>({why:a.why, rings:a.rings.map(r=>r.map(([x,y])=>[r5(x),r5(y)]))})), fences:f.fences.map(fe=>({kind:fe.kind, line:fe.line.map(([x,y])=>[r5(x),r5(y)])}))};
-      try{ await ZDB.put(rec); }catch(e){}
-      await sleep(800);
-    }
-    if(!rec._ready){ rec.areas.forEach(a=>{ const g={type:"Polygon",coordinates:a.rings}; a.geom=g; a.bbox=geomBBox(g); }); rec._ready=true; }
-    OSM.cache[id]=rec; areas.push(...rec.areas); fences.push(...rec.fences);
+const TILE = 0.2, inflight = {};
+const URBAN = new Set(["zone habitée (maisons et jardins)","site industriel","cimetière","garages","emprise ferroviaire","chantier"]);
+/* Allège un carreau : les clôtures et murs situés dans les villes et villages ne servent à rien pour la cueillette
+   (ces zones sont déjà classées fermées) ; seules comptent celles de la campagne et des bois. */
+function slimFeatures(f){
+  const urb = f.areas.filter(a=>URBAN.has(a.why));
+  const inUrb = ([x,y]) => urb.some(a=>x>=a.bbox[0]&&x<=a.bbox[2]&&y>=a.bbox[1]&&y<=a.bbox[3]&&geomContains(a.geom,x,y));
+  const fences = f.fences.filter(fe=>{ const m=fe.line[Math.floor(fe.line.length/2)]; return !(inUrb(fe.line[0]) && inUrb(m)); });
+  return {areas:f.areas, fences};
+}
+async function getTile(i, j){
+  const id=`osmt2-${i}-${j}`;
+  let rec = OSM.cache[id] || null;
+  if(!rec){ try{ rec = await ZDB.get(id); }catch(e){} }
+  if(!rec || (Date.now()-rec.savedAt)/864e5 > OSM_MAX_AGE_DAYS){
+    if(!inflight[id]) inflight[id] = (async ()=>{
+      const f = slimFeatures(accessFeatures(await loadAccess({s:i*TILE, n:(i+1)*TILE, w:j*TILE, e:(j+1)*TILE}, 90)));
+      const r = {id, savedAt:Date.now(), areas:f.areas.map(a=>({why:a.why, rings:a.rings.map(r_=>r_.map(([x,y])=>[r5(x),r5(y)]))})), fences:f.fences.map(fe=>({kind:fe.kind, line:fe.line.map(([x,y])=>[r5(x),r5(y)])}))};
+      try{ await ZDB.put(r); }catch(e){}
+      return r;
+    })().finally(()=>{ setTimeout(()=>delete inflight[id], 0); });
+    rec = await inflight[id];
   }
+  if(!rec._ready){ rec.areas.forEach(a=>{ const g={type:"Polygon",coordinates:a.rings}; a.geom=g; a.bbox=geomBBox(g); }); rec._ready=true; }
+  OSM.cache[id]=rec; return rec;
+}
+async function accessForBounds(b){
+  const i0=Math.floor(b.s/TILE), i1=Math.floor(b.n/TILE), j0=Math.floor(b.w/TILE), j1=Math.floor(b.e/TILE);
+  const areas=[], fences=[];
+  for(let i=i0;i<=i1;i++) for(let j=j0;j<=j1;j++){ const rec=await getTile(i,j); areas.push(...rec.areas); fences.push(...rec.fences); }
   return subsetAccess({areas, fences}, b);
+}
+/* À l’ouverture : chargement en arrière-plan de tous les carreaux des six départements, à partir de la vue actuelle.
+   Chaque carreau est enregistré dès qu’il arrive : si l’application est fermée, ça reprend où ça s’était arrêté. */
+function regionTiles(){
+  const out=[];
+  const [[s0,w0],[n0,e0]] = REGION_BOUNDS;
+  for(let i=Math.floor(s0/TILE); i<=Math.floor(n0/TILE); i++) for(let j=Math.floor(w0/TILE); j<=Math.floor(e0/TILE); j++){
+    let hit=false;
+    for(let a=0;a<=4 && !hit;a++) for(let c=0;c<=4 && !hit;c++){ if(deptAt(i*TILE+a*TILE/4, j*TILE+c*TILE/4)) hit=true; }
+    if(hit) out.push([i,j]);
+  }
+  return out;
+}
+async function preloadRegion(){
+  if(S.osmDl || !navigator.onLine) return;
+  S.osmDl = true;
+  try{
+    try{ if(navigator.storage && navigator.storage.persist) await navigator.storage.persist(); }catch(e){}
+    const c = map.getCenter(), tiles = regionTiles().sort((a,b)=>Math.hypot(a[0]*TILE-c.lat,a[1]*TILE-c.lng)-Math.hypot(b[0]*TILE-c.lat,b[1]*TILE-c.lng));
+    const todo=[];
+    for(const [i,j] of tiles){ let r=OSM.cache[`osmt2-${i}-${j}`]; if(!r){ try{ r=await ZDB.get(`osmt2-${i}-${j}`); }catch(e){} } if(!r || (Date.now()-r.savedAt)/864e5 > OSM_MAX_AGE_DAYS) todo.push([i,j]); }
+    let k=0, fails=0;
+    for(const [i,j] of todo){
+      if(!navigator.onLine) break;
+      bgTask(`Clôtures des 6 départements : ${Math.round(100*(tiles.length-todo.length+k)/tiles.length)} %`);
+      try{ await getTile(i,j); fails=0; }catch(e){ console.warn("Carreau "+i+","+j, e); if(++fails>=3) break; }
+      k++; await sleep(1500);
+    }
+  }finally{ S.osmDl=false; bgTask(null); }
 }
 const USER_SCAN = Symbol("scan demandé");
 async function analyze(origin){
@@ -2607,6 +2652,7 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
   S.med = null; setSpeciesSet(false); buildSpecies();
   setStatus("Zoomez sur le coin à étudier (15 km de côté au plus), puis touchez l’amanite « Scan » en haut à gauche.");
   const c=map.getCenter(); setArea(c.lat, c.lng);
+  setTimeout(preloadRegion, 5000);
 })();
 window.__pousses = {classifyForest, geomContains, hostFactor, soilFactor, weatherParts, terrainParts, waterIndex, pointStats, blendWeather, SPECIES, W};
 </script>
