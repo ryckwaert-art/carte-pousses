@@ -1521,7 +1521,7 @@ function drawAccess(feat){
 }
 function accessText(c){
   if(c.priv) return {cls:"priv", txt:`Privé, fermé : ${c.privWhy||"accès interdit"} (OpenStreetMap). Ne pas entrer sans autorisation.`};
-  if(c.priv==null) return {cls:"", txt:"Accès inconnu : les clôtures n’ont pas pu être chargées. Respectez les panneaux sur place."};
+  if(c.priv==null) return {cls:"", txt: S.osmPending ? "Vérification des clôtures en cours, retouchez la carte dans quelques secondes." : "Accès inconnu : les clôtures n’ont pas pu être chargées. Respectez les panneaux sur place."};
   if(c.pub===1) return {cls:"pub", txt:"Accessible, forêt publique : cueillette familiale tolérée, en général 5 litres par personne et par jour, sauf arrêté local."};
   if(c.forest || c.mapped) return {cls:"", txt:"Accessible, forêt privée sans clôture connue : promenade possible, mais la cueillette demande l’accord du propriétaire. Respectez les panneaux sur place."};
   return {cls:"", txt:"Accessible, terrain sans clôture connue : respectez les panneaux et les cultures sur place."};
@@ -1644,6 +1644,23 @@ async function preloadRegion(){
     }
   }finally{ S.osmDl=false; bgTask(null); }
 }
+/* Clôtures et accès : chargés après l’affichage du résultat, seulement pour la zone scannée (une seule demande légère) */
+async function loadAccessAfter(g){
+  if(!g) return;
+  S.osmPending=true; bgTask("Clôtures et accès : vérification…");
+  try{
+    const feat = accessFeatures(await loadAccess(g.b, 25));
+    if(S.grid!==g) return; // un autre scan a été lancé entre-temps
+    classifyAccess(g.cells, g.rows, g.cols, g.b, feat); drawAccess(feat); S.osmOk=true;
+    render();
+    const n=g.cells.filter(x=>x.priv).length;
+    bgTask(n ? `Clôtures chargées : ${fmt(100*n/g.cells.length)} % de zones fermées` : "Clôtures chargées : aucune zone fermée connue ici");
+    setTimeout(()=>bgTask(null), 3500);
+  }catch(e){
+    console.warn("OpenStreetMap", e); if(S.grid===g){ S.osmOk=false; }
+    bgTask("Clôtures indisponibles pour le moment"); setTimeout(()=>bgTask(null), 3500);
+  }finally{ if(S.grid===g) S.osmPending=false; }
+}
 const USER_SCAN = Symbol("scan demandé");
 async function analyze(origin){
   if(origin !== USER_SCAN) return; // aucun scan sans action explicite
@@ -1674,9 +1691,7 @@ async function analyze(origin){
     try{ pubMask = await loadPublicMask(b, cols, rows); S.pubOk=true; } catch(e){ console.warn("Forêts publiques", e); S.pubOk=false; }
     cells.forEach((x,i)=>x.pub = pubMask ? pubMask[i] : null);
 
-    setProgress(0.135,"Clôtures et accès (OpenStreetMap)"); setStatus("Clôtures, murs et accès privés : chargement…");
-    try{ const feat = await accessForBounds(b); classifyAccess(cells, rows, cols, b, feat); drawAccess(feat); S.osmOk=true; }
-    catch(e){ console.warn("OpenStreetMap", e); S.osmOk=false; cells.forEach(x=>{ x.priv=null; x.privWhy=null; }); accessLayer.clearLayers(); }
+    cells.forEach(x=>{ x.priv=null; x.privWhy=null; }); S.osmOk=false; accessLayer.clearLayers();
 
     setProgress(0.16,"Géologie"); setStatus("Géologie : lecture de la carte du BRGM…");
     let geo=null;
@@ -1734,8 +1749,9 @@ async function analyze(origin){
     if(W.ok){ cells.forEach(x=>x.ww=nearestWeights(x.lat,x.lon)); setStatus("Bilan d’eau de chaque maille…"); computeWaterBalance(cells); }
     S.grid={cells,rows,cols,b,cellM};
     drawForest(); render(); setProgress(1,"Terminé"); setTimeout(()=>setProgress(null), 600);
+    loadAccessAfter(S.grid);
     const nf=cells.filter(x=>x.forest).length;
-    setStatus(`${fmt(cells.length)} mailles de ${fmt(cellM)} m analysées${S.altiSrc && S.altiSrc!=="IGN" ? ` (altitudes : ${S.altiSrc})` : ""}, dont ${fmt(100*nf/cells.length)} % en forêt. ${S.soilOk?"pH et sable : SoilGrids.":"SoilGrids n’a pas répondu : pH estimé d’après les arbres."} ${S.osmOk?`${fmt(100*cells.filter(x=>x.priv).length/cells.length)} % en zone privée fermée.`:"Clôtures non chargées : le filtre des terrains est inactif."} ${S.geoOk==="50k"?"Géologie : BRGM 1/50 000.":S.geoOk==="1M"?"Géologie : carte simplifiée au millionième seulement.":"Géologie détaillée indisponible."} ${S.lidarOk?"Hauteur des arbres : LiDAR HD.":"LiDAR HD indisponible ici."} Cliquez sur la carte pour le détail.`);
+    setStatus(`${fmt(cells.length)} mailles de ${fmt(cellM)} m analysées${S.altiSrc && S.altiSrc!=="IGN" ? ` (altitudes : ${S.altiSrc})` : ""}, dont ${fmt(100*nf/cells.length)} % en forêt. ${S.soilOk?"pH et sable : SoilGrids.":"SoilGrids n’a pas répondu : pH estimé d’après les arbres."} Clôtures et accès : vérification en cours. ${S.geoOk==="50k"?"Géologie : BRGM 1/50 000.":S.geoOk==="1M"?"Géologie : carte simplifiée au millionième seulement.":"Géologie détaillée indisponible."} ${S.lidarOk?"Hauteur des arbres : LiDAR HD.":"LiDAR HD indisponible ici."} Cliquez sur la carte pour le détail.`);
   }catch(e){
     console.error(e);
     setStatus("L’analyse a échoué : "+e.message+". Vérifiez la connexion et relancez ; si le problème persiste, essayez un autre navigateur.", true);
@@ -2652,7 +2668,6 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
   S.med = null; setSpeciesSet(false); buildSpecies();
   setStatus("Zoomez sur le coin à étudier (15 km de côté au plus), puis touchez l’amanite « Scan » en haut à gauche.");
   const c=map.getCenter(); setArea(c.lat, c.lng);
-  setTimeout(preloadRegion, 5000);
 })();
 window.__pousses = {classifyForest, geomContains, hostFactor, soilFactor, weatherParts, terrainParts, waterIndex, pointStats, blendWeather, SPECIES, W};
 </script>
