@@ -151,45 +151,18 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--ochre);outline-
 .pop .trees span{color:#B07A1E;font-weight:700}
 .pop .addrep{font:inherit;font-size:13.5px;font-weight:700;border:1px solid #5A6B3A;color:#5A6B3A;background:transparent;border-radius:999px;padding:6px 12px;margin:2px 0 6px;min-height:34px}
 .handle{display:none}
-#loader{position:fixed;left:50%;top:38%;transform:translate(-50%,-50%);z-index:1500;background:var(--panel);border:1px solid var(--line);border-radius:18px;
-  padding:16px 22px 12px;text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.2);min-width:200px;max-width:80vw;pointer-events:none}
+#loader{position:fixed;left:0;right:0;top:env(safe-area-inset-top,0px);z-index:1500;pointer-events:none}
 #loader[hidden]{display:none}
-#loader p{margin:4px 0 0}
-#loadcancel{pointer-events:auto;margin-top:8px;font:inherit;font-size:14px;font-weight:700;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:6px 14px;min-height:36px}
-#hud{position:fixed;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom,0px));z-index:1200;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:10px 12px;box-shadow:0 -2px 14px rgba(0,0,0,.18)}
-#hud[hidden]{display:none}
-.hud-stats{display:flex;justify-content:space-around;text-align:center;font-size:12px;color:var(--muted)}
-.hud-stats b{display:block;font-family:var(--serif);font-size:20px;color:var(--ink)}
-#hud-zone{margin:6px 0 0;font-size:13px;text-align:center;color:var(--muted)}
-#hud-zone.out{color:var(--danger);font-weight:700}
-.hud-btns{display:flex;gap:6px;margin-top:8px}
-.hud-btns button{flex:1;font:inherit;font-size:15px;font-weight:700;min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--paper);color:var(--ink)}
-#hud-stop{background:var(--ink);color:var(--panel);border-color:var(--ink)}
-body.hiking #panel{display:none}
-body.hiking .leaflet-bottom{bottom:150px}
-.me.arrow{border-radius:50% 50% 50% 0;transform-origin:center}
-#repform{position:fixed;inset:0;z-index:2000;background:rgba(20,20,15,.45);display:flex;align-items:flex-end;justify-content:center}
-#repform[hidden]{display:none}
-.rf-box{background:var(--panel);color:var(--ink);width:100%;max-width:520px;max-height:92%;overflow-y:auto;border-radius:16px 16px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px))}
-.rf-box h2{margin-top:0}
-.rf-l{display:block;font-size:14px;color:var(--muted);margin:10px 0 0}
-.rf-l input,.rf-l textarea{display:block;width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:9px 10px;margin-top:4px}
-.rf-sp{border:1px solid var(--line);border-radius:10px;margin:12px 0 0;padding:8px 10px}
-.rf-sp legend{font-size:14px;color:var(--muted);padding:0 4px}
-#rf-species{display:flex;flex-wrap:wrap;gap:6px;max-height:180px;overflow-y:auto}
-#rf-species label{font-size:14px;border:1px solid var(--line);border-radius:999px;padding:6px 10px;display:flex;gap:6px;align-items:center}
-#rf-species label:has(input:checked){background:var(--moss);color:var(--panel);border-color:var(--moss)}
-#rf-preview img{max-width:100%;max-height:180px;border-radius:8px;margin-top:8px}
-.rf-btns{display:flex;gap:8px;margin-top:14px}
-.rf-btns button{flex:1;margin:0}
-.reps li{grid-template-columns:1fr auto}
-.reps .acts{display:flex;gap:6px;flex-wrap:wrap;grid-column:1 / -1}
-.reps img{width:64px;height:64px;object-fit:cover;border-radius:8px}
-.rep-ic{font-size:22px;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.4))}
-#loadpct{font-family:var(--serif);font-size:24px;font-weight:700}
-#loadstep{font-size:13px;color:var(--muted)}
-#fillrect{transition:y .35s ease}
-@media (prefers-reduced-motion: reduce){ #fillrect{transition:none} }
+.lbar{height:4px;background:rgba(90,107,58,.18)}
+.lfill{height:100%;width:0;background:var(--ochre);transition:width .35s ease}
+.lbox{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);min-width:210px;max-width:78vw;padding:16px 18px 12px;border-radius:16px;
+  background:rgba(44,45,48,.82);color:#fff;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.25);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.ios-spin{display:block;margin:0 auto 8px;animation:iosspin 1s steps(12) infinite}
+@keyframes iosspin{to{transform:rotate(360deg)}}
+.lbox p{margin:0}
+#loadstep{font-size:15px;line-height:1.3}
+#loadpct{font-size:13px;opacity:.75;margin-top:2px;font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion: reduce){ .ios-spin{animation-duration:3s} .lfill{transition:none} }
 .mstatus{display:none}
 #zoneinfo{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:10px 0;background:var(--paper)}
 .zi-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-family:var(--serif);font-size:17px}
@@ -393,23 +366,9 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
   </div>
 </div>
 <div id="loader" hidden aria-live="polite">
-  <svg viewBox="0 0 100 112" width="120" height="134" aria-hidden="true">
-    <defs><clipPath id="fillclip"><rect id="fillrect" x="0" y="112" width="100" height="112"/></clipPath>
-      <g id="cepe">
-        <path d="M38 54 C34 70 30 84 33 96 C36 106 64 106 67 96 C70 84 66 70 62 54 Z"/>
-        <path d="M8 52 C8 26 28 10 50 10 C72 10 92 26 92 52 C80 58 20 58 8 52 Z"/>
-      </g></defs>
-    <use href="#cepe" fill="#E7E1D2" stroke="#8C7A5B" stroke-width="2"/>
-    <g clip-path="url(#fillclip)">
-      <path d="M38 54 C34 70 30 84 33 96 C36 106 64 106 67 96 C70 84 66 70 62 54 Z" fill="#EFE3C2" stroke="#8C7A5B" stroke-width="2"/>
-      <path d="M40 66 l6 4 m4 -6 l6 5 m-14 8 l7 4 m3 -7 l7 5 m-16 9 l6 3 m4 -6 l6 4" stroke="#C9B48A" stroke-width="1.6" fill="none"/>
-      <path d="M8 52 C8 26 28 10 50 10 C72 10 92 26 92 52 C80 58 20 58 8 52 Z" fill="#7A4A26" stroke="#5B3519" stroke-width="2"/>
-      <path d="M22 30 C30 20 42 16 52 17" stroke="#9C6A3E" stroke-width="4" fill="none" stroke-linecap="round"/>
-    </g>
-  </svg>
-  <p id="loadpct">0 %</p>
-  <p id="loadstep">Préparation…</p>
-  <button type="button" id="loadcancel" hidden>Arrêter</button>
+  <div class="lbar"><div class="lfill" id="lfill"></div></div>
+  <div class="lbox"><svg class="ios-spin" viewBox="0 0 100 100" width="46" height="46" aria-hidden="true"><rect x="46" y="6" width="8" height="24" rx="4" fill="#fff" opacity="1.00" transform="rotate(0 50 50)"/><rect x="46" y="6" width="8" height="24" rx="4" fill="#fff" opacity="0.93" transform="rotate(-30 50 50)"/><rect x="46" y="6" width="8" height="24" rx="4" fill="#fff" opacity="0.85" transform="rotate(-60 50 50)"/><rect x="46" y="6" width="8" height="24" rx="4" fill="#fff" opacity="0.78" transform="rotate(-90 50 50)"/><rect x="46" y="6" width="8" height="24" rx="4" fill="#fff" opacity="0.70" transform="rotate(-120 50 50)"/><rect x="46" y="6" width="8" height="24" rx="4" fill="#fff" opacity="0.62" transform="rotate(-150 50 50)"/><rect x="46" y="6" width="8" height="24" rx="4" fill="#fff" opacity="0.55" transform="rotate(-180 50 50)"/><rect x="46" y="6" width="8" height="24" rx="4" fill="#fff" opacity="0.47" transform="rotate(-210 50 50)"/><rect x="46" y="6" width="8" height="24" rx="4" fill="#fff" opacity="0.40" transform="rotate(-240 50 50)"/><rect x="46" y="6" width="8" height="24" rx="4" fill="#fff" opacity="0.33" transform="rotate(-270 50 50)"/><rect x="46" y="6" width="8" height="24" rx="4" fill="#fff" opacity="0.25" transform="rotate(-300 50 50)"/><rect x="46" y="6" width="8" height="24" rx="4" fill="#fff" opacity="0.18" transform="rotate(-330 50 50)"/></svg>
+    <p id="loadstep">Préparation…</p><p id="loadpct">0 %</p><button type="button" id="loadcancel" hidden>Arrêter</button></div>
 </div>
 
 <script src="lib/leaflet.js"></script>
@@ -1145,8 +1104,14 @@ const ScanCtl = L.Control.extend({ options:{position:"topleft"},
     const b = L.DomUtil.create("button","scanbtn"); b.type="button"; b.title="Scanner la zone visible"; b.setAttribute("aria-label","Scanner la zone visible");
     b.innerHTML = AMANITA_SVG + "<span>Scan</span>";
     L.DomEvent.disableClickPropagation(b); L.DomEvent.disableScrollPropagation(b);
-    L.DomEvent.on(b, "click", async ev=>{ L.DomEvent.stop(ev); if(b.classList.contains("busy")) return; b.classList.add("busy"); b.setAttribute("aria-busy","true");
-      try{ await analyze(); } finally{ b.classList.remove("busy"); b.removeAttribute("aria-busy"); } });
+    // Seul un vrai toucher (court, sans glisser) lance le scan : déplacer la carte ne déclenche jamais rien
+    let down=null;
+    b.addEventListener("pointerdown", ev=>{ down={x:ev.clientX, y:ev.clientY, t:Date.now()}; });
+    L.DomEvent.on(b, "click", async ev=>{ L.DomEvent.stop(ev);
+      const ok = ev.detail===0 || (down && Date.now()-down.t < 800 && Math.hypot(ev.clientX-down.x, ev.clientY-down.y) < 12);
+      down=null; if(!ok || b.classList.contains("busy")) return;
+      b.classList.add("busy"); b.setAttribute("aria-busy","true");
+      try{ await analyze(USER_SCAN); } finally{ b.classList.remove("busy"); b.removeAttribute("aria-busy"); } });
     return b;
   } });
 map.zoomControl.remove();
@@ -1422,17 +1387,20 @@ function setProgress(p, step){
   const L_=document.getElementById("loader"); if(!L_) return;
   if(p==null){ L_.hidden=true; return; }
   L_.hidden=false; p=clamp(p,0,1);
-  document.getElementById("fillrect").setAttribute("y", String(112 - 112*p));
+  document.getElementById("lfill").style.width = Math.round(p*100)+"%";
   document.getElementById("loadpct").textContent = Math.round(p*100)+" %";
   if(step) document.getElementById("loadstep").textContent = step;
 }
-async function analyze(){
+const USER_SCAN = Symbol("scan demandé");
+async function analyze(origin){
+  if(origin !== USER_SCAN) return; // aucun scan sans action explicite
   const bnd = map.getBounds();
   const b = {s:bnd.getSouth(), n:bnd.getNorth(), w:bnd.getWest(), e:bnd.getEast()};
   const midLat=(b.s+b.n)/2, kx=Math.cos(midLat*Math.PI/180);
   const wKm=(b.e-b.w)*111.32*kx, hKm=(b.n-b.s)*110.57;
   if(wKm*hKm > MAX_AREA_KM2){ const m=`La zone visible fait environ ${fmt(wKm*hKm)} km². Zoomez jusqu’à ${MAX_AREA_KM2} km² au plus, puis relancez le scan.`; setStatus(m, true); banner.show(m); return; }
   if(banner && banner._d) banner._d.hidden = true;
+  const amb=document.querySelector(".scanbtn"); if(amb) amb.classList.add("busy");
   if(S.scanning){ setStatus("Le scan du secteur est en cours : attendez la fin ou arrêtez-le avant d’analyser une zone.", true); return; }
   const btn=$("#go"); btn.disabled=true;
   try{
@@ -1510,7 +1478,7 @@ async function analyze(){
   }catch(e){
     console.error(e);
     setStatus("L’analyse a échoué : "+e.message+". Vérifiez la connexion et relancez ; si le problème persiste, essayez un autre navigateur.", true);
-  }finally{ btn.disabled=false; if(document.getElementById("loadpct").textContent!=="100 %") setProgress(null); }
+  }finally{ btn.disabled=false; if(amb) amb.classList.remove("busy"); if(document.getElementById("loadpct").textContent!=="100 %") setProgress(null); }
 }
 
 function forestColor(info){
@@ -1822,7 +1790,7 @@ function onDayChange(){
    Démarrage
    ============================================================ */
 document.querySelectorAll('input[name="mode"]').forEach(r=>r.addEventListener("change",e=>{S.mode=e.target.value; render();}));
-$("#go").addEventListener("click", analyze);
+$("#go").addEventListener("click", ()=>analyze(USER_SCAN));
 window.addEventListener("resize",()=>{ if(chartTarget) drawCharts(chartTarget.lat,chartTarget.lon,chartTarget.alt); });
 
 /* ============================================================
@@ -2037,7 +2005,7 @@ $("#aroundme").addEventListener("click", ()=>{
     const ll=showMe(pos);
     // choisir le secteur le plus proche, puis analyser 5 km autour
     let best=null, bd=1e9; for(const [id,z] of Object.entries(ZONES)){ const d=Math.hypot(z.center[0]-ll[0], (z.center[1]-ll[1])*0.72); if(d<bd){ bd=d; best=id; } }
-    const go = ()=>{ map.setView(ll, 13); setTimeout(()=>{ setSheet("peek"); analyze(); }, 400); };
+    const go = ()=>{ map.setView(ll, 13); setTimeout(()=>{ setSheet("peek"); analyze(USER_SCAN); }, 400); };
     if(best && (!Z || Z.id!==best)) setZone(best).then(go); else go();
   }, err=>setStatus("Position indisponible : "+(err.code===1?"autorisez la localisation pour ce site dans les réglages de Safari.":"signal GPS introuvable."), true),
   {enableHighAccuracy:true, timeout:20000, maximumAge:60000});
