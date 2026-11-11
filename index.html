@@ -417,6 +417,7 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
     <p>La roche vient de la carte géologique harmonisée du BRGM au 1/50 000 : chaque formation visible est identifiée et classée en calcaire, marnes, roche siliceuse ou dépôts récents. Elle prime sur SoilGrids pour estimer l’acidité du sol.</p>
     <p>Chaque maille a son propre bilan d’eau, jour par jour depuis 45 jours : la réserve utile est estimée à partir de la texture du sol [10], de la profondeur probable (sols minces sur calcaire et sur les crêtes, plus épais en fond de vallon) et des cailloux ; elle se remplit avec la pluie (moins ce que retiennent les arbres) et se vide par évaporation, plus vite sur les versants sud. Cette réserve compte pour plus de la moitié de l’indice d’eau.</p>
     <p>La hauteur et le couvert des arbres viennent du LiDAR HD de l’IGN : les très jeunes peuplements sont pénalisés, les coupes récentes repérées, et les boisements absents de la BD Forêt pris en compte. La densité et la maturité du peuplement influencent la production de cèpes [11]. Les forêts anciennes reçoivent un léger bonus.</p>
+    <p>Réglages par espèce tirés d’études : saison décalée selon l’altitude, jusqu’à 30 jours [15] ; en milieu méditerranéen, réponse plus forte au manque d’eau [13] ; pied-de-mouton peu dépendant de la météo [12] ; lactaire délicieux favorisé dans les jeunes peuplements et sensible à l’humidité de l’air [14] ; girolle sensible à l’humidité de l’air et à la régularité des pluies [16] ; cèpes favorisés par un octobre doux et humide [12].</p>
     <p>Ces règles (profondeurs, pénalités, bonus) sont des choix de modélisation raisonnables, à confronter au terrain.</p>
     <h3>Vérifier les services</h3>
     <p>Si une carte ou une donnée ne s’affiche pas, ce test indique quel service ne répond pas depuis votre navigateur.</p>
@@ -440,6 +441,11 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
       <li>El Karkouri, Martin &amp; Mousain, ectomycorhizes du pin d’Alep dans l’Hérault, Annals of Forest Science, 2004.</li>
       <li>Saxton &amp; Rawls, estimation des propriétés hydriques des sols à partir de la texture et de la matière organique, Soil Science Society of America Journal, 2006.</li>
       <li>Martínez-Peña et al., modèles de production de cèpes et de lactaires en pinède, Forest Ecology and Management, 2012.</li>
+      <li>Martínez de Aragón et al., production de champignons des pinèdes du Solsonès (Catalogne), 1997-2001.</li>
+      <li>Ogaya et Peñuelas, baisse de production des champignons en chênaie verte sous sécheresse expérimentale, Forestry, 2005.</li>
+      <li>Ágreda et al., production du lactaire délicieux selon l’âge des pinèdes de Soria.</li>
+      <li>Andrew et al., phénologie de la fructification en Europe et climat.</li>
+      <li>Botanica Lithuanica, vol. 9, croissance de la girolle selon l’humidité et la pluie (1998-2002).</li>
     </ol>
     <p style="color:var(--muted);font-size:13px">Données : IGN Géoplateforme, ISRIC SoilGrids, BRGM, Météo-France (modèles et stations), Open-Meteo.</p>
     </details>
@@ -1063,7 +1069,8 @@ function pointStats(p, d){
   // Une pluie des trois derniers jours n’a pas encore eu le temps de faire sortir les champignons : elle compte à moitié
   const P26 = sum(win(p.rain, d-25, d-3)) + 0.5*sum(win(p.rain, d-2, d));
   let lastBig = null; for(let k=d; k>=Math.max(0,d-44); k--){ if(p.rain[k] >= 10){ lastBig = d-k; break; } }
-  return {
+  const rainDays = win(p.rain, d-25, d).filter(v=>v>=1).length;
+  return { rainDays,
     P26, P26raw, lastBig, WB: P26raw - E26,
     T20: mean(win(p.tmean, d-19, d)), Tmax7: mean(win(p.tmax, d-6, d)),
     SM: mean(win(p.sm, d-6, d)), RH: mean(win(p.rh, d-2, d)), VPD: mean(win(p.vpd, d-2, d)),
@@ -1080,7 +1087,7 @@ function nearestWeights(lat, lon){
 }
 function blendWeather(ww, stats, alt){
   const o = {P26:0,P26raw:0,WB:0,T20:0,Tmax7:0,SM:0,RH:0,VPD:0,frost:0,soilDrop:0,lastBig:null}, wsum={SM:0,RH:0,VPD:0,soilDrop:0};
-  let lb=0, lbw=0;
+  let lb=0, lbw=0, rd=0;
   for(const [i,w] of ww){
     const s = stats[i], p = W.pts[i], dz = alt==null ? 0 : alt - p.elev;
     o.P26 += w*s.P26; o.P26raw += w*(s.P26raw!=null?s.P26raw:s.P26); o.WB += w*s.WB;
@@ -1089,10 +1096,11 @@ function blendWeather(ww, stats, alt){
     let fr=0; for(let k=Math.max(0,S.day-4); k<=S.day; k++){ const t=p.tmin[k]; if(!isNaN(t) && t - 0.0065*dz < -1) fr++; }
     o.frost += w*fr;
     if(s.lastBig!=null){ lb += w*s.lastBig; lbw += w; }
+    rd += w*(s.rainDays||0);
     for(const k of ["SM","RH","VPD","soilDrop"]) if(!isNaN(s[k])){ o[k] += w*s[k]; wsum[k] += w; }
   }
   for(const k of ["SM","RH","VPD","soilDrop"]) o[k] = wsum[k] ? o[k]/wsum[k] : NaN;
-  o.lastBig = lbw>0.5 ? Math.round(lb/lbw) : null;
+  o.lastBig = lbw>0.5 ? Math.round(lb/lbw) : null; o.rainDays = rd;
   return o;
 }
 
@@ -1104,6 +1112,16 @@ const PRIORITY = ["girolle","cepe-bordeaux","cepe-pins","cepe-bronze","cepe-ete"
   "hygrophore-rougissant","lactaire-saumon","sparassis","russule-verdoyante","coulemelle","rose-pres","pied-bleu","mousseron","clitocybe-geotrope",
   "russule-charbonniere","langue-boeuf","bolet-jaune-pins"];
 const prio = id => { const i=PRIORITY.indexOf(id); return i<0 ? 999 : i; };
+/* Mois « équivalent » à l’altitude de l’endroit : +20 jours par 1 000 m au-dessus de 300 m, 30 jours au plus */
+function altMonth(sp, alt){
+  const d = W.ok && W.days[S.day] ? new Date(W.days[S.day]+"T12:00:00") : new Date();
+  if(alt==null) return d.getMonth()+1;
+  const shift = clamp((alt-300)/1000*20, 0, 30);
+  const spring = sp.mois.every(m=>m<=6), autumn = sp.mois.some(m=>m>=10) || Math.min(...sp.mois)>=8;
+  if(!spring && !autumn) return d.getMonth()+1;
+  const e = new Date(d.getTime() + (autumn ? 1 : -1)*shift*864e5);
+  return e.getMonth()+1;
+}
 function seasonFactor(sp, m){
   if(sp.mois.includes(m)){
     if(sp.mois.length>=3){ const prevIn=sp.mois.includes(m===1?12:m-1), nextIn=sp.mois.includes(m===12?1:m+1); if(!prevIn || !nextIn) return 0.75; }
@@ -1184,17 +1202,30 @@ function waterIndex(sp, w){
   return parts.reduce((s,[a,v])=>s+a*v,0)/tw;
 }
 function weatherParts(sp, w, month){
-  const season = seasonFactor(sp, month);
-  const water = 0.05 + 0.95*waterIndex(sp, w);
+  // [1] Saison décalée selon l’altitude : jusqu’à 30 jours d’écart, automne plus précoce et printemps plus tardif en altitude (Andrew et al.)
+  const season = seasonFactor(sp, altMonth(sp, w.alt));
+  let wi = waterIndex(sp, w);
+  // [4] Milieu méditerranéen : -30 % de pluie y a réduit la production de 60 % (Ogaya et Peñuelas, chênaie verte) ; réponse plus marquée au manque d’eau
+  if(S.med) wi = Math.pow(wi, 1.5);
+  let water = 0.05 + 0.95*wi;
+  // [5] Pied-de-mouton : aucune relation significative avec le climat dans les pinèdes du Solsonès ; moins dépendant de la pluie
+  if(sp.id==="pied-mouton") water = 0.5 + 0.5*water;
   const [t0,t1] = sp.temp;
   const tmid=(t0+t1)/2, thalf=Math.max(1,(t1-t0)/2);
   let temp = isNaN(w.T20) ? 0.5 : w.T20<t0 ? clamp(0.8-0.8*(t0-w.T20)/5,0,1) : w.T20>t1 ? clamp(0.8-0.8*(w.T20-t1)/5,0,1)
     : 1 - 0.2*Math.max(0,(Math.abs(w.T20-tmid)/thalf - 0.3)/0.7);
   if(!isNaN(w.Tmax7) && w.Tmax7 > sp.tmax) temp *= clamp(1 - (w.Tmax7-sp.tmax)/8, 0.3, 1);
-  const air = isNaN(w.VPD) ? 1 : 1 - 0.35*lin(w.VPD, 0.5, 1.6);
+  // [2][3] Girolle et lactaire délicieux : l’humidité de l’air compte davantage (Lituanie ; Soria)
+  const airW = (sp.id==="girolle" || sp.id==="lactaire-delicieux") ? 0.5 : 0.35;
+  let air = isNaN(w.VPD) ? 1 : 1 - airW*lin(w.VPD, 0.5, 1.6);
+  // [3] Girolle : la régularité des pluies compte, pas seulement le cumul (Lituanie)
+  if(sp.id==="girolle" && w.rainDays!=null) air *= 0.85 + 0.15*lin(w.rainDays, 4, 10);
+  // [6] Cèpes de Bordeaux et des pins : un octobre à la fois doux et humide favorise la production d’automne (évapotranspiration réelle d’octobre, Martínez 2003)
+  let octo = 1;
+  if((sp.id==="cepe-bordeaux" || sp.id==="cepe-pins") && month===10 && !isNaN(w.T20)) octo = 1 + 0.1*lin(w.T20, 8, 14)*lin(wi, 0.5, 1);
   const frost = (w.frost>=2 && !sp.froid) ? 0.35 : 1;
   const shock = (!isNaN(w.soilDrop) && w.soilDrop >= 2) ? 1.08 : 1;
-  return {season, water, temp, air, frost, shock, total: clamp(season*water*temp*air*frost*shock, 0, 1)};
+  return {season, water, temp, air, frost, shock, total: clamp(season*water*temp*air*frost*shock*octo, 0, 1)};
 }
 /* Hauteur et couvert des arbres (LiDAR HD) : les champignons mycorhiziens fructifient peu sous les très jeunes
    peuplements et disparaissent des coupes rases ; lisières et clairières profitent aux espèces de milieux ouverts. */
@@ -1204,7 +1235,8 @@ function structureFactor(sp, c){
     if(c.cover < 0.25){ // coupe ou clairière récente, absente de la BD Forêt
       f = sp.milieu==="foret" ? (sp.lisiere ? 0.75 : 0.5) : sp.milieu==="mixte" ? 1.1 : 1.2;
     } else if(sp.milieu!=="ouvert"){
-      f = c.h<4 ? 0.6 : c.h<8 ? 0.8 : c.h<12 ? 0.92 : 1;
+      f = sp.id==="lactaire-delicieux" ? (c.h<4 ? 0.85 : c.h<=12 ? 1 : 0.9)
+        : (c.h<4 ? 0.6 : c.h<8 ? 0.8 : c.h<12 ? 0.92 : 1);
     }
   }
   if(c.anc && sp.milieu!=="ouvert") f *= c.anc==="ancienne" ? 1.08 : c.anc==="recente" ? 0.95 : 1;
@@ -2199,6 +2231,9 @@ function drawForest(){
 function currentStats(){ return W.ok ? W.pts.map(p=>pointStats(p,S.day)) : null; }
 function monthOfDay(){ return W.ok ? Number(W.days[S.day].slice(5,7)) : (new Date().getMonth()+1); }
 function cellWx(c, stats){
+  const _w = cellWxRaw(c, stats); if(_w) _w.alt = c.alt; return _w;
+}
+function cellWxRaw(c, stats){
   if(!stats) return null; if(!c.ww) c.ww = nearestWeights(c.lat,c.lon);
   const w = blendWeather(c.ww, stats, c.alt);
   if(c.relW){ const a=Math.max(0,S.day-6); let s=0,n=0; for(let i=a;i<=S.day;i++){ s+=c.relW[i]; n++; } w.relW = n ? s/n : NaN; }
