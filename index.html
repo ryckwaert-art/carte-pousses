@@ -558,8 +558,8 @@ const SPECIES_PSL = [
   habitat:"Chênaies vertes et pinèdes, en ronds ou en lignes, tard dans la saison.",
   confusion:"Peu de risques : aiguillons sous le chapeau.",src:"[8]"},
  {id:"trompette",nom:"Trompette de la mort",latin:"Craterellus cornucopioides",comest:"excellent",milieu:"foret",
-  hotes:["chene","chene_vert","chataignier","hetre"],sol:"indifférent",alt:[0,1300],mois:[10,11,12],temp:[7,15],pluie:[55,110],tmax:25,expo:"frais",
-  habitat:"Ubacs et fonds de vallon humides sous chênes, dans les feuilles.",
+  hotes:["chene","chataignier","hetre"],sol:"indifférent",alt:[0,1300],mois:[10,11,12],temp:[7,15],pluie:[55,110],tmax:25,expo:"frais",humide:true,
+  habitat:"Feuillus à feuilles caduques (hêtre, chêne pubescent, châtaignier), dans les endroits humides : ubacs, fonds de vallon, souvent sur sol argileux. Rare en garrigue et sous chêne vert.",
   confusion:"Très peu de risques.",src:""},
  {id:"lactaire-sanguin",nom:"Lactaire sanguin",latin:"Lactarius sanguifluus",comest:"excellent",milieu:"foret",
   hotes:["pin"],sol:"calcaire",alt:[0,1200],mois:[10,11,12],temp:[9,16],pluie:[45,100],tmax:27,
@@ -631,8 +631,8 @@ const SPECIES_AIG = [
   hotes:["epicea","sapin","pin"],sol:"calcaire",alt:[400,1500],mois:[9,10,11,12],temp:[4,13],pluie:[45,100],tmax:24,expo:"frais",froid:true,
   habitat:"Mousses très humides et bords de ruisseaux sous résineux, plutôt sur calcaire.",confusion:"Peu de confusions graves.",src:""},
  {id:"trompette",nom:"Trompette de la mort",latin:"Craterellus cornucopioides",comest:"excellent",milieu:"foret",
-  hotes:["hetre","chene","chataignier"],sol:"indifférent",alt:[0,1400],mois:[8,9,10,11],temp:[7,15],pluie:[55,110],tmax:25,expo:"frais",
-  habitat:"Hêtraies et chênaies humides, dans les feuilles mortes, en colonies.",confusion:"Très peu de risques.",src:""},
+  hotes:["hetre","chene","chataignier"],sol:"indifférent",alt:[0,1400],mois:[8,9,10,11],temp:[7,15],pluie:[55,110],tmax:25,expo:"frais",humide:true,
+  habitat:"Hêtraies et chênaies caducifoliées humides, dans les feuilles mortes, en colonies, souvent sur sol argileux.",confusion:"Très peu de risques.",src:""},
  {id:"pied-mouton",nom:"Pied-de-mouton",latin:"Hydnum repandum",comest:"bon",milieu:"foret",
   hotes:["hetre","chene","chataignier","epicea","sapin","pin"],sol:"indifférent",alt:[0,1600],mois:[8,9,10,11,12],temp:[5,14],pluie:[40,90],tmax:25,froid:true,
   habitat:"Feuillus et résineux, en ronds ou en lignes, résiste aux petites gelées.",confusion:"Peu de risques : aiguillons sous le chapeau.",src:""},
@@ -1188,6 +1188,13 @@ function reliefFactor(sp, c, dryness){
   if(c.tpi!=null){
     if(sp.expo!=="chaud"){ if(c.tpi < -8) f *= 1 + 0.10*(0.5+dryness); else if(c.tpi > 12) f *= 1 - 0.08*(0.5+dryness); }
     else { if(c.tpi > 12) f *= 1.04; }
+  }
+  if(sp.humide){
+    // Pousse dans les endroits humides : un versant sud pentu ou une crête lui conviennent mal, surtout en climat méditerranéen
+    const south = -north*sw, k = S.med ? 1 : 0.6;
+    if(south > 0.3) f *= 1 - 0.4*k*south;
+    if(c.tpi!=null && c.tpi > 12) f *= 1 - 0.25*k;
+    if(c.tpi!=null && c.tpi < -8) f *= 1 + 0.1*k;
   }
   return f;
 }
