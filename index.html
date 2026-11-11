@@ -148,6 +148,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--ochre);outline-
 .pop .rk span:last-child{white-space:nowrap;text-align:right}
 .pop .why{font-size:12.5px;color:#6B675C;margin:2px 0 6px}
 .pop .trees{margin:2px 0 6px;font-size:13.5px}
+.pop .acc.priv{color:#8E2B2B;font-weight:700}
+.pop .acc.pub{color:#4D6340}
 .pop .trees span{color:#B07A1E;font-weight:700}
 .pop .addrep{font:inherit;font-size:13.5px;font-weight:700;border:1px solid #5A6B3A;color:#5A6B3A;background:transparent;border-radius:999px;padding:6px 12px;margin:2px 0 6px;min-height:34px}
 .handle{display:none}
@@ -276,22 +278,22 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
       <label id="lab-meteo"><input type="radio" name="mode" value="meteo" checked>Terrain et météo</label>
       <label><input type="radio" name="mode" value="terrain">Terrain seul</label>
     </div>
-    <button class="primary" id="go">Analyser la zone visible</button>
+    <button class="primary" id="go" hidden>Analyser la zone visible</button>
     <p id="status">Zoomez sur un secteur (15 km de côté au plus), puis lancez l’analyse.</p>
     <div class="legend"><span>faible</span><div class="ramp"></div><span>forte</span></div>
     <label class="chartnote" style="display:flex;align-items:center;gap:8px;margin-top:6px">Opacité de la coloration<input type="range" id="heatop" min="0.2" max="1" step="0.05" value="0.7" style="flex:1"></label>
     <h3>Terrains affichés</h3>
     <div class="modes" role="radiogroup" aria-label="Terrains affichés">
       <label><input type="radio" name="land" value="tous" checked>Tous</label>
-      <label><input type="radio" name="land" value="public">Forêts publiques</label>
-      <label><input type="radio" name="land" value="prive">Privés</label>
+      <label><input type="radio" name="land" value="public">Accessibles</label>
+      <label><input type="radio" name="land" value="prive">Privés fermés</label>
     </div>
     <h3>Mes sorties</h3>
     <p class="chartnote">À faire en wifi avant de partir : enregistre l’analyse et le fond de carte de la zone, pour les retrouver en forêt sans réseau. Le GPS fonctionne sans réseau.</p>
     <button class="secondary" id="savetrip">Enregistrer cette analyse comme sortie</button>
     <p class="chartnote" id="tripnote"></p>
     <ul class="trips" id="triplist"></ul>
-    <p class="chartnote" id="landnote">Forêts publiques : domaniales, communales et autres forêts gérées par l’ONF, où la cueillette familiale est en général tolérée. Le reste est le plus souvent privé : il faut l’accord du propriétaire.</p>
+    <p class="chartnote" id="landnote">« Privés fermés » : zones clôturées, murées, militaires, habitées ou marquées accès interdit sur OpenStreetMap. Tout le reste est classé accessible, y compris les forêts privées sans clôture connue, où l’on peut se promener mais où la cueillette demande l’accord du propriétaire. La carte des clôtures est incomplète : les panneaux sur place priment toujours.</p>
   </section>
 
   <section id="sec-especes">
@@ -1140,10 +1142,11 @@ function drawZones(){
 }
 const forestLayer = L.layerGroup();
 const repLayerRef = L.layerGroup();
+const accessLayerRef = L.layerGroup();
 let heatLayer = null;
 L.control.layers(
   {"Plan IGN":basePlan, "Photos aériennes":baseOrtho, "Topographique (OpenTopoMap)":baseTopo, "OpenStreetMap":baseOSM},
-  {"Zones d’étude":zone, "Relief":relief, "Géologie (BRGM 1/50 000)":geol, "Forêts publiques":foretsPub, "Forêts anciennes":foretsAnc, "Peuplements analysés":forestLayer, "Mes repères":repLayerRef},
+  {"Zones d’étude":zone, "Relief":relief, "Géologie (BRGM 1/50 000)":geol, "Forêts publiques":foretsPub, "Forêts anciennes":foretsAnc, "Peuplements analysés":forestLayer, "Clôtures et zones fermées (OSM)":accessLayerRef, "Mes repères":repLayerRef},
   {collapsed:true}).addTo(map);
 L.control.scale({imperial:false}).addTo(map);
 watchOverlay(relief,"Le relief IGN"); watchOverlay(geol,"La carte géologique du BRGM"); watchOverlay(foretsPub,"La couche des forêts publiques"); watchOverlay(foretsAnc,"La couche des forêts anciennes");
@@ -1391,6 +1394,126 @@ function setProgress(p, step){
   document.getElementById("loadpct").textContent = Math.round(p*100)+" %";
   if(step) document.getElementById("loadstep").textContent = step;
 }
+
+/* ============================================================
+   Accès : clôtures, murs et zones fermées (OpenStreetMap, via Overpass)
+   ============================================================ */
+const OVERPASS = ["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter"];
+const CLOSED_LANDUSE = /^(military|residential|farmyard|industrial|quarry|landfill|construction|railway|garages|cemetery)$/;
+const WHY_LANDUSE = {military:"zone militaire", residential:"zone habitée (maisons et jardins)", farmyard:"cour de ferme", industrial:"site industriel", quarry:"carrière",
+  landfill:"décharge", construction:"chantier", railway:"emprise ferroviaire", garages:"garages", cemetery:"cimetière"};
+async function loadAccess(b){
+  const bb = `${b.s.toFixed(5)},${b.w.toFixed(5)},${b.n.toFixed(5)},${b.e.toFixed(5)}`;
+  const q = `[out:json][timeout:40];(
+    way["barrier"~"^(fence|wall|city_wall|retaining_wall|guard_rail)$"](${bb});
+    way["access"~"^(private|no)$"]["highway"!~"."](${bb});
+    relation["access"~"^(private|no)$"](${bb});
+    way["landuse"~"^(military|residential|farmyard|industrial|quarry|landfill|construction|railway|garages|cemetery)$"](${bb});
+    relation["landuse"~"^(military|residential|farmyard|industrial|quarry)$"](${bb});
+    way["military"](${bb}); relation["military"](${bb});
+  );out geom;`;
+  let lastErr;
+  for(const url of OVERPASS){
+    try{
+      const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),60000);
+      const r = await fetch(url, {method:"POST", body:"data="+encodeURIComponent(q), headers:{"Content-Type":"application/x-www-form-urlencoded"}, signal:ctl.signal});
+      clearTimeout(t); if(!r.ok) throw new Error("HTTP "+r.status);
+      return await r.json();
+    }catch(e){ lastErr=e; }
+  }
+  throw lastErr;
+}
+function joinRings(lines){ // assemble les tronçons d’un multipolygone en anneaux fermés
+  const segs = lines.map(l=>l.slice()), rings=[];
+  while(segs.length){
+    let ring = segs.shift(), guard=0;
+    while(guard++<500){
+      const a=ring[0], z=ring[ring.length-1];
+      if(a[0]===z[0] && a[1]===z[1]) break;
+      const k = segs.findIndex(s2=>{ const s0=s2[0], s1=s2[s2.length-1]; return (s0[0]===z[0]&&s0[1]===z[1]) || (s1[0]===z[0]&&s1[1]===z[1]); });
+      if(k<0) break;
+      let nx = segs.splice(k,1)[0]; if(!(nx[0][0]===z[0]&&nx[0][1]===z[1])) nx = nx.slice().reverse();
+      ring = ring.concat(nx.slice(1));
+    }
+    if(ring.length>3) rings.push(ring);
+  }
+  return rings;
+}
+function accessFeatures(js){
+  const areas=[], fences=[];
+  const geo = g => g.map(p=>[p.lon,p.lat]);
+  const reasonOf = t => {
+    if(!t) return null;
+    if(t.military || t.landuse==="military") return "zone militaire";
+    if(t.landuse && CLOSED_LANDUSE.test(t.landuse)) return WHY_LANDUSE[t.landuse] || "zone fermée";
+    if(t.access==="private") return "accès privé signalé";
+    if(t.access==="no") return "accès interdit signalé";
+    return null;
+  };
+  for(const el of (js.elements||[])){
+    const t = el.tags||{};
+    if(el.type==="way" && el.geometry){
+      const line = geo(el.geometry), closed = line.length>3 && line[0][0]===line[line.length-1][0] && line[0][1]===line[line.length-1][1];
+      if(t.barrier){ fences.push({line, kind: /wall/.test(t.barrier) ? "mur" : t.barrier==="guard_rail" ? "glissière" : "clôture"});
+        if(closed && t.barrier!=="guard_rail") areas.push({rings:[line], why: /wall/.test(t.barrier) ? "enceinte murée" : "enclos clôturé"}); }
+      const why = reasonOf(t); if(why && closed) areas.push({rings:[line], why});
+    }
+    if(el.type==="relation" && el.members){
+      const why = reasonOf(t); if(!why) continue;
+      const outers = el.members.filter(m=>m.type==="way" && m.geometry && m.role!=="inner").map(m=>geo(m.geometry));
+      for(const ring of joinRings(outers)) areas.push({rings:[ring], why});
+    }
+  }
+  areas.forEach(a=>{ const g={type:"Polygon",coordinates:a.rings}; a.bbox=geomBBox(g); a.geom=g; });
+  return {areas, fences};
+}
+/* Classe chaque maille : dans une zone fermée, ou dans un espace entièrement entouré de clôtures et de murs */
+function classifyAccess(cells, rows, cols, b, feat){
+  for(const x of cells){
+    x.priv=false; x.privWhy=null;
+    for(const a of feat.areas){
+      if(x.lon<a.bbox[0]||x.lon>a.bbox[2]||x.lat<a.bbox[1]||x.lat>a.bbox[3]) continue;
+      if(geomContains(a.geom, x.lon, x.lat)){ x.priv=true; x.privWhy=a.why; break; }
+    }
+  }
+  // Raster fin (3 sous-mailles par maille) : on trace les clôtures, puis on remplit depuis les bords ; ce qui n’est pas atteint est enclos
+  const f=3, W=cols*f, H=rows*f, wall=new Uint8Array(W*H), seen=new Uint8Array(W*H);
+  const toPx = (lon,lat)=>[ (lon-b.w)/(b.e-b.w)*W, (b.n-lat)/(b.n-b.s)*H ];
+  for(const fe of feat.fences){
+    if(fe.kind==="glissière") continue;
+    for(let i=1;i<fe.line.length;i++){
+      const [x0,y0]=toPx(...fe.line[i-1]), [x1,y1]=toPx(...fe.line[i]);
+      const n=Math.ceil(Math.max(Math.abs(x1-x0),Math.abs(y1-y0))*2)+1;
+      for(let k=0;k<=n;k++){ const X=Math.floor(x0+(x1-x0)*k/n), Y=Math.floor(y0+(y1-y0)*k/n); if(X>=0&&Y>=0&&X<W&&Y<H) wall[Y*W+X]=1; }
+    }
+  }
+  const stack=[];
+  const push=(X,Y)=>{ if(X<0||Y<0||X>=W||Y>=H) return; const i=Y*W+X; if(seen[i]||wall[i]) return; seen[i]=1; stack.push(i); };
+  for(let X=0;X<W;X++){ push(X,0); push(X,H-1); } for(let Y=0;Y<H;Y++){ push(0,Y); push(W-1,Y); }
+  while(stack.length){ const i=stack.pop(), X=i%W, Y=(i-X)/W; push(X+1,Y); push(X-1,Y); push(X,Y+1); push(X,Y-1); }
+  for(const x of cells){
+    if(x.priv) continue;
+    let enc=0, tot=0; const y0=(rows-1-x.r)*f, x0=x.c*f;
+    for(let dy=0;dy<f;dy++) for(let dx=0;dx<f;dx++){ const i=(y0+dy)*W+x0+dx; if(wall[i]) continue; tot++; if(!seen[i]) enc++; }
+    if(tot && enc/tot>=0.5){ x.priv=true; x.privWhy="espace entouré de clôtures ou de murs"; }
+  }
+}
+const accessLayer = accessLayerRef;
+accessLayer.getAttribution = ()=>"Clôtures © contributeurs OpenStreetMap";
+function drawAccess(feat){
+  accessLayer.clearLayers();
+  for(const a of feat.areas) L.geoJSON({type:"Feature",geometry:a.geom},{style:{color:"#8E2B2B",weight:1,fillColor:"#8E2B2B",fillOpacity:0.12,dashArray:"3 3"},interactive:false}).addTo(accessLayer);
+  for(const fe of feat.fences) if(fe.kind!=="glissière") L.polyline(fe.line.map(([lo,la])=>[la,lo]),{color:"#8E2B2B",weight:2.5,opacity:0.9,interactive:false}).addTo(accessLayer);
+  if(!map.hasLayer(accessLayer)) accessLayer.addTo(map);
+}
+function accessText(c){
+  if(c.priv) return {cls:"priv", txt:`Privé, fermé : ${c.privWhy||"accès interdit"} (OpenStreetMap). Ne pas entrer sans autorisation.`};
+  if(c.priv==null) return {cls:"", txt:"Accès inconnu : les clôtures n’ont pas pu être chargées. Respectez les panneaux sur place."};
+  if(c.pub===1) return {cls:"pub", txt:"Accessible, forêt publique : cueillette familiale tolérée, en général 5 litres par personne et par jour, sauf arrêté local."};
+  if(c.forest || c.mapped) return {cls:"", txt:"Accessible, forêt privée sans clôture connue : promenade possible, mais la cueillette demande l’accord du propriétaire. Respectez les panneaux sur place."};
+  return {cls:"", txt:"Accessible, terrain sans clôture connue : respectez les panneaux et les cultures sur place."};
+}
+
 const USER_SCAN = Symbol("scan demandé");
 async function analyze(origin){
   if(origin !== USER_SCAN) return; // aucun scan sans action explicite
@@ -1417,6 +1540,10 @@ async function analyze(origin){
     let pubMask=null;
     try{ pubMask = await loadPublicMask(b, cols, rows); S.pubOk=true; } catch(e){ console.warn("Forêts publiques", e); S.pubOk=false; }
     cells.forEach((x,i)=>x.pub = pubMask ? pubMask[i] : null);
+
+    setProgress(0.135,"Clôtures et accès (OpenStreetMap)"); setStatus("Clôtures, murs et accès privés : chargement…");
+    try{ const feat = accessFeatures(await loadAccess(b)); classifyAccess(cells, rows, cols, b, feat); drawAccess(feat); S.osmOk=true; }
+    catch(e){ console.warn("OpenStreetMap", e); S.osmOk=false; cells.forEach(x=>{ x.priv=null; x.privWhy=null; }); accessLayer.clearLayers(); }
 
     setProgress(0.16,"Géologie"); setStatus("Géologie : lecture de la carte du BRGM…");
     let geo=null;
@@ -1474,7 +1601,7 @@ async function analyze(origin){
     S.grid={cells,rows,cols,b,cellM};
     drawForest(); render(); setProgress(1,"Terminé"); setTimeout(()=>setProgress(null), 600);
     const nf=cells.filter(x=>x.forest).length;
-    setStatus(`${fmt(cells.length)} mailles de ${fmt(cellM)} m analysées${S.altiSrc && S.altiSrc!=="IGN" ? ` (altitudes : ${S.altiSrc})` : ""}, dont ${fmt(100*nf/cells.length)} % en forêt. ${S.soilOk?"pH et sable : SoilGrids.":"SoilGrids n’a pas répondu : pH estimé d’après les arbres."} ${S.pubOk?`${fmt(100*cells.filter(x=>x.pub===1).length/cells.length)} % en forêt publique.`:"Les forêts publiques n’ont pas pu être chargées : le filtre des terrains est inactif."} ${S.geoOk==="50k"?"Géologie : BRGM 1/50 000.":S.geoOk==="1M"?"Géologie : carte simplifiée au millionième seulement.":"Géologie détaillée indisponible."} ${S.lidarOk?"Hauteur des arbres : LiDAR HD.":"LiDAR HD indisponible ici."} Cliquez sur la carte pour le détail.`);
+    setStatus(`${fmt(cells.length)} mailles de ${fmt(cellM)} m analysées${S.altiSrc && S.altiSrc!=="IGN" ? ` (altitudes : ${S.altiSrc})` : ""}, dont ${fmt(100*nf/cells.length)} % en forêt. ${S.soilOk?"pH et sable : SoilGrids.":"SoilGrids n’a pas répondu : pH estimé d’après les arbres."} ${S.osmOk?`${fmt(100*cells.filter(x=>x.priv).length/cells.length)} % en zone privée fermée.`:"Clôtures non chargées : le filtre des terrains est inactif."} ${S.geoOk==="50k"?"Géologie : BRGM 1/50 000.":S.geoOk==="1M"?"Géologie : carte simplifiée au millionième seulement.":"Géologie détaillée indisponible."} ${S.lidarOk?"Hauteur des arbres : LiDAR HD.":"LiDAR HD indisponible ici."} Cliquez sur la carte pour le détail.`);
   }catch(e){
     console.error(e);
     setStatus("L’analyse a échoué : "+e.message+". Vérifiez la connexion et relancez ; si le problème persiste, essayez un autre navigateur.", true);
@@ -1522,7 +1649,7 @@ function drawGrid(g, which){
   let shown=0;
   for(const c of cells){
     c.score=0;
-    if(S.land!=="tous" && c.pub!=null && ((S.land==="public") !== (c.pub===1))) continue;
+    if(S.land!=="tous" && c.priv!=null && ((S.land==="prive") !== (c.priv===true))) continue;
     shown++;
     const w = cellWx(c, stats); let best=0;
     for(const sp of SPECIES){
@@ -1591,7 +1718,7 @@ map.on("click", e=>{
   const gg = gridOf(e.latlng), ta = gg ? treesAround(c, gg) : null;
   let html=`<div class="pop"><h3>${esc(essenceName(c.label))}</h3>
     ${ta && ta.list.length ? `<p class="trees"><b>Autour, sur ${fmt(ta.radius)} m :</b> ${ta.list.map(([n,f])=>`${esc(n)} <span>${Math.round(f*100)} %</span>`).join(" · ")}</p>` : ""}
-    ${gg===S.zoneGrid && !cellIn(S.grid,e.latlng) ? `<p class="why">Vue d’ensemble du secteur (mailles de ${fmt(gg.cellM)} m). Pour plus de précision, zoomez et lancez « Analyser la zone visible ».</p>` : ""}
+    ${gg===S.zoneGrid && !cellIn(S.grid,e.latlng) ? `<p class="why">Vue d’ensemble du secteur (mailles de ${fmt(gg.cellM)} m). Pour plus de précision, zoomez et touchez l’amanite « Scan ».</p>` : ""}
     <button type="button" class="addrep" data-lat="${e.latlng.lat}" data-lon="${e.latlng.lng}">Ajouter un repère ici</button>
     <table>
     <tr><td>Altitude</td><td>${c.alt==null?"—":fmt(c.alt)+" m"}${pos}</td></tr>
@@ -1602,7 +1729,7 @@ map.on("click", e=>{
     ${c.anc?`<tr><td>Ancienneté</td><td>${c.anc==="ancienne"?"forêt ancienne (boisée depuis au moins 150 ans)":c.anc==="recente"?"forêt récente":"forêt disparue"}</td></tr>`:""}
     ${c.awc!=null?`<tr><td>Réserve en eau</td><td>${fmt(c.awc)} mm${w&&w.relW!=null&&!isNaN(w.relW)?`, remplie à ${fmt(w.relW*100)} %`:""}</td></tr>`:""}
     <tr><td>Lisière</td><td>${c.edge?"oui":"non"}</td></tr>
-    <tr><td>Terrain</td><td id="pubinfo">${c.pub===1?"forêt publique":c.pub===0?"hors forêt publique, le plus souvent privé":"statut inconnu"}</td></tr>`;
+    <tr><td>Accès</td><td><span class="acc ${accessText(c).cls}">${esc(accessText(c).txt)}</span><span id="pubinfo"></span></td></tr>`;
   if(w && S.mode==="meteo"){
     html+=`<tr><td>Pluie 26 j</td><td>${fmt(w.P26)} mm, bilan ${w.WB>=0?"+":""}${fmt(w.WB)} mm</td></tr>
       <tr><td>Eau du sol</td><td>${isNaN(w.SM)?"—":fmt(w.SM*100)+" % vol."} (modèle régional)</td></tr>
@@ -1630,7 +1757,7 @@ map.on("click", e=>{
   }
   publicInfo(e.latlng.lat, e.latlng.lng).then(info=>{
     const el=document.getElementById("pubinfo"); if(!el) return;
-    el.textContent = info ? `${info.name}${info.kind?` (${info.kind.toLowerCase()})`:""} : forêt publique` : "hors forêt publique, le plus souvent privé : accord du propriétaire nécessaire";
+    el.textContent = info ? ` ${info.name}${info.kind?` (${info.kind.toLowerCase()})`:""}.` : "";
   }).catch(()=>{});
   if(W.ok) drawCharts(c.lat,c.lon,c.alt);
 });
@@ -1710,7 +1837,7 @@ function updateSpeciesBars(per,total){
     box.appendChild(d);
   });
   const lbl = S.species==="all" ? "" : "";
-  $("#sporder").textContent = `Classées de la plus probable à la moins probable dans la zone analysée${S.mode==="meteo"?" pour le jour choisi":", d’après le terrain seul"}${S.land!=="tous"?(S.land==="public"?", en forêt publique":", en terrain privé"):""}. Le pourcentage résume les chances dans les meilleurs coins.`;
+  $("#sporder").textContent = `Classées de la plus probable à la moins probable dans la zone analysée${S.mode==="meteo"?" pour le jour choisi":", d’après le terrain seul"}${S.land!=="tous"?(S.land==="public"?", sur les terrains accessibles":", dans les zones privées fermées"):""}. Le pourcentage résume les chances dans les meilleurs coins.`;
 }
 
 /* ============================================================
@@ -1950,7 +2077,7 @@ async function setZone(id, offline=false){
 $("#day").addEventListener("input", ()=>{ if(W.ok) onDayChange(); });
 document.querySelectorAll('input[name="land"]').forEach(r=>r.addEventListener("change",e=>{
   S.land=e.target.value;
-  if(S.grid && !S.pubOk && S.land!=="tous") setStatus("Les forêts publiques n’ont pas pu être chargées pour ce secteur : relancez l’analyse pour réessayer.", true);
+  if(S.grid && !S.osmOk && S.land!=="tous") setStatus("Les clôtures et accès privés n’ont pas pu être chargés pour cette zone : relancez le scan pour réessayer.", true);
   render();
 }));
 document.querySelectorAll('input[name="zone"]').forEach(r=>r.addEventListener("change",e=>setZone(e.target.value)));
@@ -2050,7 +2177,7 @@ $("#triplist").addEventListener("click", async e=>{
 const r2 = v => v==null||isNaN(v) ? null : Math.round(v*100)/100;
 function packCells(cells){
   return cells.map(c=>({r:c.r,c:c.c,lat:Math.round(c.lat*1e5)/1e5,lon:Math.round(c.lon*1e5)/1e5,alt:c.alt==null?null:Math.round(c.alt),mapped:c.mapped,keys:[...c.keys],ouvert:c.ouvert,forest:c.forest,label:c.label,
-    ph:r2(c.ph),sand:r2(c.sand),clay:r2(c.clay),soc:r2(c.soc),cfvo:r2(c.cfvo),pub:c.pub,geo:c.geo,h:r2(c.h),cover:r2(c.cover),anc:c.anc,
+    ph:r2(c.ph),sand:r2(c.sand),clay:r2(c.clay),soc:r2(c.soc),cfvo:r2(c.cfvo),pub:c.pub,priv:c.priv,privWhy:c.privWhy,geo:c.geo,h:r2(c.h),cover:r2(c.cover),anc:c.anc,
     edge:c.edge,slope:r2(c.slope),aspect:r2(c.aspect),tpi:r2(c.tpi),awc:r2(c.awc),relW:c.relW?Array.from(c.relW,v=>Math.round(v*100)/100):null}));
 }
 function unpackCells(arr){ return arr.map(c=>({...c, keys:new Set(c.keys), relW:c.relW?Float32Array.from(c.relW):null, ww:null})); }
@@ -2190,7 +2317,7 @@ async function scanZone(force=false){
     if(W.ok){ cells.forEach(x=>x.ww=nearestWeights(x.lat,x.lon)); computeWaterBalance(cells); }
     render(); setProgress(1,"Secteur scanné"); setTimeout(()=>setProgress(null), 700);
     try{ await ZDB.put({id:zid, savedAt:Date.now(), b, rows, cols, cellM, cells:packCells(cells).map(c=>({...c, relW:null}))}); }catch(e){ console.warn("Cache du secteur", e); }
-    setStatus(`Secteur ${Z.court} scanné (${fmt(cells.length)} mailles de ${fmt(cellM)} m)${forest?"":", sans la BD Forêt (non disponible)"}. Le scan est gardé ${ZONE_CACHE_DAYS} jours ; zoomez et lancez « Analyser la zone visible » pour le détail.`);
+    setStatus(`Secteur ${Z.court} scanné (${fmt(cells.length)} mailles de ${fmt(cellM)} m)${forest?"":", sans la BD Forêt (non disponible)"}. Le scan est gardé ${ZONE_CACHE_DAYS} jours ; zoomez et touchez l’amanite « Scan » pour le détail.`);
     updateRescan();
   }catch(e){
     setProgress(null);
