@@ -120,6 +120,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--ochre);outline-
 .scanbtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;width:60px;height:66px;padding:4px 0 3px;
   background:var(--panel);border:2px solid var(--ink);border-radius:12px;box-shadow:0 2px 6px rgba(0,0,0,.25);cursor:pointer;color:var(--ink)}
 .scanbtn svg{image-rendering:pixelated}
+.leaflet-left .leaflet-control.refreshbtn{clear:none;margin-top:21px;margin-left:8px}
+.refreshbtn{width:44px;height:44px;border-radius:50%;border:2px solid var(--ink);background:var(--panel);color:var(--ink);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.25);cursor:pointer}
+.refreshbtn.busy svg{animation:spin 1s linear infinite}
 .scanbtn span{font:700 11px/1 ui-monospace,"Courier New",monospace;letter-spacing:.08em;text-transform:uppercase}
 .scanbtn:active{transform:translateY(1px)}
 .scanbtn.busy{cursor:progress}
@@ -129,7 +132,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--ochre);outline-
 .map-banner{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 10px;max-width:340px;font-size:14px;box-shadow:0 1px 4px rgba(0,0,0,.2)}
 .leaflet-control-layers-toggle{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232B2620' stroke-width='1.8' stroke-linejoin='round'%3E%3Cpath d='M12 3 2 8l10 5 10-5-10-5Z'/%3E%3Cpath d='m2 13 10 5 10-5'/%3E%3Cpath d='m2 17.5 10 5 10-5' opacity='.5'/%3E%3C/svg%3E")!important;background-size:24px 24px!important;background-repeat:no-repeat;background-position:center}
 .diag li{list-style:none;margin:2px 0}
-#bgtask{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 12px);z-index:1400;pointer-events:none;
+#bgtask{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 92px);z-index:1400;pointer-events:none;
   display:flex;align-items:center;gap:7px;max-width:calc(100% - 170px);padding:5px 11px;border-radius:999px;background:var(--panel);color:var(--muted);
   border:1px solid var(--line);box-shadow:0 1px 5px rgba(0,0,0,.12);font-size:12px}
 #bgtask[hidden]{display:none}
@@ -158,6 +161,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--ochre);outline-
 .pop .rk span:last-child{white-space:nowrap;text-align:right}
 .pop .why{font-size:12.5px;color:#6B675C;margin:2px 0 6px}
 .pop .trees{margin:2px 0 6px;font-size:13.5px}
+.pop details.terrain{margin-top:8px}
+.pop details.terrain summary{font-weight:700;font-size:13.5px;cursor:pointer;color:#5A6B3A}
 .pop .acc.priv{color:#8E2B2B;font-weight:700}
 .pop .acc.pub{color:#4D6340}
 .pop .trees span{color:#B07A1E;font-weight:700}
@@ -165,6 +170,45 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--ochre);outline-
 .handle{display:none}
 #loader{position:fixed;left:0;right:0;top:env(safe-area-inset-top,0px);z-index:1500;pointer-events:none}
 #loader[hidden]{display:none}
+#hud{position:fixed;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom,0px));z-index:1200;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:10px 12px;box-shadow:0 -2px 14px rgba(0,0,0,.18)}
+#hud[hidden]{display:none}
+.hud-stats{display:flex;justify-content:space-around;text-align:center;font-size:12px;color:var(--muted)}
+.hud-stats b{display:block;font-family:var(--serif);font-size:20px;color:var(--ink)}
+#hud-zone{margin:6px 0 0;font-size:13px;text-align:center;color:var(--muted)}
+#hud-zone.out{color:var(--danger);font-weight:700}
+.hud-btns{display:flex;gap:6px;margin-top:8px}
+.hud-btns button{flex:1;font:inherit;font-size:15px;font-weight:700;min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--paper);color:var(--ink)}
+#hud-stop{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+body.hiking #panel{display:none}
+body.hiking .leaflet-bottom{bottom:150px}
+.me.arrow{border-radius:50% 50% 50% 0;transform-origin:center}
+#sppick{position:fixed;inset:0;z-index:2000;background:rgba(20,20,15,.45);display:flex;align-items:flex-end;justify-content:center}
+#sppick[hidden]{display:none}
+#pk-list{display:flex;flex-direction:column;gap:6px;margin:10px 0 4px;max-height:52vh;overflow-y:auto}
+#pk-list label{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-size:16px;font-family:var(--serif)}
+#pk-list label em{font-family:var(--sans);font-size:12.5px;color:var(--muted);margin-left:auto;font-style:italic}
+#pk-list label:has(input:checked){border-color:var(--moss);background:var(--moss-soft)}
+#pk-list input{width:20px;height:20px;accent-color:var(--moss);margin:0}
+#pk-list .sep{font-size:12.5px;color:var(--muted);margin:8px 2px 0}
+#repform{position:fixed;inset:0;z-index:2000;background:rgba(20,20,15,.45);display:flex;align-items:flex-end;justify-content:center}
+#repform[hidden]{display:none}
+.rf-box{background:var(--panel);color:var(--ink);width:100%;max-width:520px;max-height:92%;overflow-y:auto;border-radius:16px 16px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px))}
+.rf-box h2{margin-top:0}
+.rf-l{display:block;font-size:14px;color:var(--muted);margin:10px 0 0}
+.rf-l input,.rf-l textarea{display:block;width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:9px 10px;margin-top:4px}
+.rf-sp{border:1px solid var(--line);border-radius:10px;margin:12px 0 0;padding:8px 10px}
+.rf-sp legend{font-size:14px;color:var(--muted);padding:0 4px}
+#rf-species{display:flex;flex-wrap:wrap;gap:6px;max-height:180px;overflow-y:auto}
+#rf-species label{font-size:14px;border:1px solid var(--line);border-radius:999px;padding:6px 10px;display:flex;gap:6px;align-items:center}
+#rf-species label:has(input:checked){background:var(--moss);color:var(--panel);border-color:var(--moss)}
+#rf-preview img{max-width:100%;max-height:180px;border-radius:8px;margin-top:8px}
+.rf-btns{display:flex;gap:8px;margin-top:14px}
+.rf-btns button{flex:1;margin:0}
+.reps li{grid-template-columns:1fr auto}
+.reps .acts{display:flex;gap:6px;flex-wrap:wrap;grid-column:1 / -1}
+.reps img{width:64px;height:64px;object-fit:cover;border-radius:8px}
+.rep-ic{font-size:22px;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.4))}
+#loadcancel{pointer-events:auto;margin-top:10px;font:inherit;font-size:13px;font-weight:700;border:1px solid rgba(255,255,255,.5);background:transparent;color:#fff;border-radius:999px;padding:5px 14px;min-height:32px}
 .lbar{height:4px;background:rgba(90,107,58,.18)}
 .lfill{height:100%;width:0;background:var(--ochre);transition:width .35s ease}
 .lbox{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);min-width:210px;max-width:78vw;padding:16px 18px 12px;border-radius:16px;
@@ -302,6 +346,7 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
 
   <section id="sec-especes">
     <h2>Espèces <small id="sp-count" style="font-family:var(--sans);font-size:13px;color:var(--muted)"></small></h2>
+    <button class="secondary" id="openpick" type="button" style="margin:0 0 8px">Choisir mes champignons</button>
     <p class="chartnote" id="sporder" style="margin-top:-4px">Classées par saison. Lancez une analyse pour les classer de la plus probable à la moins probable.</p>
     <div id="species"></div>
   </section>
@@ -356,6 +401,14 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
   <div class="hud-stats"><span><b id="hud-time">0:00</b>durée</span><span><b id="hud-dist">0,0 km</b>distance</span><span><b id="hud-alt">—</b>altitude</span></div>
   <p id="hud-zone"></p>
   <div class="hud-btns"><button id="hud-rep">Repère ici</button><button id="hud-center">Recentrer</button><button id="hud-stop">Quitter</button></div>
+</div>
+<div id="sppick" hidden role="dialog" aria-modal="true" aria-labelledby="pk-title">
+  <div class="rf-box">
+    <h2 id="pk-title">Quels champignons cherches-tu ?</h2>
+    <p class="chartnote">Jusqu’à trois. Les plus recherchés sont en haut ; le point vert signale ceux de saison.</p>
+    <div id="pk-list"></div>
+    <div class="rf-btns"><button type="button" id="pk-cancel" class="secondary">Annuler</button><button type="button" id="pk-ok" class="primary" disabled>Scanner</button></div>
+  </div>
 </div>
 <div id="repform" hidden role="dialog" aria-modal="true" aria-labelledby="rf-title">
   <div class="rf-box">
@@ -976,8 +1029,16 @@ function blendWeather(ww, stats, alt){
 /* ============================================================
    Score par espèce
    ============================================================ */
+const PRIORITY = ["girolle","cepe-bordeaux","cepe-pins","cepe-bronze","cepe-ete","bolet-bai","bolet-pied-rouge","trompette","chanterelle-tube",
+  "chanterelle-jaunissante","pied-mouton","oronge","lactaire-sanguin","lactaire-delicieux","morille","hygrophore-mars","saint-georges","pleurote-panicaut",
+  "hygrophore-rougissant","lactaire-saumon","sparassis","russule-verdoyante","coulemelle","rose-pres","pied-bleu","mousseron","clitocybe-geotrope",
+  "russule-charbonniere","langue-boeuf","bolet-jaune-pins"];
+const prio = id => { const i=PRIORITY.indexOf(id); return i<0 ? 999 : i; };
 function seasonFactor(sp, m){
-  if(sp.mois.includes(m)) return 1;
+  if(sp.mois.includes(m)){
+    if(sp.mois.length>=3){ const prevIn=sp.mois.includes(m===1?12:m-1), nextIn=sp.mois.includes(m===12?1:m+1); if(!prevIn || !nextIn) return 0.75; }
+    return 1;
+  }
   const prev = m===1?12:m-1, next = m===12?1:m+1;
   return (sp.mois.includes(prev)||sp.mois.includes(next)) ? 0.35 : 0.03;
 }
@@ -1056,7 +1117,9 @@ function weatherParts(sp, w, month){
   const season = seasonFactor(sp, month);
   const water = 0.05 + 0.95*waterIndex(sp, w);
   const [t0,t1] = sp.temp;
-  let temp = isNaN(w.T20) ? 0.5 : w.T20<t0 ? clamp(1-(t0-w.T20)/5,0,1) : w.T20>t1 ? clamp(1-(w.T20-t1)/5,0,1) : 1;
+  const tmid=(t0+t1)/2, thalf=Math.max(1,(t1-t0)/2);
+  let temp = isNaN(w.T20) ? 0.5 : w.T20<t0 ? clamp(0.8-0.8*(t0-w.T20)/5,0,1) : w.T20>t1 ? clamp(0.8-0.8*(w.T20-t1)/5,0,1)
+    : 1 - 0.2*Math.max(0,(Math.abs(w.T20-tmid)/thalf - 0.3)/0.7);
   if(!isNaN(w.Tmax7) && w.Tmax7 > sp.tmax) temp *= clamp(1 - (w.Tmax7-sp.tmax)/8, 0.3, 1);
   const air = isNaN(w.VPD) ? 1 : 1 - 0.35*lin(w.VPD, 0.5, 1.6);
   const frost = (w.frost>=2 && !sp.froid) ? 0.35 : 1;
@@ -1125,11 +1188,17 @@ const ScanCtl = L.Control.extend({ options:{position:"topleft"},
       const ok = ev.detail===0 || (down && Date.now()-down.t < 800 && Math.hypot(ev.clientX-down.x, ev.clientY-down.y) < 12);
       down=null; if(!ok || b.classList.contains("busy")) return;
       b.classList.add("busy"); b.setAttribute("aria-busy","true");
+      if(!S.species.length){ b.classList.remove("busy"); b.removeAttribute("aria-busy"); openPicker(()=>{ b.classList.add("busy"); analyze(USER_SCAN).finally(()=>b.classList.remove("busy")); }); return; }
       try{ await analyze(USER_SCAN); } finally{ b.classList.remove("busy"); b.removeAttribute("aria-busy"); } });
     return b;
   } });
+const RefreshCtl = L.Control.extend({ options:{position:"topleft"},
+  onAdd(){ const b=L.DomUtil.create("button","refreshbtn"); b.type="button"; b.title="Actualiser la météo de la zone scannée"; b.setAttribute("aria-label","Actualiser la météo de la zone scannée");
+    b.innerHTML='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>';
+    L.DomEvent.disableClickPropagation(b); L.DomEvent.on(b,"click",async ev=>{ L.DomEvent.stop(ev); if(b.classList.contains("busy")) return; b.classList.add("busy"); try{ await refreshWeather(); } finally{ b.classList.remove("busy"); } }); return b; } });
 map.zoomControl.remove();
 new ScanCtl().addTo(map);
+new RefreshCtl().addTo(map);
 L.control.zoom({position:"topleft"}).addTo(map);
 watchBase(basePlan, "Le Plan IGN", baseOrtho);
 function watchOverlay(layer, name){
@@ -1680,7 +1749,99 @@ async function loadAccessAfter(g){
     bgTask("Clôtures indisponibles pour le moment"); setTimeout(()=>bgTask(null), 3500);
   }finally{ if(S.grid===g) S.osmPending=false; }
 }
+/* Terrain des scans récents, gardé 30 jours : un nouveau scan à l’intérieur d’une zone déjà scannée est quasi instantané */
+const TERRAIN_DAYS = 30;
+async function saveTerrain(g){
+  const id = `terrain-${Date.now()}`;
+  const rec = {id, savedAt:Date.now(), b:g.b, rows:g.rows, cols:g.cols, cellM:g.cellM, cells:packCells(g.cells).map(c=>({...c, relW:null})),
+    flags:{soilOk:S.soilOk, geoOk:S.geoOk, lidarOk:S.lidarOk, urbanOk:S.urbanOk, clcOk:S.clcOk, batiOk:S.batiOk, pubOk:S.pubOk}};
+  await ZDB.put(rec);
+  let idx=[]; try{ idx=JSON.parse(localStorage.getItem("terrainIdx"))||[]; }catch(e){}
+  idx.push({id, b:g.b, cellM:g.cellM, savedAt:rec.savedAt});
+  idx = idx.filter(t=>(Date.now()-t.savedAt)/864e5 < TERRAIN_DAYS);
+  while(idx.length>8){ const old=idx.shift(); ZDB.del(old.id).catch(()=>{}); }
+  try{ localStorage.setItem("terrainIdx", JSON.stringify(idx)); }catch(e){}
+}
+async function findTerrain(b, cellM){
+  let idx=[]; try{ idx=JSON.parse(localStorage.getItem("terrainIdx"))||[]; }catch(e){}
+  const cand = idx.filter(t=>(Date.now()-t.savedAt)/864e5 < TERRAIN_DAYS && b.s>=t.b.s && b.n<=t.b.n && b.w>=t.b.w && b.e<=t.b.e && t.cellM <= cellM*1.35)
+                 .sort((a,c)=>a.cellM-c.cellM || c.savedAt-a.savedAt)[0];
+  if(!cand) return null;
+  let rec=null; try{ rec=await ZDB.get(cand.id); }catch(e){}
+  if(!rec) return null;
+  return {cells:unpackCells(rec.cells), rows:rec.rows, cols:rec.cols, b:rec.b, cellM:rec.cellM, flags:rec.flags||{}};
+}
+/* Actualiser : nouvelle météo pour la zone déjà scannée, sans retélécharger le terrain */
+async function refreshWeather(){
+  if(!S.grid){ setStatus("Rien à actualiser : lance d’abord un scan avec l’amanite.", true); return; }
+  const g=S.grid, c=[(g.b.s+g.b.n)/2,(g.b.w+g.b.e)/2];
+  setProgress(0.3,"Actualisation de la météo");
+  try{ await setArea(c[0], c[1]); g.cells.forEach(x=>x.ww=nearestWeights(x.lat,x.lon)); computeWaterBalance(g.cells); render();
+    setProgress(1,"Météo actualisée"); setTimeout(()=>setProgress(null),600); setStatus("Météo actualisée : les chances tiennent compte des dernières données."); }
+  catch(e){ setProgress(null); setStatus("Actualisation impossible pour le moment : "+e.message, true); }
+}
+/* Choix des champignons : obligatoire avant le premier scan, mémorisé ensuite */
+function saveMySpecies(){ try{ localStorage.setItem("mySpecies", JSON.stringify(S.species)); }catch(e){} }
+function loadMySpecies(){ try{ const v=JSON.parse(localStorage.getItem("mySpecies")); if(Array.isArray(v)) S.species=v.slice(0,3); }catch(e){} }
+let pickThen = null;
+function openPicker(then){
+  pickThen = then || null;
+  const m=monthOfDay(), sel=new Set(S.species), list=[...SPECIES].sort((a,b)=>prio(a.id)-prio(b.id));
+  const top = list.filter(sp=>prio(sp.id)<16), rest = list.filter(sp=>prio(sp.id)>=16);
+  const row = sp => `<label><input type="checkbox" value="${sp.id}" ${sel.has(sp.id)?"checked":""}>${esc(sp.nom)}${sp.mois.includes(m)?' <span class="season" title="de saison"></span>':""}<em>${esc(sp.comest)}</em></label>`;
+  $("#pk-list").innerHTML = top.map(row).join("") + `<p class="sep">Espèces plus communes ou moins recherchées</p>` + rest.map(row).join("");
+  $("#pk-ok").textContent = then ? "Scanner" : "Valider";
+  updatePickOk(); $("#sppick").hidden=false;
+}
+function updatePickOk(){ const n=document.querySelectorAll("#pk-list input:checked").length; $("#pk-ok").disabled = n===0; $("#pk-ok").textContent = (pickThen?"Scanner":"Valider") + (n?` (${n})`:""); }
+$("#pk-list").addEventListener("change", e=>{
+  if(document.querySelectorAll("#pk-list input:checked").length>3){ e.target.checked=false; banner.show("Trois champignons au maximum."); }
+  updatePickOk();
+});
+$("#pk-cancel").addEventListener("click", ()=>{ $("#sppick").hidden=true; pickThen=null; });
+$("#pk-ok").addEventListener("click", ()=>{
+  S.species=[...document.querySelectorAll("#pk-list input:checked")].map(i=>i.value).slice(0,3); saveMySpecies();
+  $("#sppick").hidden=true; buildSpecies(); render();
+  const f=pickThen; pickThen=null; if(f) f();
+});
+$("#openpick").addEventListener("click", ()=>openPicker(null));
 const USER_SCAN = Symbol("scan demandé");
+
+/* Corine Land Cover 2018 (IGN) : grandes zones artificialisées (villes, zones industrielles, routes, parcs urbains).
+   Plus grossier (25 ha) mais très fiable pour une agglomération entière. Lecture par les couleurs officielles de la légende,
+   avec un repli par interrogation du serveur si le style n’est pas celui attendu. */
+const CLC_PALETTE = {"111":[230,0,77],"112":[255,0,0],"121":[204,77,242],"122":[204,0,0],"123":[230,204,204],"124":[230,204,230],"131":[166,0,204],"132":[166,77,204],"133":[255,77,255],"141":[255,166,255],"142":[255,230,255],
+  "211":[255,255,168],"212":[255,255,0],"213":[230,230,0],"221":[230,128,0],"222":[242,166,77],"223":[230,166,0],"231":[230,230,77],"241":[255,230,166],"242":[255,230,77],"243":[230,204,77],"244":[242,204,166],
+  "311":[128,255,0],"312":[0,166,0],"313":[77,255,0],"321":[204,242,77],"322":[166,255,128],"323":[166,230,77],"324":[166,242,0],"331":[230,230,230],"332":[204,204,204],"333":[204,255,204],"334":[0,0,0],"335":[166,230,204],
+  "411":[166,166,255],"412":[77,77,255],"421":[204,204,255],"422":[230,230,255],"423":[166,166,230],"511":[0,204,242],"512":[128,242,230],"521":[0,255,166],"522":[166,255,230],"523":[230,242,255]};
+const CLC_NAMES = {"111":"tissu urbain continu","112":"tissu urbain discontinu","121":"zone industrielle ou commerciale","122":"réseau routier ou ferroviaire","123":"zone portuaire","124":"aéroport","131":"carrière","132":"décharge","133":"chantier","141":"espace vert urbain","142":"équipement sportif ou de loisirs"};
+function clcCodeOf(r,g,b_){ let best=null, bd=1e9; for(const [k,c] of Object.entries(CLC_PALETTE)){ const d=(r-c[0])**2+(g-c[1])**2+(b_-c[2])**2; if(d<bd){ bd=d; best=k; } } return bd <= 24*24*3 ? best : null; }
+async function loadCLCUrban(b, cols, rows){
+  const W2=cols*2, H2=rows*2;
+  const url = `${PUB_WMS}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=LANDCOVER.CLC18_FR&STYLES=&CRS=EPSG:4326&BBOX=${b.s},${b.w},${b.n},${b.e}&WIDTH=${W2}&HEIGHT=${H2}&FORMAT=image/png&TRANSPARENT=true`;
+  const d = await fetchImageData(url, W2, H2);
+  let opaque=0, known=0;
+  for(let i=0;i<W2*H2;i+=3){ if(d[i*4+3]>128){ opaque++; if(clcCodeOf(d[i*4],d[i*4+1],d[i*4+2])) known++; } }
+  const out = new Array(cols*rows).fill(null);
+  if(opaque && known/opaque >= 0.6){
+    for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+      const y0=(rows-1-r)*2, x0=c*2, cnt={};
+      for(let dy=0;dy<2;dy++) for(let dx=0;dx<2;dx++){ const o=((y0+dy)*W2+x0+dx)*4; if(d[o+3]>128){ const k=clcCodeOf(d[o],d[o+1],d[o+2]); if(k) cnt[k]=(cnt[k]||0)+1; } }
+      const top = Object.entries(cnt).sort((a,b2)=>b2[1]-a[1])[0];
+      if(top && top[0][0]==="1" && top[1]>=2) out[r*cols+c] = CLC_NAMES[top[0]] || "zone artificialisée";
+    }
+    return out;
+  }
+  // Style inattendu : on demande au serveur ce que représente chaque couleur
+  const res = await classifyByColor(PUB_WMS, "LANDCOVER.CLC18_FR", b, cols, rows, txt=>{
+    const t=norm(txt), m=t.match(/\b(1[1-4][1-4])\b/);
+    if(m) return CLC_NAMES[m[1]] || "zone artificialisée";
+    if(/tissu urbain|zones? industriel|reseaux? routier|aeroport|extraction|decharge|chantier|espaces? verts? urbain|equipements? sportif/.test(t)) return "zone artificialisée";
+    return "";
+  }, null, 25);
+  return res.map(v=>v||null);
+}
+
 /* Zones bâties (BD TOPO de l’IGN) : zones d’habitation et zones d’activité, exclues des prévisions */
 async function loadUrban(b){
   const out=[];
@@ -1719,50 +1880,47 @@ async function analyze(origin){
     const dLon=(b.e-b.w)/cols, dLat=(b.n-b.s)/rows, cells=[];
     for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) cells.push({r,c,lat:b.s+(r+0.5)*dLat, lon:b.w+(c+0.5)*dLon});
 
-    if(!W.ok || haversine(CENTER,[cLat,cLon]) > 12000){ setProgress(0.01,"Météo de la zone"); setStatus("Météo de la zone : chargement…"); await setArea(cLat, cLon); }
-    setProgress(0.03,"Peuplements forestiers"); setStatus("Peuplements forestiers : chargement…");
-    const forest = await loadForest(b, n=>setStatus(`Peuplements forestiers : ${fmt(n)} polygones…`));
-    S.forest = forest;
-
-    setProgress(0.1,"Zones bâties"); setStatus("Zones bâties (villes, villages, zones d’activité) : chargement…");
-    let urban=[]; try{ urban = await loadUrban(b); S.urbanOk=true; }catch(e){ console.warn("Zones bâties", e); S.urbanOk=false; }
-    S._urban = urban;
-    setProgress(0.12,"Forêts publiques"); setStatus("Forêts publiques : chargement…");
-    let pubMask=null;
-    try{ pubMask = await loadPublicMask(b, cols, rows); S.pubOk=true; } catch(e){ console.warn("Forêts publiques", e); S.pubOk=false; }
-    cells.forEach((x,i)=>x.pub = pubMask ? pubMask[i] : null);
-
-    cells.forEach(x=>{ x.priv=null; x.privWhy=null; }); S.osmOk=false; accessLayer.clearLayers();
-
-    setProgress(0.16,"Géologie"); setStatus("Géologie : lecture de la carte du BRGM…");
-    let geo=null;
-    try{ geo = await loadGeology(b, cols, rows, (i,n)=>{ setProgress(0.16+0.29*i/n,"Géologie : identification des roches"); setStatus(`Géologie : identification des formations, ${i} sur ${n}…`); }); S.geoOk = geo.some(g=>g && !g.coarse) ? "50k" : "1M"; }
-    catch(e){ console.warn("Géologie BRGM", e); S.geoOk=false; }
-    cells.forEach((x,i)=>x.geo = geo ? geo[i] : null);
-
-    setProgress(0.46,"Hauteur des arbres (LiDAR)"); setStatus("Hauteur des arbres (LiDAR HD) : chargement…");
-    let can=null;
-    const KL = 6; let bm=null;
-    try{ const r_ = await loadBuildings(b, cols*KL, rows*KL); bm = r_.mask; S.batiOk=true; }catch(e){ console.warn("Bâtiments BD TOPO", e); S.batiOk=false; }
-    try{ can = await loadCanopy(b, cols, rows, KL, bm); S.lidarOk=true; } catch(e){ console.warn("LiDAR HD", e); S.lidarOk=false; }
-    cells.forEach((x,i)=>{ const v = can ? can[i] : null; x.h = v ? v.h : null; x.cover = v ? v.cover : null; x.bfrac = v ? v.bfrac : null; });
-
-    setProgress(0.53,"Forêts anciennes"); setStatus("Forêts anciennes : chargement…");
-    let anc=null;
-    try{ anc = await loadAncient(b, cols, rows); S.ancOk = anc.some(Boolean); } catch(e){ console.warn("Forêts anciennes", e); S.ancOk=false; }
-    cells.forEach((x,i)=>x.anc = anc ? anc[i] : null);
-
-    setProgress(0.58,"Sols"); setStatus("Sol : chargement du pH et de la texture…");
-    let soil = null;
-    try{ soil = await loadSoil(b); S.soilOk = true; }
-    catch(e){ console.warn("SoilGrids", e); S.soilOk = false; }
-
-    setStatus("Altitudes : 0 %");
-    setProgress(0.66,"Altitudes et relief");
-    const alts = await loadAltitudes(cells.map(x=>[x.lat,x.lon]), (d,t)=>{ setProgress(0.66+0.22*d/t,"Altitudes et relief"); setStatus(`Altitudes : ${fmt(100*d/t)} %`); });
+    // Météo et terrain sont chargés en même temps ; le terrain d’une zone déjà scannée est réutilisé tel quel
+    const meteoP = (!W.ok || haversine(CENTER,[cLat,cLon]) > 12000) ? setArea(cLat, cLon) : Promise.resolve();
+    const reuse = await findTerrain(b, cellM);
+    let alts;
+    if(reuse){
+      setProgress(0.5,"Terrain déjà connu : réutilisation"); setStatus("Terrain déjà scanné ici : réutilisation, seule la météo est mise à jour…");
+      for(const x of cells){ const q = cellIn(reuse, {lat:x.lat, lng:x.lon}); if(q) Object.assign(x, {...q, r:x.r, c:x.c, lat:x.lat, lon:x.lon, relW:null, ww:null}); }
+      alts = cells.map(x=>x.alt);
+      S.forest = []; S.soilOk = reuse.flags.soilOk; S.geoOk = reuse.flags.geoOk; S.lidarOk = reuse.flags.lidarOk; S.urbanOk=reuse.flags.urbanOk; S.clcOk=reuse.flags.clcOk; S.batiOk=reuse.flags.batiOk; S.pubOk=reuse.flags.pubOk;
+      await meteoP;
+    } else {
+      const KL = 6, tasks = [], names = [];
+      let done = 0;
+      const track = (name, p) => { names.push(name); tasks.push(p.then(v=>{ done++; setProgress(0.05+0.85*done/9, `${name} ✓ (${done} sur 9)`); setStatus(`Chargement en parallèle : ${done} sur 9 sources prêtes…`); return v; },
+        e=>{ done++; console.warn(name, e); setProgress(0.05+0.85*done/9, `${name} indisponible (${done} sur 9)`); return null; })); };
+      setProgress(0.04,"Chargement des 9 sources en parallèle");
+      track("Peuplements forestiers", loadForest(b));
+      track("Zones bâties", loadUrban(b));
+      track("Corine Land Cover", loadCLCUrban(b, cols, rows));
+      track("Forêts publiques", loadPublicMask(b, cols, rows));
+      track("Géologie", loadGeology(b, cols, rows));
+      track("Arbres et bâtiments (LiDAR)", (async()=>{ let bm=null; try{ bm=(await loadBuildings(b, cols*KL, rows*KL)).mask; S.batiOk=true; }catch(e){ S.batiOk=false; } return await loadCanopy(b, cols, rows, KL, bm); })());
+      track("Forêts anciennes", loadAncient(b, cols, rows));
+      track("Sols", loadSoil(b));
+      track("Altitudes", loadAltitudes(cells.map(x=>[x.lat,x.lon])));
+      const [forest, urban, clcU, pubMask, geo, can, anc, soil, alts_] = await Promise.all(tasks);
+      await meteoP;
+      if(!forest) throw new Error("la BD Forêt n’a pas répondu");
+      if(!alts_) throw new Error("les altitudes n’ont pas pu être chargées");
+      alts = alts_;
+      S.forest = forest; S.urbanOk = !!urban; S._urban = urban || []; S.clcOk = !!clcU; S.pubOk = !!pubMask;
+      S.geoOk = geo ? (geo.some(g=>g && !g.coarse) ? "50k" : "1M") : false; S.lidarOk = !!can; S.ancOk = !!(anc && anc.some(Boolean)); S.soilOk = !!soil;
+      cells.forEach((x,i)=>{ x.pub = pubMask ? pubMask[i] : null; x.priv=null; x.privWhy=null; x.geo = geo ? geo[i] : null; x.anc = anc ? anc[i] : null;
+        const v = can ? can[i] : null; x.h = v ? v.h : null; x.cover = v ? v.cover : null; x.bfrac = v ? v.bfrac : null; });
+      accessLayer.clearLayers();
+      S._fresh = {forest, clcU, soil};
+    }
     { const ok=alts.filter(v=>v!=null).sort((a,c)=>a-c); if(ok.length && setSpeciesSet(isMedDefault(cLat,cLon, ok[ok.length>>1]))) buildSpecies(); }
 
     setProgress(0.9,"Calcul des chances"); setStatus("Calcul des mailles…");
+    if(!reuse){ const {forest, clcU, soil} = S._fresh;
     for(let i=0;i<cells.length;i++){
       const x = cells[i]; x.alt = alts[i];
       let hit=null;
@@ -1774,12 +1932,14 @@ async function analyze(origin){
       x.label = hit ? hit.info.label : "Hors forêt (prairie, culture ou bâti)";
       x.urban=false; x.urbanWhy=null;
       for(const u of S._urban){ if(x.lon<u.bbox[0]||x.lon>u.bbox[2]||x.lat<u.bbox[1]||x.lat>u.bbox[3]) continue; if(geomContains(u.geom,x.lon,x.lat)){ x.urban=true; x.urbanWhy=u.why; break; } }
+      if(!x.urban && clcU && clcU[i]){ x.urban=true; x.urbanWhy=`${clcU[i]} (Corine Land Cover)`; }
       if(!x.urban && x.bfrac!=null && x.bfrac>0.12){ x.urban=true; x.urbanWhy=`bâti dense, ${Math.round(x.bfrac*100)} % de la maille sous des toits`; }
       if(soil){
         const ph = sampleLayer(soil.ph, x.lat, x.lon); x.ph = ph!=null ? ph/10 : null;
         const g = (L,k) => { const v = sampleLayer(L, x.lat, x.lon); return v!=null ? v/k : null; };
         x.sand = g(soil.sand,10); x.clay = g(soil.clay,10); x.soc = g(soil.soc,10); x.cfvo = g(soil.cfvo,10);
       } else { x.ph = null; x.sand = null; x.clay = null; x.soc = null; x.cfvo = null; }
+    }
     }
     const at=(r,c)=>(r<0||c<0||r>=rows||c>=cols)?null:cells[r*cols+c];
     const dx=dLon*111320*kx, dy=dLat*110574;
@@ -1794,10 +1954,11 @@ async function analyze(origin){
     }
     if(W.ok){ cells.forEach(x=>x.ww=nearestWeights(x.lat,x.lon)); setStatus("Bilan d’eau de chaque maille…"); computeWaterBalance(cells); }
     S.grid={cells,rows,cols,b,cellM};
+    if(!reuse) saveTerrain(S.grid).catch(()=>{});
     drawForest(); render(); setProgress(1,"Terminé"); setTimeout(()=>setProgress(null), 600);
 
     const nf=cells.filter(x=>x.forest).length;
-    setStatus(`${fmt(cells.length)} mailles de ${fmt(cellM)} m analysées${S.altiSrc && S.altiSrc!=="IGN" ? ` (altitudes : ${S.altiSrc})` : ""}, dont ${fmt(100*nf/cells.length)} % en forêt. ${S.soilOk?"pH et sable : SoilGrids.":"SoilGrids n’a pas répondu : pH estimé d’après les arbres."} ${S.geoOk==="50k"?"Géologie : BRGM 1/50 000.":S.geoOk==="1M"?"Géologie : carte simplifiée au millionième seulement.":"Géologie détaillée indisponible."} ${S.lidarOk?"Hauteur des arbres : LiDAR HD.":"LiDAR HD indisponible ici."} Cliquez sur la carte pour le détail.`);
+    setStatus(`${fmt(cells.length)} mailles de ${fmt(cellM)} m analysées${S.altiSrc && S.altiSrc!=="IGN" ? ` (altitudes : ${S.altiSrc})` : ""}, dont ${fmt(100*nf/cells.length)} % en forêt. ${S.soilOk?"pH et sable : SoilGrids.":"SoilGrids n’a pas répondu : pH estimé d’après les arbres."} ${S.geoOk==="50k"?"Géologie : BRGM 1/50 000.":S.geoOk==="1M"?"Géologie : carte simplifiée au millionième seulement.":"Géologie détaillée indisponible."} ${S.lidarOk?"Hauteur des arbres : LiDAR HD.":"LiDAR HD indisponible ici."} Zones bâties exclues : ${fmt(100*cells.filter(x=>x.urban).length/cells.length)} % (BD TOPO ${S.urbanOk?"✓":"✗"}, Corine ${S.clcOk?"✓":"✗"}, toits ${S.batiOk?"✓":"✗"}). Cliquez sur la carte pour le détail.`);
   }catch(e){
     console.error(e);
     setStatus("L’analyse a échoué : "+e.message+". Vérifiez la connexion et relancez ; si le problème persiste, essayez un autre navigateur.", true);
@@ -1944,9 +2105,15 @@ map.on("click", e=>{
     const [sp0,r0]=ranked[0];
     let why=`Pour ${esc(sp0.nom)} : hôte ${pct(r0.t.host)}, sol ${pct(r0.t.soil)}, altitude ${pct(r0.t.alt)}, relief ×${fmt(r0.t.relief,2)}, structure ×${fmt(r0.t.struct,2)}`;
     if(r0.m) why+=`, saison ${pct(r0.m.season)}, eau ${pct(r0.m.water)}, température ${pct(r0.m.temp)}, air ${pct(r0.m.air)}${r0.m.frost<1?", gel récent":""}${r0.m.shock>1?", refroidissement du sol":""}`;
+    const fac = [["l’arbre hôte",r0.t.host],["le sol",r0.t.soil],["l’altitude",r0.t.alt]].concat(r0.m?[["la saison",r0.m.season],["l’eau",r0.m.water],["la température",r0.m.temp]]:[]).sort((a,b2)=>a[1]-b2[1])[0];
+    const verdict = r0.score>=0.75?"très favorable":r0.score>=0.5?"favorable":r0.score>=0.25?"possible":"peu probable";
+    html += `<p class="why"><b>${esc(sp0.nom)} : ${verdict}.</b>${fac && fac[1]<0.8 ? ` Ce qui limite le plus ici : ${fac[0]} (${pct(fac[1])}).` : " Aucun facteur nettement limitant."}</p>`;
     html += `<p class="why">${why}.</p>`;
   } else if(!c.urban) html+=`<p>Aucune espèce de la liste ne trouve ici de conditions favorables${S.mode==="meteo"?" pour ce jour":""}.</p>`;
   html+=`</div>`;
+  // Les champignons d’abord, le détail du terrain ensuite
+  { const tI=html.indexOf("<table>"), eI=html.indexOf("</table>")+8, end=html.lastIndexOf("</div>");
+    if(tI>0 && eI>8 && end>eI){ html = html.slice(0,tI) + html.slice(eI,end) + `<details class="terrain"><summary>Détail du terrain et de la météo</summary>${html.slice(tI,eI)}</details></div>`; } }
   if(window.matchMedia("(max-width:760px)").matches){
     // Fenêtre sur la carte, tenue à l’écart des boutons du haut (zoom, couches) et du volet du bas
     setSheet("peek");
@@ -1972,11 +2139,8 @@ document.addEventListener("click", e=>{ if(e.target && e.target.id==="zoneclose"
    ============================================================ */
 function buildSpecies(){
   const m=monthOfDay(), box=$("#species"); box.innerHTML="";
-  const all=document.createElement("div"); all.className="sp";
   S.species = S.species.filter(id=>SPECIES.some(s=>s.id===id));
-  all.innerHTML=`<div class="sprow"><input type="checkbox" name="sp" id="sp-all" value="all" ${S.species.length?"":"checked"}><label class="spname" for="sp-all">Toutes les espèces<em>meilleure chance par maille</em></label><span></span></div>`;
-  box.appendChild(all);
-  for(const sp of [...SPECIES].sort((a,b)=>(seasonFactor(b,m)-seasonFactor(a,m))||a.nom.localeCompare(b.nom,"fr"))){
+  for(const sp of [...SPECIES].sort((a,b)=>(S.species.includes(b.id)-S.species.includes(a.id)) || (prio(a.id)-prio(b.id)) || a.nom.localeCompare(b.nom,"fr"))){
     const inS=sp.mois.includes(m), d=document.createElement("div"); d.className="sp"; d.dataset.id=sp.id;
     d.innerHTML=`<div class="sprow">
       <input type="checkbox" name="sp" id="sp-${sp.id}" value="${sp.id}" ${S.species.includes(sp.id)?"checked":""}>
@@ -1995,12 +2159,12 @@ function buildSpecies(){
   }
   box.querySelectorAll('input[name="sp"]').forEach(r=>r.addEventListener("change",e=>{
     const v=e.target.value;
-    if(v==="all"){ S.species=[]; }
-    else if(e.target.checked){
+    if(e.target.checked){
       if(S.species.length>=3){ e.target.checked=false; banner.show("Trois champignons au maximum : décoche-en un pour en choisir un autre."); return; }
       S.species.push(v);
     } else S.species = S.species.filter(x=>x!==v);
-    box.querySelectorAll('input[name="sp"]').forEach(c=>{ c.checked = c.value==="all" ? !S.species.length : S.species.includes(c.value); });
+    box.querySelectorAll('input[name="sp"]').forEach(c=>{ c.checked = S.species.includes(c.value); });
+    saveMySpecies();
     const h=$("#sp-count"); if(h) h.textContent = S.species.length ? `${S.species.length} sur 3 choisis` : "";
     render();
   }));
@@ -2040,7 +2204,7 @@ function updateSpeciesBars(per,total){
     keys[id] = {k: 0.7*top + 0.3*Math.min(1, share*3), top, share, max:p.max};
   }
   const box=$("#species"), rows=[...box.querySelectorAll(".sp[data-id]")];
-  rows.sort((a,b)=>keys[b.dataset.id].k-keys[a.dataset.id].k || a.dataset.id.localeCompare(b.dataset.id));
+  rows.sort((a,b)=>(S.species.includes(b.dataset.id)-S.species.includes(a.dataset.id)) || (S.species.includes(a.dataset.id) ? keys[b.dataset.id].k-keys[a.dataset.id].k : prio(a.dataset.id)-prio(b.dataset.id)));
   rows.forEach(d=>{
     const q=keys[d.dataset.id];
     d.querySelector(".bar span").style.width=Math.round(q.k*100)+"%";
@@ -2334,7 +2498,7 @@ $("#aroundme").addEventListener("click", ()=>{
   setStatus("Recherche de votre position…");
   navigator.geolocation.getCurrentPosition(pos=>{
     const ll=showMe(pos);
-    map.setView(ll, 13); setTimeout(()=>{ setSheet("peek"); analyze(USER_SCAN); }, 400);
+    map.setView(ll, 13); setTimeout(()=>{ setSheet("peek"); if(S.species.length) analyze(USER_SCAN); else openPicker(()=>analyze(USER_SCAN)); }, 400);
   }, err=>setStatus("Position indisponible : "+(err.code===1?"autorisez la localisation pour ce site dans les réglages de Safari.":"signal GPS introuvable."), true),
   {enableHighAccuracy:true, timeout:20000, maximumAge:60000});
 });
@@ -2379,7 +2543,7 @@ $("#triplist").addEventListener("click", async e=>{
 const r2 = v => v==null||isNaN(v) ? null : Math.round(v*100)/100;
 function packCells(cells){
   return cells.map(c=>({r:c.r,c:c.c,lat:Math.round(c.lat*1e5)/1e5,lon:Math.round(c.lon*1e5)/1e5,alt:c.alt==null?null:Math.round(c.alt),mapped:c.mapped,keys:[...c.keys],ouvert:c.ouvert,forest:c.forest,label:c.label,
-    ph:r2(c.ph),sand:r2(c.sand),clay:r2(c.clay),soc:r2(c.soc),cfvo:r2(c.cfvo),pub:c.pub,urban:c.urban,urbanWhy:c.urbanWhy,priv:c.priv,privWhy:c.privWhy,geo:c.geo,h:r2(c.h),cover:r2(c.cover),anc:c.anc,
+    ph:r2(c.ph),sand:r2(c.sand),clay:r2(c.clay),soc:r2(c.soc),cfvo:r2(c.cfvo),pub:c.pub,urban:c.urban,urbanWhy:c.urbanWhy,bfrac:r2(c.bfrac),priv:c.priv,privWhy:c.privWhy,geo:c.geo,h:r2(c.h),cover:r2(c.cover),anc:c.anc,
     edge:c.edge,slope:r2(c.slope),aspect:r2(c.aspect),tpi:r2(c.tpi),awc:r2(c.awc),relW:c.relW?Array.from(c.relW,v=>Math.round(v*100)/100):null}));
 }
 function unpackCells(arr){ return arr.map(c=>({...c, keys:new Set(c.keys), relW:c.relW?Float32Array.from(c.relW):null, ww:null})); }
@@ -2726,7 +2890,7 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
   let lv=null; try{ lv=JSON.parse(localStorage.getItem("lastView")); }catch(e){}
   if(lv && deptAt(lv.lat, lv.lon)) map.setView([lv.lat, lv.lon], lv.z); else map.fitBounds(REGION_BOUNDS, {paddingTopLeft:[20,80], paddingBottomRight:[20, window.matchMedia("(max-width:760px)").matches ? 190 : 20]});
   drawZones(); setTimeout(refreshMap, 50);
-  S.med = null; setSpeciesSet(false); buildSpecies();
+  S.med = null; setSpeciesSet(false); loadMySpecies(); buildSpecies();
   setStatus("Zoomez sur le coin à étudier (15 km de côté au plus), puis touchez l’amanite « Scan » en haut à gauche.");
   const c=map.getCenter(); setArea(c.lat, c.lng);
 })();
