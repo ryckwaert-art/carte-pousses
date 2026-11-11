@@ -455,6 +455,7 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
 <div id="sppick" hidden role="dialog" aria-modal="true" aria-labelledby="pk-title">
   <div class="rf-box">
     <h2 id="pk-title">Quels champignons cherches-tu ?</h2>
+    <p class="chartnote" id="pk-new" hidden style="color:var(--ink);font-weight:700">Nouvelle zone, à plus de 30 km du dernier scan : que cherches-tu ici ?</p>
     <p class="chartnote">Jusqu’à trois. Les plus recherchés sont en haut ; le point vert signale ceux de saison.</p>
     <div id="pk-list"></div>
     <div class="rf-btns"><button type="button" id="pk-cancel" class="secondary">Annuler</button><button type="button" id="pk-ok" class="primary" disabled>Scanner</button></div>
@@ -1257,7 +1258,7 @@ const ScanCtl = L.Control.extend({ options:{position:"topleft"},
       const ok = ev.detail===0 || (down && Date.now()-down.t < 800 && Math.hypot(ev.clientX-down.x, ev.clientY-down.y) < 12);
       down=null; if(!ok || b.classList.contains("busy")) return;
       b.classList.add("busy"); b.setAttribute("aria-busy","true");
-      if(!hasChoice()){ b.classList.remove("busy"); b.removeAttribute("aria-busy"); openPicker(()=>{ b.classList.add("busy"); analyze(USER_SCAN).finally(()=>b.classList.remove("busy")); }); return; }
+      { const c=map.getCenter(); if(needPick(c.lat,c.lng)){ b.classList.remove("busy"); b.removeAttribute("aria-busy"); scanWithPick(()=>b.classList.add("busy"), ()=>b.classList.remove("busy")); return; } }
       try{ await analyze(USER_SCAN); } finally{ b.classList.remove("busy"); b.removeAttribute("aria-busy"); } });
     return b;
   } });
@@ -1975,17 +1976,30 @@ $("#sb-results").addEventListener("click", e=>{
 function startScan(){
   const b=document.querySelector(".scanbtn");
   const go=()=>{ if(b) b.classList.add("busy"); analyze(USER_SCAN).finally(()=>{ if(b) b.classList.remove("busy"); }); };
-  if(!hasChoice()) openPicker(go); else go();
+  const c=map.getCenter(), why=needPick(c.lat,c.lng);
+  if(why) openPicker(go, why==="far"); else go();
 }
 document.addEventListener("click", e=>{ if(e.target.closest && e.target.closest(".scanhere")){ map.closePopup(); if(sbMarker){ map.removeLayer(sbMarker); sbMarker=null; } startScan(); } });
 /* Choix des champignons : obligatoire avant le premier scan, mémorisé ensuite */
 function saveMySpecies(){ try{ localStorage.setItem("mySpecies", JSON.stringify(S.allMode && !S.species.length ? {all:true} : S.species)); }catch(e){} }
 function loadMySpecies(){ try{ const v=JSON.parse(localStorage.getItem("mySpecies")); if(Array.isArray(v)){ S.species=v.slice(0,3); S.allMode=false; } else if(v && v.all){ S.species=[]; S.allMode=true; } }catch(e){} }
 const hasChoice = () => S.species.length>0 || !!S.allMode;
+function lastScanCenter(){ try{ return JSON.parse(localStorage.getItem("lastScanCenter")); }catch(e){ return null; } }
+function needPick(lat, lon){
+  if(!hasChoice()) return "first";
+  const l = lastScanCenter();
+  return (l && haversine([l.lat,l.lon],[lat,lon]) > 30000) ? "far" : null;
+}
+/* Lance un scan de la vue actuelle, en demandant d’abord les champignons si nécessaire */
+function scanWithPick(onStart, onEnd){
+  const c = map.getCenter(), why = needPick(c.lat, c.lng);
+  const go = ()=>{ onStart && onStart(); analyze(USER_SCAN).finally(()=>{ onEnd && onEnd(); }); };
+  if(why) openPicker(go, why==="far"); else go();
+}
 const countLabel = () => S.species.length ? `${S.species.length} sur 3 choisis` : (S.allMode ? "tous les champignons" : "");
 let pickThen = null;
-function openPicker(then){
-  pickThen = then || null;
+function openPicker(then, far=false){
+  pickThen = then || null; $("#pk-new").hidden = !far;
   const m=monthOfDay(), sel=new Set(S.species), list=[...SPECIES].sort((a,b)=>prio(a.id)-prio(b.id));
   const top = list.filter(sp=>prio(sp.id)<16), rest = list.filter(sp=>prio(sp.id)>=16);
   const row = sp => `<label><input type="checkbox" value="${sp.id}" ${sel.has(sp.id)?"checked":""}>${esc(sp.nom)}${sp.mois.includes(m)?' <span class="season" title="de saison"></span>':""}<em>${esc(sp.comest)}</em></label>`;
@@ -2159,6 +2173,7 @@ async function analyze(origin){
     }
     if(W.ok){ cells.forEach(x=>x.ww=nearestWeights(x.lat,x.lon)); setStatus("Bilan d’eau de chaque maille…"); computeWaterBalance(cells); }
     S.grid={cells,rows,cols,b,cellM};
+    try{ localStorage.setItem("lastScanCenter", JSON.stringify({lat:cLat, lon:cLon})); }catch(e){}
     if(!reuse) saveTerrain(S.grid).catch(()=>{});
     drawForest(); render(); setProgress(1,"Terminé"); setTimeout(()=>setProgress(null), 600);
 
@@ -2708,7 +2723,7 @@ $("#aroundme").addEventListener("click", ()=>{
   setStatus("Recherche de votre position…");
   navigator.geolocation.getCurrentPosition(pos=>{
     const ll=showMe(pos);
-    map.setView(ll, 13); setTimeout(()=>{ setSheet("peek"); if(hasChoice()) analyze(USER_SCAN); else openPicker(()=>analyze(USER_SCAN)); }, 400);
+    map.setView(ll, 13); setTimeout(()=>{ setSheet("peek"); scanWithPick(); }, 400);
   }, err=>setStatus("Position indisponible : "+(err.code===1?"autorisez la localisation pour ce site dans les réglages de Safari.":"signal GPS introuvable."), true),
   {enableHighAccuracy:true, timeout:20000, maximumAge:60000});
 });
