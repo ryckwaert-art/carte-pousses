@@ -287,15 +287,14 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
     <h3>Terrains affichés</h3>
     <div class="modes" role="radiogroup" aria-label="Terrains affichés">
       <label><input type="radio" name="land" value="tous" checked>Tous</label>
-      <label><input type="radio" name="land" value="public">Accessibles</label>
-      <label><input type="radio" name="land" value="prive">Privés fermés</label>
+      <label><input type="radio" name="land" value="public">Forêts publiques</label>
     </div>
     <h3>Mes sorties</h3>
     <p class="chartnote">À faire en wifi avant de partir : enregistre l’analyse et le fond de carte de la zone, pour les retrouver en forêt sans réseau. Le GPS fonctionne sans réseau.</p>
     <button class="secondary" id="savetrip">Enregistrer cette analyse comme sortie</button>
     <p class="chartnote" id="tripnote"></p>
     <ul class="trips" id="triplist"></ul>
-    <p class="chartnote" id="landnote">« Privés fermés » : domaines et enclos clôturés ou murés, terrains militaires, carrières et propriétés marquées accès interdit sur OpenStreetMap. Tout le reste est classé accessible, y compris les forêts privées sans clôture connue, où l’on peut se promener mais où la cueillette demande l’accord du propriétaire. La carte des clôtures est incomplète : les panneaux sur place priment toujours.</p>
+    <p class="chartnote" id="landnote">Forêts publiques (domaniales, communales, gérées par l’ONF) : cueillette familiale tolérée, en général 5 litres par personne et par jour. En forêt privée, la promenade est possible là où il n’y a ni clôture ni panneau, mais la cueillette demande l’accord du propriétaire.</p>
   </section>
 
   <section id="sec-especes">
@@ -1122,9 +1121,7 @@ const ScanCtl = L.Control.extend({ options:{position:"topleft"},
 map.zoomControl.remove();
 new ScanCtl().addTo(map);
 L.control.zoom({position:"topleft"}).addTo(map);
-watchBase(basePlan, "Le Plan IGN", baseTopo);
-watchBase(baseOrtho, "Les photos aériennes de l’IGN", baseTopo);
-watchBase(baseTopo, "OpenTopoMap", baseOSM);
+watchBase(basePlan, "Le Plan IGN", baseOrtho);
 function watchOverlay(layer, name){
   let ok=0, bad=0, told=false;
   layer.on("tileload", ()=>{ ok++; });
@@ -1156,8 +1153,8 @@ const repLayerRef = L.layerGroup();
 const accessLayerRef = L.layerGroup();
 let heatLayer = null;
 L.control.layers(
-  {"Plan IGN":basePlan, "Photos aériennes":baseOrtho, "Topographique (OpenTopoMap)":baseTopo, "OpenStreetMap":baseOSM},
-  {"Départements couverts":zone, "Relief":relief, "Géologie (BRGM 1/50 000)":geol, "Forêts publiques":foretsPub, "Forêts anciennes":foretsAnc, "Peuplements analysés":forestLayer, "Clôtures et zones fermées (OSM)":accessLayerRef, "Mes repères":repLayerRef},
+  {"Plan IGN":basePlan, "Photos aériennes":baseOrtho},
+  {"Départements couverts":zone, "Relief":relief, "Géologie (BRGM 1/50 000)":geol, "Forêts publiques":foretsPub, "Forêts anciennes":foretsAnc, "Peuplements analysés":forestLayer, "Mes repères":repLayerRef},
   {collapsed:true}).addTo(map);
 L.control.scale({imperial:false}).addTo(map);
 watchOverlay(relief,"Le relief IGN"); watchOverlay(geol,"La carte géologique du BRGM"); watchOverlay(foretsPub,"La couche des forêts publiques"); watchOverlay(foretsAnc,"La couche des forêts anciennes");
@@ -1520,11 +1517,10 @@ function drawAccess(feat){
   if(!map.hasLayer(accessLayer)) accessLayer.addTo(map);
 }
 function accessText(c){
-  if(c.priv) return {cls:"priv", txt:`Privé, fermé : ${c.privWhy||"accès interdit"} (OpenStreetMap). Ne pas entrer sans autorisation.`};
-  if(c.priv==null) return {cls:"", txt: S.osmPending ? "Vérification des clôtures en cours, retouchez la carte dans quelques secondes." : "Accès inconnu : les clôtures n’ont pas pu être chargées. Respectez les panneaux sur place."};
-  if(c.pub===1) return {cls:"pub", txt:"Accessible, forêt publique : cueillette familiale tolérée, en général 5 litres par personne et par jour, sauf arrêté local."};
-  if(c.forest || c.mapped) return {cls:"", txt:"Accessible, forêt privée sans clôture connue : promenade possible, mais la cueillette demande l’accord du propriétaire. Respectez les panneaux sur place."};
-  return {cls:"", txt:"Accessible, terrain sans clôture connue : respectez les panneaux et les cultures sur place."};
+  if(c.pub===1) return {cls:"pub", txt:"Forêt publique : cueillette familiale tolérée, en général 5 litres par personne et par jour, sauf arrêté local."};
+  if(c.pub==null) return {cls:"", txt:"Statut inconnu : respectez les clôtures et panneaux sur place."};
+  if(c.forest || c.mapped) return {cls:"", txt:"Forêt privée : promenade possible là où il n’y a ni clôture ni panneau ; cueillette seulement avec l’accord du propriétaire."};
+  return {cls:"", txt:"Terrain privé ou agricole : respectez les clôtures, les panneaux et les cultures."};
 }
 
 
@@ -1749,9 +1745,9 @@ async function analyze(origin){
     if(W.ok){ cells.forEach(x=>x.ww=nearestWeights(x.lat,x.lon)); setStatus("Bilan d’eau de chaque maille…"); computeWaterBalance(cells); }
     S.grid={cells,rows,cols,b,cellM};
     drawForest(); render(); setProgress(1,"Terminé"); setTimeout(()=>setProgress(null), 600);
-    loadAccessAfter(S.grid);
+
     const nf=cells.filter(x=>x.forest).length;
-    setStatus(`${fmt(cells.length)} mailles de ${fmt(cellM)} m analysées${S.altiSrc && S.altiSrc!=="IGN" ? ` (altitudes : ${S.altiSrc})` : ""}, dont ${fmt(100*nf/cells.length)} % en forêt. ${S.soilOk?"pH et sable : SoilGrids.":"SoilGrids n’a pas répondu : pH estimé d’après les arbres."} Clôtures et accès : vérification en cours. ${S.geoOk==="50k"?"Géologie : BRGM 1/50 000.":S.geoOk==="1M"?"Géologie : carte simplifiée au millionième seulement.":"Géologie détaillée indisponible."} ${S.lidarOk?"Hauteur des arbres : LiDAR HD.":"LiDAR HD indisponible ici."} Cliquez sur la carte pour le détail.`);
+    setStatus(`${fmt(cells.length)} mailles de ${fmt(cellM)} m analysées${S.altiSrc && S.altiSrc!=="IGN" ? ` (altitudes : ${S.altiSrc})` : ""}, dont ${fmt(100*nf/cells.length)} % en forêt. ${S.soilOk?"pH et sable : SoilGrids.":"SoilGrids n’a pas répondu : pH estimé d’après les arbres."} ${S.geoOk==="50k"?"Géologie : BRGM 1/50 000.":S.geoOk==="1M"?"Géologie : carte simplifiée au millionième seulement.":"Géologie détaillée indisponible."} ${S.lidarOk?"Hauteur des arbres : LiDAR HD.":"LiDAR HD indisponible ici."} Cliquez sur la carte pour le détail.`);
   }catch(e){
     console.error(e);
     setStatus("L’analyse a échoué : "+e.message+". Vérifiez la connexion et relancez ; si le problème persiste, essayez un autre navigateur.", true);
@@ -1799,7 +1795,7 @@ function drawGrid(g, which){
   let shown=0;
   for(const c of cells){
     c.score=0;
-    if(S.land!=="tous" && c.priv!=null && ((S.land==="prive") !== (c.priv===true))) continue;
+    if(S.land==="public" && c.pub!==1) continue;
     shown++;
     const w = cellWx(c, stats); let best=0;
     for(const sp of SPECIES){
@@ -1987,7 +1983,7 @@ function updateSpeciesBars(per,total){
     box.appendChild(d);
   });
   const lbl = S.species==="all" ? "" : "";
-  $("#sporder").textContent = `Classées de la plus probable à la moins probable dans la zone analysée${S.mode==="meteo"?" pour le jour choisi":", d’après le terrain seul"}${S.land!=="tous"?(S.land==="public"?", sur les terrains accessibles":", dans les zones privées fermées"):""}. Le pourcentage résume les chances dans les meilleurs coins.`;
+  $("#sporder").textContent = `Classées de la plus probable à la moins probable dans la zone analysée${S.mode==="meteo"?" pour le jour choisi":", d’après le terrain seul"}${S.land!=="tous"?", en forêt publique":""}. Le pourcentage résume les chances dans les meilleurs coins.`;
 }
 
 /* ============================================================
@@ -2171,8 +2167,6 @@ async function showPlaceWeather(ll, fromGPS=false){
 const DIAG = [
   ["Plan IGN", ()=>wmts("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2","image/png").replace("{z}","12").replace("{y}","1490").replace("{x}","2108"), "img"],
   ["Photos aériennes IGN", ()=>wmts("ORTHOIMAGERY.ORTHOPHOTOS","image/jpeg").replace("{z}","12").replace("{y}","1490").replace("{x}","2108"), "img"],
-  ["OpenTopoMap", ()=>"https://a.tile.opentopomap.org/12/2108/1490.png", "img"],
-  ["OpenStreetMap", ()=>"https://tile.openstreetmap.org/12/2108/1490.png", "img"],
   ["Géologie BRGM", ()=>"https://geoservices.brgm.fr/geologie?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=SCAN_H_GEOL50&STYLES=&CRS=EPSG:4326&BBOX=43.7,3.7,43.8,3.8&WIDTH=64&HEIGHT=64&FORMAT=image/png&TRANSPARENT=true", "img"],
   ["Forêts publiques (ONF)", ()=>`${PUB_WMS}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=FORETS.PUBLIQUES&STYLES=&CRS=EPSG:4326&BBOX=43.7,3.7,43.8,3.8&WIDTH=64&HEIGHT=64&FORMAT=image/png&TRANSPARENT=true`, "fetch"],
   ["Peuplements (BD Forêt)", ()=>"https://data.geopf.fr/wfs/ows?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=LANDCOVER.FORESTINVENTORY.V2:formation_vegetale&OUTPUTFORMAT=application/json&COUNT=1", "fetch"],
@@ -2220,7 +2214,7 @@ async function setArea(lat, lon){
 $("#day").addEventListener("input", ()=>{ if(W.ok) onDayChange(); });
 document.querySelectorAll('input[name="land"]').forEach(r=>r.addEventListener("change",e=>{
   S.land=e.target.value;
-  if(S.grid && !S.osmOk && S.land!=="tous") setStatus("Les clôtures et accès privés n’ont pas pu être chargés pour cette zone : relancez le scan pour réessayer.", true);
+  if(S.grid && !S.pubOk && S.land!=="tous") setStatus("Les forêts publiques n’ont pas pu être chargées pour cette zone : relancez le scan pour réessayer.", true);
   render();
 }));
 let viewTimer=null;
@@ -2372,7 +2366,7 @@ async function openTrip(id){
   W.ok=true;
   S.grid={cells:unpackCells(t.cells), rows:t.rows, cols:t.cols, b:t.b, cellM:t.cellM}; S.forest=[];
   document.querySelector('input[value="meteo"]').disabled=false; $("#lab-meteo").classList.remove("disabled");
-  S.mode=t.mode; S.land=t.land; document.querySelectorAll('input[name="mode"]').forEach(r=>r.checked=r.value===S.mode); document.querySelectorAll('input[name="land"]').forEach(r=>r.checked=r.value===S.land);
+  S.mode=t.mode; S.land=(t.land==="public"?"public":"tous"); document.querySelectorAll('input[name="mode"]').forEach(r=>r.checked=r.value===S.mode); document.querySelectorAll('input[name="land"]').forEach(r=>r.checked=r.value===S.land);
   const sl=$("#day"); sl.min=25; sl.max=W.days.length-1; S.day=Math.min(t.day, W.days.length-1); sl.value=S.day; sl.disabled=false;
   S.month=monthOfDay(); $("#daylabel").innerHTML=dayLabel(S.day); buildSpecies();
   map.fitBounds([[t.b.s,t.b.w],[t.b.n,t.b.e]]);
