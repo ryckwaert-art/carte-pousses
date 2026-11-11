@@ -61,7 +61,7 @@ canvas.chart{width:100%;display:block;margin-top:6px}
 dl.wx{display:grid;grid-template-columns:1fr auto;gap:2px 10px;margin:10px 0 0;font-size:15px}
 dl.wx dt{color:var(--muted)} dl.wx dd{margin:0;text-align:right;font-weight:700}
 .zones{margin:10px 0 8px}
-.tabs{display:flex;gap:18px;border-bottom:1px solid var(--line);margin-top:4px}
+.tabs{display:flex;gap:22px;border-bottom:1px solid var(--line);margin-top:4px}
 .tabs button{background:none;border:0;font:inherit;font-family:var(--serif);font-size:18px;color:var(--muted);padding:6px 0 8px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
 .tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ochre)}
 .now{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;align-items:baseline;margin:14px 0 4px}
@@ -138,11 +138,45 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--ochre);outline-
 .pop .rk b{font-weight:500}
 .pop .rk span:last-child{white-space:nowrap;text-align:right}
 .pop .why{font-size:12.5px;color:#6B675C;margin:2px 0 6px}
+.pop .trees{margin:2px 0 6px;font-size:13.5px}
+.pop .trees span{color:#B07A1E;font-weight:700}
+.pop .addrep{font:inherit;font-size:13.5px;font-weight:700;border:1px solid #5A6B3A;color:#5A6B3A;background:transparent;border-radius:999px;padding:6px 12px;margin:2px 0 6px;min-height:34px}
 .handle{display:none}
 #loader{position:fixed;left:50%;top:38%;transform:translate(-50%,-50%);z-index:1500;background:var(--panel);border:1px solid var(--line);border-radius:18px;
   padding:16px 22px 12px;text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.2);min-width:200px;max-width:80vw;pointer-events:none}
 #loader[hidden]{display:none}
 #loader p{margin:4px 0 0}
+#loadcancel{pointer-events:auto;margin-top:8px;font:inherit;font-size:14px;font-weight:700;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:999px;padding:6px 14px;min-height:36px}
+#hud{position:fixed;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom,0px));z-index:1200;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:10px 12px;box-shadow:0 -2px 14px rgba(0,0,0,.18)}
+#hud[hidden]{display:none}
+.hud-stats{display:flex;justify-content:space-around;text-align:center;font-size:12px;color:var(--muted)}
+.hud-stats b{display:block;font-family:var(--serif);font-size:20px;color:var(--ink)}
+#hud-zone{margin:6px 0 0;font-size:13px;text-align:center;color:var(--muted)}
+#hud-zone.out{color:var(--danger);font-weight:700}
+.hud-btns{display:flex;gap:6px;margin-top:8px}
+.hud-btns button{flex:1;font:inherit;font-size:15px;font-weight:700;min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--paper);color:var(--ink)}
+#hud-stop{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+body.hiking #panel{display:none}
+body.hiking .leaflet-bottom{bottom:150px}
+.me.arrow{border-radius:50% 50% 50% 0;transform-origin:center}
+#repform{position:fixed;inset:0;z-index:2000;background:rgba(20,20,15,.45);display:flex;align-items:flex-end;justify-content:center}
+#repform[hidden]{display:none}
+.rf-box{background:var(--panel);color:var(--ink);width:100%;max-width:520px;max-height:92%;overflow-y:auto;border-radius:16px 16px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px))}
+.rf-box h2{margin-top:0}
+.rf-l{display:block;font-size:14px;color:var(--muted);margin:10px 0 0}
+.rf-l input,.rf-l textarea{display:block;width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:9px 10px;margin-top:4px}
+.rf-sp{border:1px solid var(--line);border-radius:10px;margin:12px 0 0;padding:8px 10px}
+.rf-sp legend{font-size:14px;color:var(--muted);padding:0 4px}
+#rf-species{display:flex;flex-wrap:wrap;gap:6px;max-height:180px;overflow-y:auto}
+#rf-species label{font-size:14px;border:1px solid var(--line);border-radius:999px;padding:6px 10px;display:flex;gap:6px;align-items:center}
+#rf-species label:has(input:checked){background:var(--moss);color:var(--panel);border-color:var(--moss)}
+#rf-preview img{max-width:100%;max-height:180px;border-radius:8px;margin-top:8px}
+.rf-btns{display:flex;gap:8px;margin-top:14px}
+.rf-btns button{flex:1;margin:0}
+.reps li{grid-template-columns:1fr auto}
+.reps .acts{display:flex;gap:6px;flex-wrap:wrap;grid-column:1 / -1}
+.reps img{width:64px;height:64px;object-fit:cover;border-radius:8px}
+.rep-ic{font-size:22px;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.4))}
 #loadpct{font-family:var(--serif);font-size:24px;font-weight:700}
 #loadstep{font-size:13px;color:var(--muted)}
 #fillrect{transition:y .35s ease}
@@ -205,7 +239,7 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
   </div>
   <div class="quick">
     <button id="aroundme">Analyser autour de moi</button>
-    <button id="follow" aria-pressed="false">Suivre ma position</button>
+    <button id="hike" aria-pressed="false">Mode randonnée</button>
   </div>
   <p class="mstatus" id="mstatus"></p>
   <div id="zoneinfo" hidden>
@@ -214,8 +248,9 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
   </div>
   <p class="sub" id="zonesub"></p>
   <div class="tabs" role="tablist">
-    <button role="tab" id="tb-carte" aria-selected="true" aria-controls="tab-carte">Carte des pousses</button>
-    <button role="tab" id="tb-meteo" aria-selected="false" aria-controls="tab-meteo">Météo sur place</button>
+    <button role="tab" id="tb-carte" aria-selected="true" aria-controls="tab-carte">Pousses</button>
+    <button role="tab" id="tb-meteo" aria-selected="false" aria-controls="tab-meteo">Météo</button>
+    <button role="tab" id="tb-carnet" aria-selected="false" aria-controls="tab-carnet">Carnet</button>
   </div>
   <div id="tab-meteo" role="tabpanel" hidden>
     <p class="sub" style="margin-top:12px">Conditions actuelles et prévisions des prochaines heures, d’après les modèles Météo-France AROME et ARPÈGE.</p>
@@ -225,6 +260,17 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
     </div>
     <p class="chartnote" id="wxwherenote">Cliquez sur la carte pour choisir un lieu, ou utilisez votre position.</p>
     <div id="wxnow"></div>
+  </div>
+  <div id="tab-carnet" role="tabpanel" hidden>
+    <h2>Mes repères</h2>
+    <p class="chartnote">Tes cueillettes et coins notés, avec leurs coordonnées GPS. Ils restent sur cet appareil : pense à les exporter de temps en temps pour les garder en sécurité.</p>
+    <button class="primary" id="addrep-gps">Ajouter un repère à ma position</button>
+    <div class="quick">
+      <button id="exp-gpx">Exporter en GPX</button>
+      <button id="exp-csv">Exporter en tableur</button>
+    </div>
+    <p class="chartnote" id="repnote"></p>
+    <ul class="trips reps" id="replist"></ul>
   </div>
   <div id="tab-carte" role="tabpanel">
 
@@ -248,6 +294,7 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
       <label><input type="radio" name="mode" value="terrain">Terrain seul</label>
     </div>
     <button class="primary" id="go">Analyser la zone visible</button>
+    <button class="secondary" id="rescan" hidden>Scanner tout le secteur</button>
     <p id="status">Zoomez sur un secteur (15 km de côté au plus), puis lancez l’analyse.</p>
     <div class="legend"><span>faible</span><div class="ramp"></div><span>forte</span></div>
     <label class="chartnote" style="display:flex;align-items:center;gap:8px;margin-top:6px">Opacité de la coloration<input type="range" id="heatop" min="0.2" max="1" step="0.05" value="0.7" style="flex:1"></label>
@@ -317,6 +364,25 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
   </div>
 </aside>
 <main id="map" aria-label="Carte"></main>
+<div id="hud" hidden>
+  <div class="hud-stats"><span><b id="hud-time">0:00</b>durée</span><span><b id="hud-dist">0,0 km</b>distance</span><span><b id="hud-alt">—</b>altitude</span></div>
+  <p id="hud-zone"></p>
+  <div class="hud-btns"><button id="hud-rep">Repère ici</button><button id="hud-center">Recentrer</button><button id="hud-stop">Quitter</button></div>
+</div>
+<div id="repform" hidden role="dialog" aria-modal="true" aria-labelledby="rf-title">
+  <div class="rf-box">
+    <h2 id="rf-title">Nouveau repère</h2>
+    <p class="chartnote" id="rf-coords"></p>
+    <label class="rf-l">Titre<input type="text" id="rf-name" maxlength="80"></label>
+    <fieldset class="rf-sp"><legend>Champignons trouvés</legend><div id="rf-species"></div>
+      <label class="rf-l">Autre espèce<input type="text" id="rf-other" maxlength="80" placeholder="Nom, si absent de la liste"></label></fieldset>
+    <label class="rf-l">Quantité<input type="text" id="rf-qty" maxlength="60" placeholder="Par exemple : 1,2 kg ou une quinzaine"></label>
+    <label class="rf-l">Notes<textarea id="rf-note" rows="3" maxlength="1000" placeholder="Arbre voisin, état, accès, météo…"></textarea></label>
+    <label class="rf-l">Photo<input type="file" id="rf-photo" accept="image/*"></label>
+    <div id="rf-preview"></div>
+    <div class="rf-btns"><button type="button" id="rf-cancel" class="secondary">Annuler</button><button type="button" id="rf-save" class="primary">Enregistrer</button></div>
+  </div>
+</div>
 <div id="loader" hidden aria-live="polite">
   <svg viewBox="0 0 100 112" width="120" height="134" aria-hidden="true">
     <defs><clipPath id="fillclip"><rect id="fillrect" x="0" y="112" width="100" height="112"/></clipPath>
@@ -334,6 +400,7 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
   </svg>
   <p id="loadpct">0 %</p>
   <p id="loadstep">Préparation…</p>
+  <button type="button" id="loadcancel" hidden>Arrêter</button>
 </div>
 
 <script src="lib/leaflet.js"></script>
@@ -687,15 +754,19 @@ async function omElevation(pts){
 async function loadAltitudes(points, onProgress){
   const res = new Array(points.length).fill(null);
   S.altiSrc = "IGN";
-  // 1) Une seule requête POST pour toute la grille
+  // 1) Requêtes POST de 4 500 points au plus (limite du service : 5 000), espacées pour respecter 5 requêtes par seconde
   try{
     onProgress && onProgress(0, points.length);
-    const lon = points.map(p=>p[1].toFixed(6)).join("|"), lat = points.map(p=>p[0].toFixed(6)).join("|");
-    const js = await fetchJSON(ALTI_URL, {method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({lon, lat, resource:"ign_rge_alti_wld", delimiter:"|", indent:"false", measures:"false", zonly:"true"})}, 60000);
-    if(js.elevations && js.elevations.length === points.length){
-      js.elevations.forEach((v,k)=>res[k]=toZ(v)); onProgress && onProgress(points.length, points.length); return res;
+    for(let a=0; a<points.length; a+=4500){
+      const part = points.slice(a, a+4500);
+      const lon = part.map(p=>p[1].toFixed(6)).join("|"), lat = part.map(p=>p[0].toFixed(6)).join("|");
+      const js = await fetchJSON(ALTI_URL, {method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({lon, lat, resource:"ign_rge_alti_wld", delimiter:"|", indent:"false", measures:"false", zonly:"true"})}, 90000);
+      if(!js.elevations || js.elevations.length !== part.length) throw new Error("réponse incomplète");
+      js.elevations.forEach((v,k)=>res[a+k]=toZ(v)); onProgress && onProgress(Math.min(points.length,a+4500), points.length);
+      await sleep(300);
     }
+    return res;
   }catch(e){ console.warn("Altitudes IGN (POST)", e); }
   // 2) Lots de 100 points, un toutes les 300 ms, nouvel essai après le blocage de 5 s
   let done = 0, failed = [], streak = 0;
@@ -1080,10 +1151,11 @@ function drawZones(){
   }
 }
 const forestLayer = L.layerGroup();
+const repLayerRef = L.layerGroup();
 let heatLayer = null;
 L.control.layers(
   {"Plan IGN":basePlan, "Photos aériennes":baseOrtho, "Topographique (OpenTopoMap)":baseTopo, "OpenStreetMap":baseOSM},
-  {"Zones d’étude":zone, "Relief":relief, "Géologie (BRGM 1/50 000)":geol, "Forêts publiques":foretsPub, "Forêts anciennes":foretsAnc, "Peuplements analysés":forestLayer},
+  {"Zones d’étude":zone, "Relief":relief, "Géologie (BRGM 1/50 000)":geol, "Forêts publiques":foretsPub, "Forêts anciennes":foretsAnc, "Peuplements analysés":forestLayer, "Mes repères":repLayerRef},
   {collapsed:true}).addTo(map);
 L.control.scale({imperial:false}).addTo(map);
 watchOverlay(relief,"Le relief IGN"); watchOverlay(geol,"La carte géologique du BRGM"); watchOverlay(foretsPub,"La couche des forêts publiques"); watchOverlay(foretsAnc,"La couche des forêts anciennes");
@@ -1175,7 +1247,7 @@ async function gfiText(base, layer, lat, lon){
   }
   return null;
 }
-async function classifyByColor(base, layer, b, cols, rows, classify, onProgress, maxColors=40){
+async function classifyByColor(base, layer, b, cols, rows, classify, onProgress, maxColors=40, lookup=null){
   const W2=cols*2, H2=rows*2;
   const url = `${base}${base.includes("?")?"&":"?"}SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=${layer}&STYLES=&CRS=EPSG:4326`
     + `&BBOX=${b.s},${b.w},${b.n},${b.e}&WIDTH=${W2}&HEIGHT=${H2}&FORMAT=image/png&TRANSPARENT=true`;
@@ -1198,8 +1270,8 @@ async function classifyByColor(base, layer, b, cols, rows, classify, onProgress,
     let idx = rep.has(k) ? rep.get(k) : cellKey.indexOf(k);
     const r=Math.floor(idx/cols), c=idx%cols;
     const lat=b.s+(r+0.5)*(b.n-b.s)/rows, lon=b.w+(c+0.5)*(b.e-b.w)/cols;
-    const txt = await gfiText(base, layer, lat, lon);
-    meaning.set(k, txt ? classify(txt) : null);
+    if(lookup){ let v=null; try{ v = await lookup(lat, lon); }catch(e){} meaning.set(k, v); }
+    else { const txt = await gfiText(base, layer, lat, lon); meaning.set(k, txt ? classify(txt) : null); }
     onProgress && onProgress(++i, known.length);
     await sleep(120);
   }
@@ -1222,8 +1294,8 @@ function classifyGeology(txt){
   const label = (parts[0]||txt).slice(0,140);
   return {cls, label};
 }
-async function loadGeology(b, cols, rows, onProgress){
-  let res = await classifyByColor(BRGM_WMS, "SCAN_H_GEOL50", b, cols, rows, classifyGeology, onProgress, 40);
+async function loadGeology(b, cols, rows, onProgress, maxC=40){
+  let res = await classifyByColor(BRGM_WMS, "SCAN_H_GEOL50", b, cols, rows, classifyGeology, onProgress, maxC);
   let ok = res.filter(Boolean).length;
   if(ok < res.length*0.2){ // repli sur la carte lithologique simplifiée au millionième
     res = await classifyByColor(BRGM_WMS, "LITHO_1M_SIMPLIFIEE", b, cols, rows, classifyGeology, onProgress, 20);
@@ -1337,6 +1409,7 @@ async function analyze(){
   const midLat=(b.s+b.n)/2, kx=Math.cos(midLat*Math.PI/180);
   const wKm=(b.e-b.w)*111.32*kx, hKm=(b.n-b.s)*110.57;
   if(wKm*hKm > MAX_AREA_KM2){ setStatus(`La zone visible fait environ ${fmt(wKm*hKm)} km². Zoomez jusqu’à ${MAX_AREA_KM2} km² au plus.`, true); return; }
+  if(S.scanning){ setStatus("Le scan du secteur est en cours : attendez la fin ou arrêtez-le avant d’analyser une zone.", true); return; }
   const btn=$("#go"); btn.disabled=true;
   try{
     const cellM = Math.max(100, Math.sqrt(wKm*hKm*1e6/TARGET_CELLS));
@@ -1406,7 +1479,7 @@ async function analyze(){
       x.tpi = n ? x.alt - s/n : null;
     }
     if(W.ok){ cells.forEach(x=>x.ww=nearestWeights(x.lat,x.lon)); setStatus("Bilan d’eau de chaque maille…"); computeWaterBalance(cells); }
-    S.grid={cells,rows,cols,b};
+    S.grid={cells,rows,cols,b,cellM};
     drawForest(); render(); setProgress(1,"Terminé"); setTimeout(()=>setProgress(null), 600);
     const nf=cells.filter(x=>x.forest).length;
     setStatus(`${fmt(cells.length)} mailles de ${fmt(cellM)} m analysées${S.altiSrc && S.altiSrc!=="IGN" ? ` (altitudes : ${S.altiSrc})` : ""}, dont ${fmt(100*nf/cells.length)} % en forêt. ${S.soilOk?"pH et sable : SoilGrids.":"SoilGrids n’a pas répondu : pH estimé d’après les arbres."} ${S.pubOk?`${fmt(100*cells.filter(x=>x.pub===1).length/cells.length)} % en forêt publique.`:"Les forêts publiques n’ont pas pu être chargées : le filtre des terrains est inactif."} ${S.geoOk==="50k"?"Géologie : BRGM 1/50 000.":S.geoOk==="1M"?"Géologie : carte simplifiée au millionième seulement.":"Géologie détaillée indisponible."} ${S.lidarOk?"Hauteur des arbres : LiDAR HD.":"LiDAR HD indisponible ici."} Cliquez sur la carte pour le détail.`);
@@ -1445,9 +1518,11 @@ function scoreCell(sp, c, stats, month, wx){
   return {score:t.total*m.total, t, m};
 }
 
-function render(){
-  if(!S.grid) return;
-  const {cells,rows,cols,b} = S.grid, stats=currentStats(), month=monthOfDay();
+map.createPane("zoneHeat").style.zIndex = 380;
+map.createPane("fineHeat").style.zIndex = 390;
+let zoneHeat = null;
+function drawGrid(g, which){
+  const {cells,rows,cols,b} = g, stats=currentStats(), month=monthOfDay();
   const list = S.species==="all" ? SPECIES : SPECIES.filter(s=>s.id===S.species);
   const per={}; SPECIES.forEach(s=>per[s.id]={good:0,max:0,vals:[]});
   const cv=document.createElement("canvas"); cv.width=cols; cv.height=rows;
@@ -1468,15 +1543,49 @@ function render(){
     if(best>=0.06){ const [R,G,B]=rampColor(best); img.data[px]=R; img.data[px+1]=G; img.data[px+2]=B; img.data[px+3]=Math.round(255*(0.2+0.6*best)); }
   }
   ctx.putImageData(img,0,0);
-  if(heatLayer) map.removeLayer(heatLayer);
-  heatLayer = L.imageOverlay(cv.toDataURL(), [[b.s,b.w],[b.n,b.e]], {interactive:false, opacity:Number($("#heatop").value)}).addTo(map);
-  updateSpeciesBars(per, shown);
+  const op = Number($("#heatop").value);
+  const layer = L.imageOverlay(cv.toDataURL(), [[b.s,b.w],[b.n,b.e]], {interactive:false, opacity: which==="zone" ? op*0.85 : op, pane: which==="zone" ? "zoneHeat" : "fineHeat"}).addTo(map);
+  if(which==="zone"){ if(zoneHeat) map.removeLayer(zoneHeat); zoneHeat = layer; }
+  else { if(heatLayer) map.removeLayer(heatLayer); heatLayer = layer; }
+  return {per, shown};
+}
+function render(){
+  let res=null;
+  if(S.zoneGrid){ const r=drawGrid(S.zoneGrid,"zone"); if(!S.grid) res=r; }
+  if(S.grid) res=drawGrid(S.grid,"fine");
+  if(res) updateSpeciesBars(res.per, res.shown);
 }
 
-function cellAt(ll){
-  const g=S.grid; if(!g) return null; const {b,rows,cols,cells}=g;
+function cellIn(g, ll){
+  if(!g) return null; const {b,rows,cols,cells}=g;
   if(ll.lat<b.s||ll.lat>b.n||ll.lng<b.w||ll.lng>b.e) return null;
   return cells[Math.min(rows-1,Math.floor((ll.lat-b.s)/(b.n-b.s)*rows))*cols + Math.min(cols-1,Math.floor((ll.lng-b.w)/(b.e-b.w)*cols))];
+}
+function gridOf(ll){ return cellIn(S.grid, ll) ? S.grid : cellIn(S.zoneGrid, ll) ? S.zoneGrid : null; }
+function cellAt(ll){ return cellIn(S.grid, ll) || cellIn(S.zoneGrid, ll); }
+
+/* Les trois peuplements les plus présents autour d’un point (BD Forêt) */
+function essenceName(label){
+  if(!label) return "Inconnu";
+  if(/^Hors for/i.test(label)) return "Hors forêt (prés, cultures, bâti)";
+  const t = norm(label);
+  const dict = [[/chenes? sempervirent/,"Chêne vert"],[/chenes? decidu/,"Chênes caducs (pubescent, sessile…)"],[/pin d.alep/,"Pin d’Alep"],[/pin sylvestre/,"Pin sylvestre"],
+    [/laricio|pin noir/,"Pin laricio ou pin noir"],[/pin maritime/,"Pin maritime"],[/crochets|cembro/,"Pin à crochets ou cembro"],[/melange de pins/,"Pins en mélange"],[/autres? pins?/,"Autres pins"],
+    [/sapin|epicea/,"Sapin ou épicéa"],[/douglas/,"Douglas"],[/meleze/,"Mélèze"],[/hetre/,"Hêtre"],[/chataignier/,"Châtaignier"],[/robinier/,"Robinier"],[/peupl/,"Peuplier"],
+    [/feuillus preponderants/,"Feuillus mêlés de conifères"],[/coniferes preponderants/,"Conifères mêlés de feuillus"],[/melange de feuillus|autres feuillus|feuillus purs/,"Feuillus en mélange"],
+    [/melange de coniferes|autres coniferes|coniferes purs/,"Conifères en mélange"],[/lande/,"Lande ou garrigue"],[/herbace/,"Pelouse ou prairie"],[/sans couvert/,"Coupe ou clairière"]];
+  for(const [re,n] of dict) if(re.test(t)) return n;
+  return label.replace(/^Forêt (fermée|ouverte)\s*(de |d’|d'|à )?/i,"").replace(/\s+purs?$/i,"");
+}
+function treesAround(c, g, radiusM=300){
+  const cellM = g.cellM || 200, rc = Math.max(1, Math.round(radiusM/cellM)), cnt = new Map(); let tot=0;
+  for(let r=c.r-rc; r<=c.r+rc; r++) for(let cc=c.c-rc; cc<=c.c+rc; cc++){
+    if(r<0||cc<0||r>=g.rows||cc>=g.cols || (r-c.r)**2+(cc-c.c)**2 > rc*rc+0.5) continue;
+    const q = g.cells[r*g.cols+cc]; if(!q) continue;
+    const n = (!q.mapped && q.h!=null && q.cover>0.5 && q.h>5) ? "Boisement non répertorié (LiDAR)" : essenceName(q.label);
+    cnt.set(n, (cnt.get(n)||0)+1); tot++;
+  }
+  return {list:[...cnt.entries()].sort((a,b)=>b[1]-a[1]).slice(0,3).map(([n,k])=>[n, k/tot]), radius: Math.round(rc*cellM)};
 }
 const DIRS=["nord","nord-est","est","sud-est","sud","sud-ouest","ouest","nord-ouest"];
 const pct = v => Math.round(v*100)+" %";
@@ -1487,7 +1596,12 @@ map.on("click", e=>{
   const expo = c.slope==null ? "—" : (c.slope<4 ? "replat" : DIRS[Math.round(c.aspect/45)%8]+`, pente ${fmt(c.slope)}°`);
   const pos = c.tpi==null ? "" : (c.tpi<-8 ? " (creux, fond de vallon)" : c.tpi>12 ? " (crête ou bosse)" : "");
   const se = soilEstimate(c);
-  let html=`<div class="pop"><h3>${esc(c.label)}</h3><table>
+  const gg = gridOf(e.latlng), ta = gg ? treesAround(c, gg) : null;
+  let html=`<div class="pop"><h3>${esc(essenceName(c.label))}</h3>
+    ${ta && ta.list.length ? `<p class="trees"><b>Autour, sur ${fmt(ta.radius)} m :</b> ${ta.list.map(([n,f])=>`${esc(n)} <span>${Math.round(f*100)} %</span>`).join(" · ")}</p>` : ""}
+    ${gg===S.zoneGrid && !cellIn(S.grid,e.latlng) ? `<p class="why">Vue d’ensemble du secteur (mailles de ${fmt(gg.cellM)} m). Pour plus de précision, zoomez et lancez « Analyser la zone visible ».</p>` : ""}
+    <button type="button" class="addrep" data-lat="${e.latlng.lat}" data-lon="${e.latlng.lng}">Ajouter un repère ici</button>
+    <table>
     <tr><td>Altitude</td><td>${c.alt==null?"—":fmt(c.alt)+" m"}${pos}</td></tr>
     <tr><td>Exposition</td><td>${expo}</td></tr>
     <tr><td>Sol</td><td>${se.ph==null?"pH inconnu":"pH "+fmt(se.ph,1)}${c.sand!=null?`, ${fmt(c.sand)} % de sable`:""}<br><span style="color:#6B675C">${esc(se.src)}</span></td></tr>
@@ -1671,11 +1785,13 @@ function weatherSourceNote(){
   t += W.obsUntil ? ` Pluie mesurée à ${W.nStations} station${W.nStations>1?"s":""} Météo-France jusqu’au ${W.obsUntil}, modélisée ensuite.` : " Pluie modélisée (stations non chargées).";
   return t;
 }
+let renderTimer=null;
+function renderSoon(){ clearTimeout(renderTimer); renderTimer=setTimeout(render, 120); }
 function onDayChange(){
   S.day=Number($("#day").value); $("#daylabel").innerHTML=dayLabel(S.day);
   if(chartTarget) drawCharts(chartTarget.lat,chartTarget.lon,chartTarget.alt);
   const pm=S.month; S.month=monthOfDay(); if(pm!==S.month) buildSpecies();
-  render();
+  renderSoon();
 }
 
 /* ============================================================
@@ -1683,6 +1799,7 @@ function onDayChange(){
    ============================================================ */
 document.querySelectorAll('input[name="mode"]').forEach(r=>r.addEventListener("change",e=>{S.mode=e.target.value; render();}));
 $("#go").addEventListener("click", analyze);
+$("#rescan").addEventListener("click", ()=>{ if(!S.scanning) scanZone(true); });
 window.addEventListener("resize",()=>{ if(chartTarget) drawCharts(chartTarget.lat,chartTarget.lon,chartTarget.alt); });
 
 /* ============================================================
@@ -1694,17 +1811,17 @@ const WMO = {0:"Ciel dégagé",1:"Plutôt dégagé",2:"Partiellement nuageux",3:
   82:"Averses violentes",85:"Averses de neige",86:"Fortes averses de neige",95:"Orage",96:"Orage avec grêle",99:"Orage avec forte grêle"};
 let wxPoint = null, lastClickLL = null;
 function setTab(which){
-  const carte = which==="carte";
-  $("#tab-carte").hidden = !carte; $("#tab-meteo").hidden = carte;
-  $("#tb-carte").setAttribute("aria-selected", carte); $("#tb-meteo").setAttribute("aria-selected", !carte);
+  for(const t of ["carte","meteo","carnet"]){ $("#tab-"+t).hidden = t!==which; $("#tb-"+t).setAttribute("aria-selected", t===which); }
   setTimeout(refreshMap, 30);
-  if(!carte){
+  if(which==="carnet") refreshRepList();
+  if(which==="meteo"){
     const mode = document.querySelector('input[name="wxwhere"]:checked').value;
     if(mode==="gps") useGPS(); else showPlaceWeather(lastClickLL ? [lastClickLL.lat,lastClickLL.lng] : CENTER);
   }
 }
 $("#tb-carte").addEventListener("click", ()=>setTab("carte"));
 $("#tb-meteo").addEventListener("click", ()=>setTab("meteo"));
+$("#tb-carnet").addEventListener("click", ()=>setTab("carnet"));
 document.querySelectorAll('input[name="wxwhere"]').forEach(r=>r.addEventListener("change",e=>{
   if(e.target.value==="gps") useGPS(); else showPlaceWeather(lastClickLL ? [lastClickLL.lat,lastClickLL.lng] : CENTER);
 }));
@@ -1809,14 +1926,15 @@ async function runDiag(){
     + `<li style="color:var(--muted);margin-top:6px">${esc(navigator.userAgent.match(/Chrome\/[\d.]+|Firefox\/[\d.]+|Version\/[\d.]+ Safari/)?.[0]||navigator.userAgent)}</li>`;
 }
 $("#diagbtn").addEventListener("click", runDiag);
-$("#heatop").addEventListener("input", e=>{ if(heatLayer) heatLayer.setOpacity(Number(e.target.value)); });
+$("#heatop").addEventListener("input", e=>{ const v=Number(e.target.value); if(heatLayer) heatLayer.setOpacity(v); if(zoneHeat) zoneHeat.setOpacity(v*0.85); });
 
 async function setZone(id, offline=false){
   Z = {...ZONES[id], id}; CENTER = Z.center; CENTER_ALT = Z.alt; ZONE_KM = Z.km; SPECIES = Z.species;
   document.querySelectorAll('input[name="zone"]').forEach(r=>r.checked = r.value===id);
   if(location.hash.slice(1)!==id) history.replaceState(null,"","#"+id);
   $("#zonesub").textContent = Z.sub;
-  S.grid=null; S.forest=[]; S.species="all"; if(heatLayer){ map.removeLayer(heatLayer); heatLayer=null; } forestLayer.clearLayers(); map.closePopup();
+  S.grid=null; S.zoneGrid=null; S.forest=[]; S.species="all"; if(heatLayer){ map.removeLayer(heatLayer); heatLayer=null; } if(zoneHeat){ map.removeLayer(zoneHeat); zoneHeat=null; } forestLayer.clearLayers(); map.closePopup();
+  if(S.scanning) S.scanCancel = true;
   drawZones(); map.setView(CENTER, 11); setTimeout(refreshMap, 50);
   setStatus("Zoomez sur un secteur (15 km de côté au plus), puis lancez l’analyse.");
   W.ok=false; buildSpecies(); $("#sporder").textContent="Classées par saison. Lancez une analyse pour les classer de la plus probable à la moins probable.";
@@ -1827,8 +1945,9 @@ async function setZone(id, offline=false){
     await loadWeather();
     const sl=$("#day"); sl.min=25; sl.max=W.days.length-1; sl.value=W.todayIdx; sl.disabled=false;
     S.day=W.todayIdx; S.month=monthOfDay(); $("#daylabel").innerHTML=dayLabel(S.day); buildSpecies(); drawCharts(CENTER[0],CENTER[1],CENTER_ALT);
+    const zid = Z.id; setTimeout(()=>{ if(Z && Z.id===zid) scanZone(); }, 300);
     if(!W.hasSM) $("#chartnote").textContent += " L’humidité du sol n’est pas fournie ici : l’indice d’eau repose sur la pluie et le bilan hydrique.";
-    loadStationRain().then(()=>{ if(S.grid) computeWaterBalance(S.grid.cells); if(chartTarget) drawCharts(chartTarget.lat,chartTarget.lon,chartTarget.alt); render(); })
+    loadStationRain().then(()=>{ if(S.grid) computeWaterBalance(S.grid.cells); if(S.zoneGrid) computeWaterBalance(S.zoneGrid.cells); if(chartTarget) drawCharts(chartTarget.lat,chartTarget.lon,chartTarget.alt); render(); })
       .catch(e=>{ console.warn("Stations Météo-France", e); if(chartTarget) drawCharts(chartTarget.lat,chartTarget.lon,chartTarget.alt); });
   }catch(e){
     console.error(e); W.ok=false; S.mode="terrain";
@@ -1889,16 +2008,6 @@ function showMe(pos){
   else { meMarker.setLatLng(ll); meCircle.setLatLng(ll).setRadius(pos.coords.accuracy); }
   return ll;
 }
-$("#follow").addEventListener("click", ()=>{
-  const b=$("#follow");
-  if(watchId!=null){ navigator.geolocation.clearWatch(watchId); watchId=null; b.classList.remove("on"); b.setAttribute("aria-pressed","false"); b.textContent="Suivre ma position"; return; }
-  if(!navigator.geolocation){ setStatus("Ce navigateur ne donne pas accès à la position.", true); return; }
-  let first=true;
-  watchId = navigator.geolocation.watchPosition(pos=>{ const ll=showMe(pos); if(first){ map.setView(ll, Math.max(map.getZoom(),14)); first=false; } },
-    err=>{ setStatus("Position indisponible : "+(err.code===1?"autorisez la localisation pour ce site dans les réglages de Safari.":"signal GPS introuvable."), true); },
-    {enableHighAccuracy:true, maximumAge:10000, timeout:30000});
-  b.classList.add("on"); b.setAttribute("aria-pressed","true"); b.textContent="Arrêter le suivi";
-});
 $("#aroundme").addEventListener("click", ()=>{
   if(!navigator.geolocation){ setStatus("Ce navigateur ne donne pas accès à la position.", true); return; }
   setStatus("Recherche de votre position…");
@@ -1914,18 +2023,17 @@ $("#aroundme").addEventListener("click", ()=>{
 
 /* Mes sorties : plusieurs analyses enregistrées sur l’appareil (base IndexedDB, plus spacieuse que le stockage simple) */
 const OLD_TRIP_KEY="sortie-v1";
-const DB = {
+const IDB = {
   db:null,
-  open(){ if(this.db) return Promise.resolve(this.db); return new Promise((res,rej)=>{ const r=indexedDB.open("pousses",1);
-    r.onupgradeneeded=()=>{ if(!r.result.objectStoreNames.contains("sorties")) r.result.createObjectStore("sorties",{keyPath:"id"}); };
-    r.onsuccess=()=>{ this.db=r.result; res(r.result); }; r.onerror=()=>rej(r.error); }); },
-  async run(mode, fn){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction("sorties",mode); const q=fn(t.objectStore("sorties"));
+  open(){ if(this.db) return Promise.resolve(this.db); return new Promise((res,rej)=>{ const r=indexedDB.open("pousses",2);
+    r.onupgradeneeded=()=>{ for(const st of ["sorties","reperes","zones"]) if(!r.result.objectStoreNames.contains(st)) r.result.createObjectStore(st,{keyPath:"id"}); };
+    r.onsuccess=()=>{ this.db=r.result; res(r.result); }; r.onerror=()=>rej(r.error); r.onblocked=()=>rej(new Error("base bloquée")); }); },
+  async run(store, mode, fn){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction(store,mode); const q=fn(t.objectStore(store));
     t.oncomplete=()=>res(q ? q.result : undefined); t.onerror=()=>rej(t.error); t.onabort=()=>rej(t.error); }); },
-  put(o){ return this.run("readwrite", st=>st.put(o)); },
-  del(id){ return this.run("readwrite", st=>st.delete(id)); },
-  get(id){ return this.run("readonly", st=>st.get(id)); },
-  all(){ return this.run("readonly", st=>st.getAll()); }
+  store(name){ return { put:o=>this.run(name,"readwrite",st=>st.put(o)), del:id=>this.run(name,"readwrite",st=>st.delete(id)),
+    get:id=>this.run(name,"readonly",st=>st.get(id)), all:()=>this.run(name,"readonly",st=>st.getAll()) }; }
 };
+const DB = IDB.store("sorties"), REP = IDB.store("reperes"), ZDB = IDB.store("zones");
 const dateFr = t => new Date(t).toLocaleString("fr-FR",{day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"});
 function tripSummary(t){ return `${t.name || (ZONES[t.zone]?ZONES[t.zone].court:"")}, enregistrée le ${dateFr(t.savedAt)}`; }
 async function migrateOldTrip(){
@@ -1968,11 +2076,12 @@ function tileList(b, zmin, zmax){
 }
 $("#savetrip").addEventListener("click", async ()=>{
   const btn=$("#savetrip"), note=$("#tripnote");
-  if(!S.grid){ note.textContent="Lancez d’abord une analyse sur le secteur de votre sortie."; return; }
+  const G = S.grid || S.zoneGrid;
+  if(!G){ note.textContent="Lancez d’abord une analyse, ou attendez la fin du scan du secteur."; return; }
   const def = `${Z.court}, ${new Date().toLocaleDateString("fr-FR",{day:"numeric",month:"short"})}`;
   const name = prompt("Nom de la sortie :", def); if(name===null) return;
   btn.disabled=true;
-  const trip = {id:Date.now(), name:(name.trim()||def).slice(0,60), zone:Z.id, savedAt:Date.now(), b:S.grid.b, rows:S.grid.rows, cols:S.grid.cols, cells:packCells(S.grid.cells),
+  const trip = {id:Date.now(), name:(name.trim()||def).slice(0,60), zone:Z.id, savedAt:Date.now(), b:G.b, rows:G.rows, cols:G.cols, cellM:G.cellM, cells:packCells(G.cells),
     W:{days:W.days, todayIdx:W.todayIdx, hasSM:W.hasSM, obsUntil:W.obsUntil, nStations:W.nStations, src:W.src,
        pts:W.pts.map(p=>({lat:p.lat,lon:p.lon,elev:p.elev,rain:p.rain.map(r2),tmin:p.tmin.map(r2),tmax:p.tmax.map(r2),tmean:p.tmean.map(r2),et0:p.et0.map(r2),sm:p.sm.map(v=>isNaN(v)?null:Math.round(v*1000)/1000),rh:p.rh.map(r2),vpd:p.vpd.map(r2),tsoil:p.tsoil.map(r2)}))},
     day:S.day, mode:S.mode, land:S.land, tiles:0};
@@ -1980,7 +2089,8 @@ $("#savetrip").addEventListener("click", async ()=>{
   catch(e){ note.textContent="Enregistrement impossible : la mémoire de l’appareil est pleine ou ce mode de navigation l’interdit. Supprimez une ancienne sortie et réessayez."; btn.disabled=false; return; }
   refreshTripList();
   // Préchargement du Plan IGN (le service de tuiles de l’IGN n’est pas limité en nombre de requêtes) du zoom 11 au 16
-  const tiles=tileList(S.grid.b, 11, 16), tpl=wmts("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2","image/png");
+  let zmax=16, tiles=tileList(G.b, 11, zmax); while(tiles.length>3000 && zmax>12){ zmax--; tiles=tileList(G.b, 11, zmax); }
+  const tpl=wmts("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2","image/png");
   let done=0, fail=0; const queue=tiles.slice();
   async function worker(){ while(queue.length){ const [z,x,y]=queue.shift(); try{ const r=await fetch(tpl.replace("{z}",z).replace("{x}",x).replace("{y}",y),{mode:"cors"}); if(!r.ok) fail++; }catch(e){ fail++; } done++; if(done%10===0) note.textContent=`Fond de carte : ${done} tuiles sur ${tiles.length}…`; } }
   note.textContent=`Fond de carte : 0 tuile sur ${tiles.length}…`;
@@ -1999,7 +2109,7 @@ async function openTrip(id){
   const nn=a=>a.map(v=>v==null?NaN:v);
   W.pts=t.W.pts.map(p=>({...p, rain:p.rain.map(v=>v||0), et0:p.et0.map(v=>v||0), tmin:nn(p.tmin), tmax:nn(p.tmax), tmean:nn(p.tmean), sm:nn(p.sm), rh:nn(p.rh), vpd:nn(p.vpd), tsoil:nn(p.tsoil)}));
   W.ok=true;
-  S.grid={cells:unpackCells(t.cells), rows:t.rows, cols:t.cols, b:t.b}; S.forest=[];
+  S.grid={cells:unpackCells(t.cells), rows:t.rows, cols:t.cols, b:t.b, cellM:t.cellM}; S.forest=[];
   document.querySelector('input[value="meteo"]').disabled=false; $("#lab-meteo").classList.remove("disabled");
   S.mode=t.mode; S.land=t.land; document.querySelectorAll('input[name="mode"]').forEach(r=>r.checked=r.value===S.mode); document.querySelectorAll('input[name="land"]').forEach(r=>r.checked=r.value===S.land);
   const sl=$("#day"); sl.min=25; sl.max=W.days.length-1; S.day=Math.min(t.day, W.days.length-1); sl.value=S.day; sl.disabled=false;
@@ -2010,6 +2120,275 @@ async function openTrip(id){
   setStatus(`Sortie « ${t.name||""} » (${dateFr(t.savedAt)}). La météo est celle du jour de l’enregistrement.`);
 }
 migrateOldTrip().then(refreshTripList);
+
+
+/* ============================================================
+   Scan automatique du secteur entier (vue d’ensemble, mise en cache)
+   ============================================================ */
+const ZONE_CELLS = IS_MOBILE ? 14000 : 20000;
+const ZONE_CACHE_DAYS = 60;
+function zoneBounds(z){ const dLat=z.km/110.57, dLon=z.km/(111.32*Math.cos(z.center[0]*Math.PI/180)); return {s:z.center[0]-dLat, n:z.center[0]+dLat, w:z.center[1]-dLon, e:z.center[1]+dLon}; }
+async function forestLookup(lat, lon){
+  const e=0.0002;
+  const url = "https://data.geopf.fr/wfs/ows?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=LANDCOVER.FORESTINVENTORY.V2:formation_vegetale"
+    + `&OUTPUTFORMAT=application/json&COUNT=1&PROPERTYNAME=code_tfv,tfv,tfv_g11,essence&BBOX=${lat-e},${lon-e},${lat+e},${lon+e},urn:ogc:def:crs:EPSG::4326`;
+  let js; try{ js = await fetchJSON(url, {}, 20000); }catch(err){ js = await fetchJSON(url.replace("&PROPERTYNAME=code_tfv,tfv,tfv_g11,essence",""), {}, 20000); }
+  const f = js.features && js.features[0]; return f ? classifyForest(f.properties) : null;
+}
+function stopIfCancelled(){ if(S.scanCancel) throw new Error("scan arrêté"); }
+function deriveTerrain(cells, rows, cols, b){
+  const at=(r,c)=>(r<0||c<0||r>=rows||c>=cols)?null:cells[r*cols+c];
+  const kx=Math.cos(((b.s+b.n)/2)*Math.PI/180), dx=(b.e-b.w)/cols*111320*kx, dy=(b.n-b.s)/rows*110574;
+  for(const x of cells){
+    x.edge = [at(x.r+1,x.c),at(x.r-1,x.c),at(x.r,x.c+1),at(x.r,x.c-1)].some(n=>n && n.forest!==x.forest);
+    if(x.alt==null){ x.slope=null; x.aspect=null; x.tpi=null; continue; }
+    const z = q => q && q.alt!=null ? q.alt : x.alt;
+    const gx=(z(at(x.r,x.c+1))-z(at(x.r,x.c-1)))/(2*dx), gy=(z(at(x.r+1,x.c))-z(at(x.r-1,x.c)))/(2*dy);
+    x.slope=Math.atan(Math.hypot(gx,gy))*180/Math.PI; x.aspect=(Math.atan2(-gx,-gy)*180/Math.PI+360)%360;
+    let s2=0,n=0; for(let rr=x.r-1;rr<=x.r+1;rr++) for(let cc=x.c-1;cc<=x.c+1;cc++){ const q=at(rr,cc); if(q&&q!==x&&q.alt!=null){ s2+=q.alt; n++; } }
+    x.tpi = n ? x.alt - s2/n : null;
+  }
+}
+async function scanZone(force=false){
+  if(!Z || S.scanning) return;
+  const zid = Z.id;
+  // 1) Un scan récent est déjà enregistré : affichage immédiat, avec la météo du jour
+  if(!force){
+    let cached=null; try{ cached = await ZDB.get(zid); }catch(e){}
+    if(cached && Date.now()-cached.savedAt < ZONE_CACHE_DAYS*864e5){
+      if(!Z || Z.id!==zid) return;
+      S.zoneGrid = {cells:unpackCells(cached.cells), rows:cached.rows, cols:cached.cols, b:cached.b, cellM:cached.cellM, savedAt:cached.savedAt};
+      if(W.ok){ S.zoneGrid.cells.forEach(x=>x.ww=nearestWeights(x.lat,x.lon)); computeWaterBalance(S.zoneGrid.cells); }
+      render(); setStatus(`Secteur entier affiché (scan du ${new Date(cached.savedAt).toLocaleDateString("fr-FR",{day:"numeric",month:"long"})}, météo du jour). Zoomez et lancez « Analyser la zone visible » pour le détail.`);
+      updateRescan(); return;
+    }
+  }
+  // 2) Nouveau scan, mailles de 400 à 700 m environ
+  const b = zoneBounds(Z), kx=Math.cos(Z.center[0]*Math.PI/180);
+  const wKm=(b.e-b.w)*111.32*kx, hKm=(b.n-b.s)*110.57, cellM=Math.max(350, Math.sqrt(wKm*hKm*1e6/ZONE_CELLS));
+  const cols=Math.ceil(wKm*1000/cellM), rows=Math.ceil(hKm*1000/cellM), dLon=(b.e-b.w)/cols, dLat=(b.n-b.s)/rows;
+  const cells=[]; for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) cells.push({r,c,lat:b.s+(r+0.5)*dLat, lon:b.w+(c+0.5)*dLon});
+  S.scanning=true; S.scanCancel=false; $("#loadcancel").hidden=false; $("#go").disabled=true;
+  try{
+    setProgress(0.02,"Scan du secteur : peuplements forestiers"); setStatus(`Scan du secteur ${Z.court} : ${fmt(cells.length)} mailles de ${fmt(cellM)} m. À faire une fois, de préférence en wifi.`);
+    let forest=null;
+    try{ forest = await classifyByColor(PUB_WMS, "LANDCOVER.FORESTINVENTORY.V2", b, cols, rows, null, (i,n)=>setProgress(0.02+0.2*i/n,"Scan du secteur : peuplements forestiers"), 45, forestLookup); }
+    catch(e){ console.warn("BD Forêt (secteur)", e); }
+    stopIfCancelled();
+    cells.forEach((x,i)=>{ const f=forest?forest[i]:null; x.mapped=!!f; x.keys=f?f.keys:new Set(); x.ouvert=f?f.ouvert:false; x.forest=f?f.forest:false; x.label=f?f.label:"Hors forêt (prairie, culture ou bâti)"; });
+    setProgress(0.23,"Scan du secteur : forêts publiques");
+    let pub=null; try{ pub=await loadPublicMask(b, cols, rows); }catch(e){} cells.forEach((x,i)=>x.pub = pub?pub[i]:null); stopIfCancelled();
+    setProgress(0.27,"Scan du secteur : géologie");
+    let geo=null; try{ geo=await loadGeology(b, cols, rows, (i,n)=>setProgress(0.27+0.25*i/n,"Scan du secteur : géologie"), 80); }catch(e){ console.warn("Géologie (secteur)", e); }
+    cells.forEach((x,i)=>x.geo = geo?geo[i]:null); stopIfCancelled();
+    setProgress(0.53,"Scan du secteur : hauteur des arbres");
+    let can=null; try{ can=await loadCanopy(b, cols, rows); }catch(e){} cells.forEach((x,i)=>{ const v=can?can[i]:null; x.h=v?v.h:null; x.cover=v?v.cover:null; }); stopIfCancelled();
+    setProgress(0.58,"Scan du secteur : forêts anciennes");
+    let anc=null; try{ anc=await loadAncient(b, cols, rows); }catch(e){} cells.forEach((x,i)=>x.anc = anc?anc[i]:null); stopIfCancelled();
+    setProgress(0.62,"Scan du secteur : sols");
+    let soil=null; try{ soil=await loadSoil(b); }catch(e){}
+    cells.forEach(x=>{ if(soil){ const g=(L_,k)=>{ const v=sampleLayer(L_,x.lat,x.lon); return v!=null?v/k:null; }; x.ph=g(soil.ph,10); x.sand=g(soil.sand,10); x.clay=g(soil.clay,10); x.soc=g(soil.soc,10); x.cfvo=g(soil.cfvo,10); } else { x.ph=x.sand=x.clay=x.soc=x.cfvo=null; } });
+    stopIfCancelled();
+    setProgress(0.68,"Scan du secteur : altitudes");
+    const alts = await loadAltitudes(cells.map(x=>[x.lat,x.lon]), (d,t)=>setProgress(0.68+0.25*d/t,"Scan du secteur : altitudes"));
+    stopIfCancelled();
+    cells.forEach((x,i)=>x.alt=alts[i]);
+    setProgress(0.95,"Scan du secteur : calcul");
+    deriveTerrain(cells, rows, cols, b);
+    if(!Z || Z.id!==zid) return;
+    S.zoneGrid = {cells, rows, cols, b, cellM, savedAt:Date.now()};
+    if(W.ok){ cells.forEach(x=>x.ww=nearestWeights(x.lat,x.lon)); computeWaterBalance(cells); }
+    render(); setProgress(1,"Secteur scanné"); setTimeout(()=>setProgress(null), 700);
+    try{ await ZDB.put({id:zid, savedAt:Date.now(), b, rows, cols, cellM, cells:packCells(cells).map(c=>({...c, relW:null}))}); }catch(e){ console.warn("Cache du secteur", e); }
+    setStatus(`Secteur ${Z.court} scanné (${fmt(cells.length)} mailles de ${fmt(cellM)} m)${forest?"":", sans la BD Forêt (non disponible)"}. Le scan est gardé ${ZONE_CACHE_DAYS} jours ; zoomez et lancez « Analyser la zone visible » pour le détail.`);
+    updateRescan();
+  }catch(e){
+    setProgress(null);
+    setStatus(S.scanCancel ? "Scan du secteur arrêté. Relancez-le avec « Rescanner le secteur » quand vous voulez." : "Le scan du secteur a échoué : "+e.message, !S.scanCancel);
+  }finally{
+    S.scanning=false; $("#loadcancel").hidden=true; $("#go").disabled=false;
+  }
+}
+$("#loadcancel").addEventListener("click", ()=>{ S.scanCancel=true; $("#loadstep").textContent="Arrêt en cours…"; });
+function updateRescan(){
+  const bt=$("#rescan"); if(!bt) return;
+  bt.hidden=false; bt.textContent = S.zoneGrid && S.zoneGrid.savedAt ? `Rescanner le secteur (dernier scan : ${new Date(S.zoneGrid.savedAt).toLocaleDateString("fr-FR",{day:"numeric",month:"short"})})` : "Scanner tout le secteur";
+}
+
+/* ============================================================
+   Mode randonnée : suivi en direct, parcours, zone couverte
+   ============================================================ */
+const H = {on:false, watch:null, follow:true, track:[], dist:0, t0:0, timer:null, line:null, zones:null, wake:null, last:null};
+function haversine(a,b){ const R=6371000, t=Math.PI/180, dLa=(b[0]-a[0])*t, dLo=(b[1]-a[1])*t; const x=Math.sin(dLa/2)**2+Math.cos(a[0]*t)*Math.cos(b[0]*t)*Math.sin(dLo/2)**2; return 2*R*Math.asin(Math.sqrt(x)); }
+async function keepAwake(){ try{ if("wakeLock" in navigator) H.wake = await navigator.wakeLock.request("screen"); }catch(e){} }
+document.addEventListener("visibilitychange", ()=>{ if(H.on && document.visibilityState==="visible") keepAwake(); });
+function drawHikeZones(){
+  if(H.zones) map.removeLayer(H.zones);
+  H.zones = L.layerGroup();
+  const add=(g,lbl,dash)=>{ if(!g) return; L.rectangle([[g.b.s,g.b.w],[g.b.n,g.b.e]],{color:"#2E7BD6",weight:2,dashArray:dash,fill:false,interactive:false}).bindTooltip(lbl,{permanent:false}).addTo(H.zones); };
+  add(S.zoneGrid,"Secteur scanné","8 6"); add(S.grid,"Zone analysée en détail","3 5");
+  H.zones.addTo(map);
+}
+function inCovered(ll){ const p={lat:ll[0],lng:ll[1]}; return cellIn(S.grid,p) ? "detail" : cellIn(S.zoneGrid,p) ? "secteur" : null; }
+function updateHud(){
+  const sec=Math.floor((Date.now()-H.t0)/1000), h=Math.floor(sec/3600), m=Math.floor(sec/60)%60;
+  $("#hud-time").textContent = h ? `${h} h ${String(m).padStart(2,"0")}` : `${m}:${String(sec%60).padStart(2,"0")}`;
+  $("#hud-dist").textContent = `${fmt(H.dist/1000,1)} km`;
+}
+function onHikePos(pos){
+  const ll=[pos.coords.latitude,pos.coords.longitude], acc=pos.coords.accuracy;
+  showMe(pos);
+  const hd = pos.coords.heading, sp = pos.coords.speed;
+  const el = meMarker && meMarker.getElement() && meMarker.getElement().querySelector(".me");
+  if(el){ if(hd!=null && !isNaN(hd) && sp>0.6){ el.classList.add("arrow"); el.style.transform=`rotate(${hd-45}deg)`; } else { el.classList.remove("arrow"); el.style.transform=""; } }
+  if(acc<=50){
+    if(!H.last || haversine(H.last,ll)>=5){ if(H.last) H.dist += haversine(H.last,ll); H.last=ll; H.track.push([ll[0],ll[1],pos.coords.altitude,Date.now()]); H.line.addLatLng(ll); }
+  }
+  const alt = pos.coords.altitude!=null ? pos.coords.altitude : (cellAt({lat:ll[0],lng:ll[1]})||{}).alt;
+  $("#hud-alt").textContent = alt!=null ? `${fmt(alt)} m` : "—";
+  const cov = inCovered(ll), z=$("#hud-zone");
+  z.textContent = cov==="detail" ? "Dans la zone analysée en détail" : cov==="secteur" ? "Dans le secteur scanné (vue d’ensemble)" : "Hors des zones analysées : pas de prévision ici";
+  z.classList.toggle("out", !cov);
+  if(H.follow) map.setView(ll, Math.max(map.getZoom(), 15), {animate:true});
+  updateHud();
+}
+function startHike(){
+  if(!navigator.geolocation){ setStatus("Ce navigateur ne donne pas accès à la position.", true); return; }
+  H.on=true; H.follow=true; H.track=[]; H.dist=0; H.last=null; H.t0=Date.now();
+  H.line = L.polyline([], {color:"#2E7BD6", weight:4, opacity:0.8, interactive:false}).addTo(map);
+  drawHikeZones(); map.closePopup();
+  document.body.classList.add("hiking"); $("#hud").hidden=false; setTimeout(refreshMap, 50);
+  H.watch = navigator.geolocation.watchPosition(onHikePos,
+    err=>{ $("#hud-zone").textContent = err.code===1 ? "Localisation refusée : autorisez-la pour ce site dans les réglages." : "Recherche du signal GPS…"; },
+    {enableHighAccuracy:true, maximumAge:5000, timeout:30000});
+  H.timer = setInterval(updateHud, 1000); keepAwake();
+  $("#hike").classList.add("on"); $("#hike").setAttribute("aria-pressed","true");
+}
+async function stopHike(){
+  if(H.watch!=null) navigator.geolocation.clearWatch(H.watch); clearInterval(H.timer);
+  try{ if(H.wake) await H.wake.release(); }catch(e){} H.wake=null;
+  H.on=false; document.body.classList.remove("hiking"); $("#hud").hidden=true; setTimeout(refreshMap, 50);
+  if(H.zones){ map.removeLayer(H.zones); H.zones=null; }
+  $("#hike").classList.remove("on"); $("#hike").setAttribute("aria-pressed","false");
+  if(H.track.length>2 && confirm(`Parcours de ${fmt(H.dist/1000,1)} km. L’exporter en fichier GPX ?`)){
+    const pts = H.track.map(([la,lo,al,t])=>`<trkpt lat="${la.toFixed(6)}" lon="${lo.toFixed(6)}">${al!=null?`<ele>${al.toFixed(1)}</ele>`:""}<time>${new Date(t).toISOString()}</time></trkpt>`).join("");
+    await shareFile(`parcours-${new Date().toISOString().slice(0,10)}.gpx`, "application/gpx+xml", `<?xml version="1.0" encoding="UTF-8"?><gpx version="1.1" creator="Carte des pousses" xmlns="http://www.topografix.com/GPX/1/1"><trk><name>Parcours du ${new Date().toLocaleDateString("fr-FR")}</name><trkseg>${pts}</trkseg></trk></gpx>`);
+  }
+  if(H.line && !confirm("Garder le tracé du parcours affiché sur la carte ?")){ map.removeLayer(H.line); }
+}
+$("#hike").addEventListener("click", ()=>{ H.on ? stopHike() : startHike(); });
+$("#hud-stop").addEventListener("click", stopHike);
+$("#hud-center").addEventListener("click", ()=>{ H.follow=true; if(H.last) map.setView(H.last, Math.max(map.getZoom(),15)); });
+$("#hud-rep").addEventListener("click", ()=>openRepForm({gps:true}));
+map.on("dragstart", ()=>{ if(H.on) H.follow=false; });
+
+/* ============================================================
+   Carnet : points repères des cueillettes
+   ============================================================ */
+const repLayer = repLayerRef.addTo(map);
+let repEdit = null, repPhoto = null;
+function repContext(lat, lon){
+  const c = cellAt({lat,lng:lon}), g = gridOf({lat,lng:lon}), ctx = {zone: Z ? Z.court : ""};
+  if(c){ ctx.alt = c.alt!=null ? Math.round(c.alt) : null; ctx.roche = c.geo ? c.geo.label : null; ctx.foret = essenceName(c.label);
+    if(g){ const ta=treesAround(c,g); ctx.arbres = ta.list.map(([n,f])=>`${n} ${Math.round(f*100)} %`).join(", "); } }
+  try{ const st=currentStats(); if(st && c){ const w=cellWx(c,st); ctx.meteo = `pluie 26 j : ${fmt(w.P26)} mm, temp. 20 j : ${fmt(w.T20,1)} °C`; } }catch(e){}
+  return ctx;
+}
+function openRepForm(opt){
+  const f=$("#repform"); repEdit=null; repPhoto=null;
+  const fill = (lat, lon, acc, rec)=>{
+    repEdit = rec || {id:Date.now(), date:Date.now(), lat, lon, acc, ctx:repContext(lat,lon)};
+    $("#rf-title").textContent = rec ? "Modifier le repère" : "Nouveau repère";
+    $("#rf-coords").textContent = `${repEdit.lat.toFixed(5)}, ${repEdit.lon.toFixed(5)}${repEdit.acc?` (précision ${fmt(repEdit.acc)} m)`:""}${repEdit.ctx&&repEdit.ctx.alt!=null?`, ${repEdit.ctx.alt} m`:""}`;
+    $("#rf-name").value = rec ? rec.name : `Cueillette du ${new Date().toLocaleDateString("fr-FR",{day:"numeric",month:"short"})}`;
+    const chosen = new Set(rec ? rec.species||[] : []);
+    $("#rf-species").innerHTML = [...SPECIES].sort((a,b)=>a.nom.localeCompare(b.nom,"fr")).map(sp=>`<label><input type="checkbox" value="${esc(sp.nom)}" ${chosen.has(sp.nom)?"checked":""}>${esc(sp.nom)}</label>`).join("");
+    $("#rf-other").value = rec ? rec.other||"" : ""; $("#rf-qty").value = rec ? rec.qty||"" : ""; $("#rf-note").value = rec ? rec.note||"" : "";
+    $("#rf-photo").value=""; repPhoto = rec && rec.photo ? rec.photo : null;
+    $("#rf-preview").innerHTML = repPhoto ? `<img src="${URL.createObjectURL(repPhoto)}" alt="Photo du repère">` : "";
+    f.hidden=false; $("#rf-name").focus();
+  };
+  if(opt.rec) return fill(null,null,null,opt.rec);
+  if(opt.lat!=null) return fill(opt.lat, opt.lon, null, null);
+  if(H.on && H.last && opt.gps){ return fill(H.last[0], H.last[1], null, null); }
+  if(!navigator.geolocation){ $("#repnote").textContent="Position indisponible sur ce navigateur."; return; }
+  $("#repnote").textContent="Recherche de ta position…";
+  navigator.geolocation.getCurrentPosition(pos=>{ $("#repnote").textContent=""; fill(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, null); },
+    err=>{ $("#repnote").textContent = err.code===1 ? "Localisation refusée : autorise-la pour ce site dans les réglages." : "Signal GPS introuvable. Tu peux aussi toucher la carte puis « Ajouter un repère ici »."; },
+    {enableHighAccuracy:true, timeout:20000, maximumAge:15000});
+}
+async function compressPhoto(file){
+  let src; try{ src = await createImageBitmap(file); }catch(e){ const u=URL.createObjectURL(file); src=new Image(); src.src=u; await src.decode(); }
+  const k = Math.min(1, 1280/Math.max(src.width, src.height)), cv=document.createElement("canvas");
+  cv.width=Math.round(src.width*k); cv.height=Math.round(src.height*k); cv.getContext("2d").drawImage(src,0,0,cv.width,cv.height);
+  return await new Promise(res=>cv.toBlob(res, "image/jpeg", 0.8));
+}
+$("#rf-photo").addEventListener("change", async e=>{
+  const f=e.target.files && e.target.files[0]; if(!f) return;
+  try{ repPhoto = await compressPhoto(f); $("#rf-preview").innerHTML = `<img src="${URL.createObjectURL(repPhoto)}" alt="Photo du repère">`; }
+  catch(err){ $("#rf-preview").textContent="Photo illisible."; }
+});
+$("#rf-cancel").addEventListener("click", ()=>{ $("#repform").hidden=true; });
+$("#rf-save").addEventListener("click", async ()=>{
+  if(!repEdit) return;
+  const r = {...repEdit, name: $("#rf-name").value.trim() || "Repère", species: [...document.querySelectorAll("#rf-species input:checked")].map(i=>i.value),
+    other: $("#rf-other").value.trim(), qty: $("#rf-qty").value.trim(), note: $("#rf-note").value.trim(), photo: repPhoto || null};
+  try{ await REP.put(r); }catch(e){ alert("Enregistrement impossible : mémoire pleine ou navigation privée."); return; }
+  $("#repform").hidden=true; $("#repnote").textContent=`Repère « ${r.name} » enregistré.`; refreshRepList(); drawReps();
+});
+function repSpecies(r){ return [...(r.species||[]), r.other].filter(Boolean).join(", "); }
+async function drawReps(){
+  repLayer.clearLayers(); let list=[]; try{ list=(await REP.all())||[]; }catch(e){ return; }
+  for(const r of list){
+    L.marker([r.lat,r.lon],{icon:L.divIcon({className:"",html:'<div class="rep-ic">🍄</div>',iconSize:[24,24],iconAnchor:[12,20]}),title:r.name})
+      .on("click", ev=>{ L.DomEvent.stopPropagation(ev);
+        const img = r.photo ? `<img src="${URL.createObjectURL(r.photo)}" alt="" style="width:100%;max-height:140px;object-fit:cover;border-radius:8px;margin:4px 0">` : "";
+        L.popup({maxWidth:260, autoPanPaddingTopLeft:[14,84], autoPanPaddingBottomRight:[14, SHEET.peek+16]}).setLatLng([r.lat,r.lon]).setContent(`<div class="pop"><h3>${esc(r.name)}</h3><p class="why">${new Date(r.date).toLocaleString("fr-FR",{day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"})}</p>${img}${repSpecies(r)?`<p>${esc(repSpecies(r))}${r.qty?`, ${esc(r.qty)}`:""}</p>`:""}${r.note?`<p>${esc(r.note)}</p>`:""}<p class="why">${r.lat.toFixed(5)}, ${r.lon.toFixed(5)}</p><button type="button" class="addrep editrep" data-id="${r.id}">Modifier</button></div>`).openOn(map); })
+      .addTo(repLayer);
+  }
+}
+async function refreshRepList(){
+  const ul=$("#replist"); let list=[];
+  try{ list=(await REP.all())||[]; }catch(e){ ul.innerHTML='<li class="empty">Le carnet ne fonctionne pas dans ce mode de navigation (navigation privée ?).</li>'; return; }
+  list.sort((a,b)=>b.date-a.date);
+  if(!list.length){ ul.innerHTML='<li class="empty">Aucun repère pour l’instant. Ajoute-en un à ta position, ou touche la carte puis « Ajouter un repère ici ».</li>'; return; }
+  ul.innerHTML = list.map(r=>`<li data-id="${r.id}"><div><b>${esc(r.name)}</b><small>${new Date(r.date).toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})}${repSpecies(r)?` · ${esc(repSpecies(r))}`:""}${r.qty?` · ${esc(r.qty)}`:""}<br>${r.lat.toFixed(5)}, ${r.lon.toFixed(5)}${r.ctx&&r.ctx.zone?` · ${esc(r.ctx.zone)}`:""}</small></div>
+    ${r.photo?`<img data-photo="${r.id}" alt="">`:"<span></span>"}
+    <div class="acts"><button type="button" class="see">Voir</button><button type="button" class="edit">Modifier</button><button type="button" class="copy">Copier les coordonnées</button><button type="button" class="del">Supprimer</button></div></li>`).join("");
+  for(const r of list) if(r.photo){ const im=ul.querySelector(`img[data-photo="${r.id}"]`); if(im) im.src=URL.createObjectURL(r.photo); }
+}
+$("#replist").addEventListener("click", async e=>{
+  const li=e.target.closest("li[data-id]"); if(!li) return; const id=Number(li.dataset.id); const r=await REP.get(id).catch(()=>null); if(!r) return;
+  if(e.target.classList.contains("see")){ setSheet("peek"); map.setView([r.lat,r.lon], 16); }
+  if(e.target.classList.contains("edit")) openRepForm({rec:r});
+  if(e.target.classList.contains("copy")){ const t=`${r.lat.toFixed(6)}, ${r.lon.toFixed(6)}`; try{ await navigator.clipboard.writeText(t); $("#repnote").textContent="Coordonnées copiées : "+t; }catch(err){ prompt("Coordonnées :", t); } }
+  if(e.target.classList.contains("del") && confirm(`Supprimer le repère « ${r.name} » ? Cette action est définitive.`)){ await REP.del(id).catch(()=>{}); refreshRepList(); drawReps(); }
+});
+document.addEventListener("click", async e=>{
+  const b=e.target.closest && e.target.closest(".addrep"); if(!b) return;
+  if(b.classList.contains("editrep")){ const r=await REP.get(Number(b.dataset.id)).catch(()=>null); map.closePopup(); if(r) openRepForm({rec:r}); return; }
+  map.closePopup(); openRepForm({lat:Number(b.dataset.lat), lon:Number(b.dataset.lon)});
+});
+$("#addrep-gps").addEventListener("click", ()=>openRepForm({gps:true}));
+async function shareFile(name, type, text){
+  const file = new File([text], name, {type});
+  try{ if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:name}); return; } }catch(e){ if(e && e.name==="AbortError") return; }
+  const a=document.createElement("a"); a.href=URL.createObjectURL(file); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+}
+const xmlEsc = t => String(t||"").replace(/[<>&"]/g, c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]));
+$("#exp-gpx").addEventListener("click", async ()=>{
+  const list=(await REP.all().catch(()=>[]))||[]; if(!list.length){ $("#repnote").textContent="Aucun repère à exporter."; return; }
+  const w = list.map(r=>`<wpt lat="${r.lat.toFixed(6)}" lon="${r.lon.toFixed(6)}">${r.ctx&&r.ctx.alt!=null?`<ele>${r.ctx.alt}</ele>`:""}<time>${new Date(r.date).toISOString()}</time><name>${xmlEsc(r.name)}</name><desc>${xmlEsc([repSpecies(r), r.qty, r.note].filter(Boolean).join(" | "))}</desc></wpt>`).join("");
+  await shareFile(`reperes-champignons-${new Date().toISOString().slice(0,10)}.gpx`, "application/gpx+xml", `<?xml version="1.0" encoding="UTF-8"?><gpx version="1.1" creator="Carte des pousses" xmlns="http://www.topografix.com/GPX/1/1">${w}</gpx>`);
+});
+$("#exp-csv").addEventListener("click", async ()=>{
+  const list=(await REP.all().catch(()=>[]))||[]; if(!list.length){ $("#repnote").textContent="Aucun repère à exporter."; return; }
+  const q = v => `"${String(v==null?"":v).replace(/"/g,'""')}"`;
+  const rows = [["Date","Titre","Latitude","Longitude","Altitude (m)","Espèces","Quantité","Notes","Secteur","Peuplements autour","Roche","Météo"]]
+    .concat(list.sort((a,b)=>a.date-b.date).map(r=>[new Date(r.date).toLocaleString("fr-FR"), r.name, r.lat.toFixed(6), r.lon.toFixed(6), r.ctx&&r.ctx.alt!=null?r.ctx.alt:"", repSpecies(r), r.qty, r.note, r.ctx&&r.ctx.zone, r.ctx&&r.ctx.arbres, r.ctx&&r.ctx.roche, r.ctx&&r.ctx.meteo]));
+  await shareFile(`reperes-champignons-${new Date().toISOString().slice(0,10)}.csv`, "text/csv", "\ufeff"+rows.map(r=>r.map(q).join(";")).join("\r\n"));
+});
+drawReps();
 
 /* Service worker : application et tuiles disponibles hors ligne */
 if("serviceWorker" in navigator && location.protocol.startsWith("http")){
