@@ -88,7 +88,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--ochre);outline-
 #status.err{color:var(--danger)}
 .sp{border-bottom:1px solid var(--line)}
 .sprow{display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:8px;padding:7px 0}
-.sprow input{accent-color:var(--moss);margin:0}
+.sprow input{accent-color:var(--moss);margin:0;width:18px;height:18px}
 .spname{font-family:var(--serif);font-size:17px;line-height:1.15;cursor:pointer}
 .spname em{display:block;font-size:14px;color:var(--muted)}
 .spname .off{color:var(--muted)}
@@ -152,6 +152,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--ochre);outline-
 .pop .rk{display:grid;grid-template-columns:1fr 60px 40px;gap:6px;align-items:center;margin:2px 0}
 .pop .rk .bar{width:60px}
 .pop .rk b{font-weight:500}
+.pop .rk.sel b{color:#B3261E;font-weight:700}
+.pop .rk.sel span{color:#B3261E;font-weight:700}
+.pop .rk.sel .bar span{background:#B3261E}
 .pop .rk span:last-child{white-space:nowrap;text-align:right}
 .pop .why{font-size:12.5px;color:#6B675C;margin:2px 0 6px}
 .pop .trees{margin:2px 0 6px;font-size:13.5px}
@@ -298,7 +301,7 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
   </section>
 
   <section id="sec-especes">
-    <h2>Espèces</h2>
+    <h2>Espèces <small id="sp-count" style="font-family:var(--sans);font-size:13px;color:var(--muted)"></small></h2>
     <p class="chartnote" id="sporder" style="margin-top:-4px">Classées par saison. Lancez une analyse pour les classer de la plus probable à la moins probable.</p>
     <div id="species"></div>
   </section>
@@ -979,6 +982,7 @@ function seasonFactor(sp, m){
   return (sp.mois.includes(prev)||sp.mois.includes(next)) ? 0.35 : 0.03;
 }
 function hostFactor(sp, c){
+  if(c.urban) return 0; // ville, village ou zone d’activité : pas de prévision
   const k = c.keys;
   const woodedLidar = !c.mapped && c.h!=null && c.cover>0.5 && c.h>5;
   if(woodedLidar && sp.milieu!=="ouvert") return sp.milieu==="mixte" ? 0.6 : 0.35;
@@ -1005,6 +1009,12 @@ function hostFactor(sp, c){
     if(k.has("herbace")||k.has("lande")) f = Math.max(f,0.75);
   }
   if(sp.lisiere && c.edge && f>0) f = Math.min(1, f*1.25);
+  // Proportionnel au couvert mesuré par le LiDAR : quelques arbres épars ne valent pas une forêt
+  if(c.cover!=null && f>0 && c.cover>=0.25){
+    if(sp.milieu==="foret") f *= Math.min(1, 0.45 + 0.75*c.cover);
+    else if(sp.milieu==="mixte") f *= Math.min(1, 0.7 + 0.5*c.cover);
+  }
+  if(!c.mapped && c.cover!=null && c.cover<0.5 && sp.milieu==="foret") f = 0; // arbres isolés hors forêt
   return f;
 }
 function soilFactor(sp, c){
@@ -1167,7 +1177,7 @@ if(window.ResizeObserver) new ResizeObserver(refreshMap).observe(document.getEle
 /* ============================================================
    Analyse
    ============================================================ */
-const S = {species:"all", mode:"meteo", day:0, month:null, grid:null, forest:[], soilOk:false, land:"tous", pubOk:false};
+const S = {species:[], mode:"meteo", day:0, month:null, grid:null, forest:[], soilOk:false, land:"tous", pubOk:false};
 
 /* Forêts publiques (ONF, via la Géoplateforme) : l’image de la couche est lue pixel par pixel sur la grille */
 const PUB_WMS = "https://data.geopf.fr/wms-r/wms";
@@ -1334,9 +1344,9 @@ async function discoverMNH(){
   try{ localStorage.setItem("mnhLayer", pick); }catch(e){}
   return pick;
 }
-async function loadCanopy(b, cols, rows){
+async function loadCanopy(b, cols, rows, k=3, bmask=null){
   const layer = await discoverMNH();
-  const k=3, W3=cols*k, H3=rows*k;
+  const W3=cols*k, H3=rows*k;
   const url = `${PUB_WMS}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=${encodeURIComponent(layer)}&STYLES=&CRS=EPSG:4326`
     + `&BBOX=${b.s},${b.w},${b.n},${b.e}&WIDTH=${W3}&HEIGHT=${H3}&FORMAT=${encodeURIComponent("image/x-bil;bits=32")}`;
   const buf = await fetchBuf(url, 90000);
@@ -1347,13 +1357,26 @@ async function loadCanopy(b, cols, rows){
   if(plausible(f) < 0.3) throw new Error("pas de données LiDAR ici");
   const out=new Array(cols*rows).fill(null);
   for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
-    let s=0,n=0,cov=0; const y0=(rows-1-r)*k, x0=c*k;
-    for(let dy=0;dy<k;dy++) for(let dx=0;dx<k;dx++){ const v=f[(y0+dy)*W3+x0+dx]; if(v>-50 && v<120){ const h=Math.max(0,v); s+=h; n++; if(h>3) cov++; } }
-    if(n) out[r*cols+c] = {h:s/n, cover:cov/n};
+    let s=0,n=0,cov=0,bat=0,tot=0; const y0=(rows-1-r)*k, x0=c*k;
+    for(let dy=0;dy<k;dy++) for(let dx=0;dx<k;dx++){
+      const i=(y0+dy)*W3+x0+dx; tot++;
+      if(bmask && bmask[i]){ bat++; continue; } // un toit n’est pas un arbre
+      const v=f[i]; if(v>-50 && v<120){ const h=Math.max(0,v); n++; if(h>3){ cov++; s+=h; } }
+    }
+    if(n) out[r*cols+c] = {h: cov ? s/cov : 0, cover:cov/n, bfrac: bat/tot};
+    else if(bat) out[r*cols+c] = {h:0, cover:0, bfrac: bat/tot};
   }
   return out;
 }
 
+/* Emprise des bâtiments (BD TOPO de l’IGN), lue sur une image à la même résolution que le LiDAR */
+async function loadBuildings(b, W2, H2){
+  const url = `https://data.geopf.fr/wms-v/ows?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=BDTOPO-GEOPO-BATI_WLD_WGS84G&STYLES=&CRS=EPSG:4326`
+    + `&BBOX=${b.s},${b.w},${b.n},${b.e}&WIDTH=${W2}&HEIGHT=${H2}&FORMAT=image/png&TRANSPARENT=true`;
+  const d = await fetchImageData(url, W2, H2), m = new Uint8Array(W2*H2); let n=0;
+  for(let i=0;i<m.length;i++) if(d[i*4+3] > 40){ m[i]=1; n++; }
+  return {mask:m, n};
+}
 /* Réserve utile du sol (Saxton et Rawls, 2006) et bilan d’eau jour par jour pour chaque maille */
 function awcOf(c){
   let dTheta = 0.13;
@@ -1658,6 +1681,25 @@ async function loadAccessAfter(g){
   }finally{ if(S.grid===g) S.osmPending=false; }
 }
 const USER_SCAN = Symbol("scan demandé");
+/* Zones bâties (BD TOPO de l’IGN) : zones d’habitation et zones d’activité, exclues des prévisions */
+async function loadUrban(b){
+  const out=[];
+  for(const [layer,label] of [["BDTOPO_V3:zone_d_habitation","zone habitée"],["BDTOPO_V3:zone_d_activite_ou_d_interet","zone d’activité"]]){
+    const url = "https://data.geopf.fr/wfs/ows?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES="+layer
+      + "&OUTPUTFORMAT=application/json&SRSNAME=urn:ogc:def:crs:EPSG::4326&COUNT=5000"
+      + `&BBOX=${b.s},${b.w},${b.n},${b.e},urn:ogc:def:crs:EPSG::4326`;
+    const js = await fetchJSON(url, {}, 45000);
+    for(const f of (js.features||[])){
+      const g=f.geometry; if(!g || !/Polygon/.test(g.type)) continue;
+      const pr=f.properties||{}, nat=String(pr.nature||pr.categorie||"");
+      if(/ruine/i.test(nat)) continue; // les ruines en forêt ne sont pas des zones bâties
+      const c0=firstCoord(g.coordinates); if(Math.abs(c0[0]-b.s) < Math.abs(c0[0]-b.w)) g.coordinates=swapCoords(g.coordinates);
+      const nom = pr.toponyme || pr.nom || "";
+      out.push({geom:g, bbox:geomBBox(g), why:`${nat?nat.toLowerCase():label}${nom?` (${nom})`:""}`});
+    }
+  }
+  return out;
+}
 async function analyze(origin){
   if(origin !== USER_SCAN) return; // aucun scan sans action explicite
   const bnd = map.getBounds();
@@ -1672,7 +1714,7 @@ async function analyze(origin){
   if(S.scanning){ setStatus("Le scan du secteur est en cours : attendez la fin ou arrêtez-le avant d’analyser une zone.", true); return; }
   const btn=$("#go"); btn.disabled=true;
   try{
-    const cellM = Math.max(80, Math.sqrt(wKm*hKm*1e6/TARGET_CELLS));
+    const cellM = Math.max(50, Math.sqrt(wKm*hKm*1e6/TARGET_CELLS));
     const cols=Math.max(2,Math.ceil(wKm*1000/cellM)), rows=Math.max(2,Math.ceil(hKm*1000/cellM));
     const dLon=(b.e-b.w)/cols, dLat=(b.n-b.s)/rows, cells=[];
     for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) cells.push({r,c,lat:b.s+(r+0.5)*dLat, lon:b.w+(c+0.5)*dLon});
@@ -1682,6 +1724,9 @@ async function analyze(origin){
     const forest = await loadForest(b, n=>setStatus(`Peuplements forestiers : ${fmt(n)} polygones…`));
     S.forest = forest;
 
+    setProgress(0.1,"Zones bâties"); setStatus("Zones bâties (villes, villages, zones d’activité) : chargement…");
+    let urban=[]; try{ urban = await loadUrban(b); S.urbanOk=true; }catch(e){ console.warn("Zones bâties", e); S.urbanOk=false; }
+    S._urban = urban;
     setProgress(0.12,"Forêts publiques"); setStatus("Forêts publiques : chargement…");
     let pubMask=null;
     try{ pubMask = await loadPublicMask(b, cols, rows); S.pubOk=true; } catch(e){ console.warn("Forêts publiques", e); S.pubOk=false; }
@@ -1697,8 +1742,10 @@ async function analyze(origin){
 
     setProgress(0.46,"Hauteur des arbres (LiDAR)"); setStatus("Hauteur des arbres (LiDAR HD) : chargement…");
     let can=null;
-    try{ can = await loadCanopy(b, cols, rows); S.lidarOk=true; } catch(e){ console.warn("LiDAR HD", e); S.lidarOk=false; }
-    cells.forEach((x,i)=>{ const v = can ? can[i] : null; x.h = v ? v.h : null; x.cover = v ? v.cover : null; });
+    const KL = 6; let bm=null;
+    try{ const r_ = await loadBuildings(b, cols*KL, rows*KL); bm = r_.mask; S.batiOk=true; }catch(e){ console.warn("Bâtiments BD TOPO", e); S.batiOk=false; }
+    try{ can = await loadCanopy(b, cols, rows, KL, bm); S.lidarOk=true; } catch(e){ console.warn("LiDAR HD", e); S.lidarOk=false; }
+    cells.forEach((x,i)=>{ const v = can ? can[i] : null; x.h = v ? v.h : null; x.cover = v ? v.cover : null; x.bfrac = v ? v.bfrac : null; });
 
     setProgress(0.53,"Forêts anciennes"); setStatus("Forêts anciennes : chargement…");
     let anc=null;
@@ -1725,6 +1772,9 @@ async function analyze(origin){
       }
       x.mapped=!!hit; x.keys=hit?hit.info.keys:new Set(); x.ouvert=hit?hit.info.ouvert:false; x.forest=hit?hit.info.forest:false;
       x.label = hit ? hit.info.label : "Hors forêt (prairie, culture ou bâti)";
+      x.urban=false; x.urbanWhy=null;
+      for(const u of S._urban){ if(x.lon<u.bbox[0]||x.lon>u.bbox[2]||x.lat<u.bbox[1]||x.lat>u.bbox[3]) continue; if(geomContains(u.geom,x.lon,x.lat)){ x.urban=true; x.urbanWhy=u.why; break; } }
+      if(!x.urban && x.bfrac!=null && x.bfrac>0.12){ x.urban=true; x.urbanWhy=`bâti dense, ${Math.round(x.bfrac*100)} % de la maille sous des toits`; }
       if(soil){
         const ph = sampleLayer(soil.ph, x.lat, x.lon); x.ph = ph!=null ? ph/10 : null;
         const g = (L,k) => { const v = sampleLayer(L, x.lat, x.lon); return v!=null ? v/k : null; };
@@ -1788,7 +1838,7 @@ map.createPane("fineHeat").style.zIndex = 390;
 let zoneHeat = null;
 function drawGrid(g, which){
   const {cells,rows,cols,b} = g, stats=currentStats(), month=monthOfDay();
-  const list = S.species==="all" ? SPECIES : SPECIES.filter(s=>s.id===S.species);
+  const list = S.species.length ? SPECIES.filter(s=>S.species.includes(s.id)) : SPECIES;
   const per={}; SPECIES.forEach(s=>per[s.id]={good:0,max:0,vals:[]});
   const cv=document.createElement("canvas"); cv.width=cols; cv.height=rows;
   const ctx=cv.getContext("2d"), img=ctx.createImageData(cols,rows);
@@ -1815,6 +1865,7 @@ function drawGrid(g, which){
   return {per, shown};
 }
 function render(){
+  const hc=document.getElementById("sp-count"); if(hc) hc.textContent = S.species.length ? `${S.species.length} sur 3 choisis` : "";
   let res=null;
   if(S.zoneGrid){ const r=drawGrid(S.zoneGrid,"zone"); if(!S.grid) res=r; }
   if(S.grid) res=drawGrid(S.grid,"fine");
@@ -1857,12 +1908,16 @@ const pct = v => Math.round(v*100)+" %";
 map.on("click", e=>{
   const c=cellAt(e.latlng); if(!c) return;
   const stats=currentStats(), month=monthOfDay(), w=cellWx(c,stats);
-  const ranked=SPECIES.map(sp=>[sp,scoreCell(sp,c,stats,month,w)]).filter(x=>x[1].score>=0.05).sort((a,b)=>b[1].score-a[1].score).slice(0,6);
+  const all_ = SPECIES.map(sp=>[sp,scoreCell(sp,c,stats,month,w)]);
+  const chosen = all_.filter(([sp])=>S.species.includes(sp.id)).sort((a,b)=>b[1].score-a[1].score);
+  const others = all_.filter(([sp])=>!S.species.includes(sp.id) && !c.urban).filter(x=>x[1].score>=0.05).sort((a,b)=>b[1].score-a[1].score).slice(0, Math.max(3, 6-chosen.length));
+  const ranked = chosen.concat(others);
   const expo = c.slope==null ? "—" : (c.slope<4 ? "replat" : DIRS[Math.round(c.aspect/45)%8]+`, pente ${fmt(c.slope)}°`);
   const pos = c.tpi==null ? "" : (c.tpi<-8 ? " (creux, fond de vallon)" : c.tpi>12 ? " (crête ou bosse)" : "");
   const se = soilEstimate(c);
   const gg = gridOf(e.latlng), ta = gg ? treesAround(c, gg) : null;
-  let html=`<div class="pop"><h3>${esc(essenceName(c.label))}</h3>
+  let html=`<div class="pop"><h3>${c.urban ? "Zone bâtie" : esc(essenceName(c.label))}</h3>
+    ${c.urban ? `<p class="acc priv">${esc(c.urbanWhy||"zone habitée")} : ville, village ou zone d’activité, sans prévision de pousse.</p>` : ""}
     ${ta && ta.list.length ? `<p class="trees"><b>Autour, sur ${fmt(ta.radius)} m :</b> ${ta.list.map(([n,f])=>`${esc(n)} <span>${Math.round(f*100)} %</span>`).join(" · ")}</p>` : ""}
     ${gg===S.zoneGrid && !cellIn(S.grid,e.latlng) ? `<p class="why">Vue d’ensemble du secteur (mailles de ${fmt(gg.cellM)} m). Pour plus de précision, zoomez et touchez l’amanite « Scan ».</p>` : ""}
     <button type="button" class="addrep" data-lat="${e.latlng.lat}" data-lon="${e.latlng.lng}">Ajouter un repère ici</button>
@@ -1871,7 +1926,7 @@ map.on("click", e=>{
     <tr><td>Exposition</td><td>${expo}</td></tr>
     <tr><td>Sol</td><td>${se.ph==null?"pH inconnu":"pH "+fmt(se.ph,1)}${c.sand!=null?`, ${fmt(c.sand)} % de sable`:""}<br><span style="color:#6B675C">${esc(se.src)}</span></td></tr>
     ${c.geo?`<tr><td>Roche</td><td>${esc(c.geo.label)}${c.geo.coarse?" (carte au millionième)":""}</td></tr>`:""}
-    ${c.h!=null?`<tr><td>Arbres</td><td>${c.cover<0.25?"couvert clairsemé ou coupe":`hauteur moyenne ${fmt(c.h)} m`}, couvert ${fmt(c.cover*100)} %</td></tr>`:""}
+    ${c.h!=null?`<tr><td>Arbres</td><td>couvert ${fmt(c.cover*100)} % (${c.cover<0.1?"quasiment pas d’arbres":c.cover<0.25?"arbres épars ou coupe":c.cover<0.5?"boisement clairsemé":c.cover<0.75?"boisement assez dense":"boisement dense"})${c.cover>=0.1?`, hauteur moyenne ${fmt(c.h)} m`:""}${c.bfrac>0.02?`, bâti ${fmt(c.bfrac*100)} %`:""}</td></tr>`:""}
     ${c.anc?`<tr><td>Ancienneté</td><td>${c.anc==="ancienne"?"forêt ancienne (boisée depuis au moins 150 ans)":c.anc==="recente"?"forêt récente":"forêt disparue"}</td></tr>`:""}
     ${c.awc!=null?`<tr><td>Réserve en eau</td><td>${fmt(c.awc)} mm${w&&w.relW!=null&&!isNaN(w.relW)?`, remplie à ${fmt(w.relW*100)} %`:""}</td></tr>`:""}
     <tr><td>Lisière</td><td>${c.edge?"oui":"non"}</td></tr>
@@ -1884,12 +1939,13 @@ map.on("click", e=>{
   }
   html+=`</table>`;
   if(ranked.length){
-    html += ranked.map(([sp,r])=>`<div class="rk"><b>${esc(sp.nom)}</b><div class="bar"><span style="width:${Math.round(r.score*100)}%"></span></div><span>${pct(r.score)}</span></div>`).join("");
+    html += ranked.map(([sp,r])=>{ const sel=S.species.includes(sp.id); return `<div class="rk${sel?" sel":""}"><b>${esc(sp.nom)}</b><div class="bar"><span style="width:${Math.round(r.score*100)}%"></span></div><span>${pct(r.score)}</span></div>`; }).join("");
+    if(chosen.length && others.length) html = html.replace(`<div class="rk"><b>${esc(others[0][0].nom)}</b>`, `<p class="why" style="margin:6px 0 2px">Autres espèces possibles ici :</p><div class="rk"><b>${esc(others[0][0].nom)}</b>`);
     const [sp0,r0]=ranked[0];
     let why=`Pour ${esc(sp0.nom)} : hôte ${pct(r0.t.host)}, sol ${pct(r0.t.soil)}, altitude ${pct(r0.t.alt)}, relief ×${fmt(r0.t.relief,2)}, structure ×${fmt(r0.t.struct,2)}`;
     if(r0.m) why+=`, saison ${pct(r0.m.season)}, eau ${pct(r0.m.water)}, température ${pct(r0.m.temp)}, air ${pct(r0.m.air)}${r0.m.frost<1?", gel récent":""}${r0.m.shock>1?", refroidissement du sol":""}`;
     html += `<p class="why">${why}.</p>`;
-  } else html+=`<p>Aucune espèce de la liste ne trouve ici de conditions favorables${S.mode==="meteo"?" pour ce jour":""}.</p>`;
+  } else if(!c.urban) html+=`<p>Aucune espèce de la liste ne trouve ici de conditions favorables${S.mode==="meteo"?" pour ce jour":""}.</p>`;
   html+=`</div>`;
   if(window.matchMedia("(max-width:760px)").matches){
     // Fenêtre sur la carte, tenue à l’écart des boutons du haut (zoom, couches) et du volet du bas
@@ -1917,12 +1973,13 @@ document.addEventListener("click", e=>{ if(e.target && e.target.id==="zoneclose"
 function buildSpecies(){
   const m=monthOfDay(), box=$("#species"); box.innerHTML="";
   const all=document.createElement("div"); all.className="sp";
-  all.innerHTML=`<div class="sprow"><input type="radio" name="sp" id="sp-all" value="all" ${S.species==="all"?"checked":""}><label class="spname" for="sp-all">Toutes les espèces<em>meilleure chance par maille</em></label><span></span></div>`;
+  S.species = S.species.filter(id=>SPECIES.some(s=>s.id===id));
+  all.innerHTML=`<div class="sprow"><input type="checkbox" name="sp" id="sp-all" value="all" ${S.species.length?"":"checked"}><label class="spname" for="sp-all">Toutes les espèces<em>meilleure chance par maille</em></label><span></span></div>`;
   box.appendChild(all);
   for(const sp of [...SPECIES].sort((a,b)=>(seasonFactor(b,m)-seasonFactor(a,m))||a.nom.localeCompare(b.nom,"fr"))){
     const inS=sp.mois.includes(m), d=document.createElement("div"); d.className="sp"; d.dataset.id=sp.id;
     d.innerHTML=`<div class="sprow">
-      <input type="radio" name="sp" id="sp-${sp.id}" value="${sp.id}" ${S.species===sp.id?"checked":""}>
+      <input type="checkbox" name="sp" id="sp-${sp.id}" value="${sp.id}" ${S.species.includes(sp.id)?"checked":""}>
       <label class="spname" for="sp-${sp.id}"><span class="${inS?"":"off"}">${esc(sp.nom)}</span>${inS?'<span class="season" title="de saison"></span>':""}<em>${esc(sp.latin)}</em></label>
       <div class="rank"><div class="bar"><span style="width:0"></span></div><small></small></div>
       <button class="more" aria-expanded="false">Fiche</button>
@@ -1936,7 +1993,17 @@ function buildSpecies(){
       </div></div>`;
     box.appendChild(d);
   }
-  box.querySelectorAll('input[name="sp"]').forEach(r=>r.addEventListener("change",e=>{S.species=e.target.value; render();}));
+  box.querySelectorAll('input[name="sp"]').forEach(r=>r.addEventListener("change",e=>{
+    const v=e.target.value;
+    if(v==="all"){ S.species=[]; }
+    else if(e.target.checked){
+      if(S.species.length>=3){ e.target.checked=false; banner.show("Trois champignons au maximum : décoche-en un pour en choisir un autre."); return; }
+      S.species.push(v);
+    } else S.species = S.species.filter(x=>x!==v);
+    box.querySelectorAll('input[name="sp"]').forEach(c=>{ c.checked = c.value==="all" ? !S.species.length : S.species.includes(c.value); });
+    const h=$("#sp-count"); if(h) h.textContent = S.species.length ? `${S.species.length} sur 3 choisis` : "";
+    render();
+  }));
   box.querySelectorAll(".more").forEach(btn=>btn.addEventListener("click",()=>{
     const det=btn.nextElementSibling, open=det.classList.toggle("open");
     btn.setAttribute("aria-expanded",open); btn.textContent=open?"Fermer":"Fiche";
@@ -2312,7 +2379,7 @@ $("#triplist").addEventListener("click", async e=>{
 const r2 = v => v==null||isNaN(v) ? null : Math.round(v*100)/100;
 function packCells(cells){
   return cells.map(c=>({r:c.r,c:c.c,lat:Math.round(c.lat*1e5)/1e5,lon:Math.round(c.lon*1e5)/1e5,alt:c.alt==null?null:Math.round(c.alt),mapped:c.mapped,keys:[...c.keys],ouvert:c.ouvert,forest:c.forest,label:c.label,
-    ph:r2(c.ph),sand:r2(c.sand),clay:r2(c.clay),soc:r2(c.soc),cfvo:r2(c.cfvo),pub:c.pub,priv:c.priv,privWhy:c.privWhy,geo:c.geo,h:r2(c.h),cover:r2(c.cover),anc:c.anc,
+    ph:r2(c.ph),sand:r2(c.sand),clay:r2(c.clay),soc:r2(c.soc),cfvo:r2(c.cfvo),pub:c.pub,urban:c.urban,urbanWhy:c.urbanWhy,priv:c.priv,privWhy:c.privWhy,geo:c.geo,h:r2(c.h),cover:r2(c.cover),anc:c.anc,
     edge:c.edge,slope:r2(c.slope),aspect:r2(c.aspect),tpi:r2(c.tpi),awc:r2(c.awc),relW:c.relW?Array.from(c.relW,v=>Math.round(v*100)/100):null}));
 }
 function unpackCells(arr){ return arr.map(c=>({...c, keys:new Set(c.keys), relW:c.relW?Float32Array.from(c.relW):null, ww:null})); }
