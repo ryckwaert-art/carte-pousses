@@ -179,6 +179,7 @@ body.hiking .daybar{display:none}
 .pop .rk .bar{width:60px}
 .pop .rk b{font-weight:500}
 .pop .rk.sel b{color:#B3261E;font-weight:700}
+.pop .splink{cursor:pointer;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;text-decoration-color:rgba(0,0,0,.25)}
 .pop .rk.sel span{color:#B3261E;font-weight:700}
 .pop .rk.sel .bar span{background:#B3261E}
 .pop .rk span:last-child{white-space:nowrap;text-align:right}
@@ -326,7 +327,7 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
     <div class="zi-head"><b>Détail de la zone touchée</b><button type="button" id="zoneclose">Fermer</button></div>
     <div id="zonebody"></div>
   </div>
-  <p class="sub" id="zonesub">Aude, Aveyron, Gard, Hérault, Lozère et Tarn : zoomez où vous voulez dans ces départements, puis touchez l’amanite « Scan ».</p>
+  <p class="sub" id="zonesub">France métropolitaine : zoomez où vous voulez, puis touchez l’amanite « Scan ».</p>
   <div class="tabs" role="tablist">
     <button role="tab" id="tb-carte" aria-selected="true" aria-controls="tab-carte">Pousses</button>
     <button role="tab" id="tb-meteo" aria-selected="false" aria-controls="tab-meteo">Météo</button>
@@ -1113,10 +1114,11 @@ const PRIORITY = ["girolle","cepe-bordeaux","cepe-pins","cepe-bronze","cepe-ete"
   "russule-charbonniere","langue-boeuf","bolet-jaune-pins"];
 const prio = id => { const i=PRIORITY.indexOf(id); return i<0 ? 999 : i; };
 /* Mois « équivalent » à l’altitude de l’endroit : +20 jours par 1 000 m au-dessus de 300 m, 30 jours au plus */
-function altMonth(sp, alt){
+function altMonth(sp, alt, lat){
   const d = W.ok && W.days[S.day] ? new Date(W.days[S.day]+"T12:00:00") : new Date();
-  if(alt==null) return d.getMonth()+1;
-  const shift = clamp((alt-300)/1000*20, 0, 30);
+  if(alt==null && lat==null) return d.getMonth()+1;
+  // Altitude : +20 jours par 1 000 m au-dessus de 300 m ; latitude : environ un jour par degré au nord de 43,6° (saison plus précoce au nord)
+  const shift = clamp(((alt??300)-300)/1000*20 + clamp(((lat??43.6)-43.6)*1.0, -2, 8), 0, 38);
   const spring = sp.mois.every(m=>m<=6), autumn = sp.mois.some(m=>m>=10) || Math.min(...sp.mois)>=8;
   if(!spring && !autumn) return d.getMonth()+1;
   const e = new Date(d.getTime() + (autumn ? 1 : -1)*shift*864e5);
@@ -1210,7 +1212,7 @@ function waterIndex(sp, w){
 }
 function weatherParts(sp, w, month){
   // [1] Saison décalée selon l’altitude : jusqu’à 30 jours d’écart, automne plus précoce et printemps plus tardif en altitude (Andrew et al.)
-  const season = seasonFactor(sp, altMonth(sp, w.alt));
+  const season = seasonFactor(sp, altMonth(sp, w.alt, w.lat));
   let wi = waterIndex(sp, w);
   // [4] Milieu méditerranéen : -30 % de pluie y a réduit la production de 60 % (Ogaya et Peñuelas, chênaie verte) ; réponse plus marquée au manque d’eau
   if(S.med) wi = Math.pow(wi, 1.5);
@@ -1342,15 +1344,24 @@ const foretsPub = L.tileLayer.wms("https://data.geopf.fr/wms-r/wms",{layers:"FOR
 const foretsAnc = L.tileLayer.wms("https://data.geopf.fr/wms-r/wms",{layers:"IGNF_FORETS-ANCIENNES", format:"image/png", transparent:true, version:"1.3.0", opacity:0.6, attribution:attrIGN});
 const zone = L.layerGroup().addTo(map);
 /* Départements couverts (contours officiels simplifiés) */
-const DEPTS = [{"code":"11","nom":"Aude","geom":{"type":"Polygon","coordinates":[[[1.6884,43.2736],[1.7084,43.2913],[1.7041,43.3027],[1.7265,43.3136],[1.7238,43.3297],[1.7561,43.3478],[1.7723,43.337],[1.8042,43.3579],[1.8041,43.3917],[1.8276,43.4184],[1.8587,43.4438],[1.8961,43.4184],[1.9031,43.4065],[1.9322,43.4243],[1.9564,43.4254],[1.9883,43.4076],[2.0133,43.4148],[2.0291,43.4369],[2.0531,43.4302],[2.0708,43.4064],[2.1093,43.3946],[2.1716,43.4156],[2.1877,43.3939],[2.215,43.3835],[2.2297,43.4094],[2.222,43.4278],[2.2441,43.4459],[2.2648,43.4535],[2.282,43.4412],[2.3114,43.4416],[2.3951,43.4183],[2.4331,43.4352],[2.4522,43.4319],[2.4969,43.4369],[2.5192,43.4236],[2.5658,43.423],[2.5935,43.4126],[2.5692,43.4003],[2.5532,43.3816],[2.5568,43.3671],[2.5474,43.3387],[2.5848,43.3336],[2.6016,43.2987],[2.6588,43.294],[2.6936,43.3205],[2.7068,43.2937],[2.7002,43.2823],[2.7379,43.2673],[2.7525,43.2546],[2.7722,43.2578],[2.7869,43.2735],[2.7918,43.293],[2.8386,43.3221],[2.8683,43.3296],[2.872,43.3732],[2.8902,43.3654],[2.8867,43.3299],[2.9469,43.3121],[3.0043,43.3201],[3.0059,43.2849],[3.0549,43.2797],[3.0783,43.2618],[3.1109,43.2535],[3.122,43.2616],[3.1472,43.247],[3.1754,43.2437],[3.201,43.2492],[3.2103,43.2356],[3.2406,43.2128],[3.1773,43.1654],[3.1408,43.1288],[3.0929,43.0691],[3.074,43.0381],[3.0428,42.9602],[3.0405,42.9297],[3.0606,42.9171],[3.0435,42.8382],[2.9762,42.8703],[2.9177,42.8849],[2.9069,42.8958],[2.8804,42.9014],[2.8653,42.9183],[2.8347,42.9123],[2.8164,42.9],[2.7891,42.896],[2.7622,42.8737],[2.7544,42.8519],[2.7393,42.837],[2.6805,42.8307],[2.6651,42.8366],[2.598,42.8371],[2.5515,42.8467],[2.5303,42.8433],[2.5015,42.8511],[2.4525,42.8369],[2.3822,42.8485],[2.3271,42.8374],[2.3336,42.8044],[2.3439,42.8012],[2.3429,42.7754],[2.3525,42.7625],[2.3574,42.7306],[2.322,42.7078],[2.2971,42.701],[2.2552,42.6975],[2.2465,42.6812],[2.1762,42.6525],[2.1661,42.6639],[2.1759,42.6828],[2.1606,42.7011],[2.0874,42.739],[2.0839,42.7516],[2.0572,42.7562],[2.0079,42.7341],[1.9516,42.7367],[1.9132,42.7588],[1.9177,42.7827],[1.8971,42.808],[1.8692,42.8151],[1.8759,42.8527],[1.9457,42.8562],[1.9869,42.871],[1.981,42.8784],[1.9919,42.9051],[1.9806,42.9296],[1.9339,42.9393],[1.9364,42.954],[1.9853,42.967],[1.985,43.0326],[1.9731,43.0462],[1.9411,43.0527],[1.9558,43.0854],[1.9494,43.1207],[1.9177,43.1332],[1.8954,43.1166],[1.8804,43.1415],[1.8248,43.1458],[1.7806,43.1598],[1.7436,43.1827],[1.7135,43.1856],[1.7099,43.2006],[1.7238,43.2245],[1.6998,43.2438],[1.7008,43.2605],[1.6884,43.2736]]]}},{"code":"12","nom":"Aveyron","geom":{"type":"Polygon","coordinates":[[[2.2075,44.6155],[2.2084,44.6438],[2.2286,44.6551],[2.2509,44.6519],[2.291,44.6666],[2.3268,44.6697],[2.3328,44.6506],[2.366,44.6413],[2.382,44.6509],[2.435,44.6389],[2.4522,44.6482],[2.4832,44.6503],[2.5009,44.6904],[2.5582,44.7235],[2.5545,44.7396],[2.5652,44.7782],[2.5994,44.7928],[2.5968,44.8198],[2.6116,44.8307],[2.6027,44.8432],[2.6239,44.8669],[2.6491,44.8697],[2.6578,44.8864],[2.6813,44.9074],[2.7064,44.9072],[2.7165,44.9291],[2.731,44.9367],[2.7564,44.9324],[2.7735,44.9151],[2.7783,44.8877],[2.7727,44.8555],[2.802,44.8736],[2.8135,44.8694],[2.8597,44.8745],[2.8553,44.8512],[2.8704,44.8294],[2.8796,44.803],[2.8935,44.7863],[2.9202,44.7943],[2.9345,44.7792],[2.9208,44.7657],[2.9348,44.744],[2.9251,44.7271],[2.943,44.677],[2.973,44.6457],[2.9817,44.6447],[3.0123,44.6219],[3.0332,44.5969],[3.0759,44.573],[3.0836,44.559],[3.068,44.5029],[3.1003,44.48],[3.1158,44.4756],[3.1352,44.4544],[3.1417,44.4285],[3.1267,44.414],[3.1406,44.3926],[3.1217,44.3887],[3.1193,44.3641],[3.1337,44.3303],[3.1543,44.3084],[3.1252,44.2845],[3.1242,44.2603],[3.1537,44.2738],[3.1607,44.2454],[3.1799,44.2457],[3.2243,44.23],[3.2251,44.2126],[3.2066,44.1899],[3.2403,44.1908],[3.295,44.2069],[3.3173,44.2002],[3.3578,44.1979],[3.3736,44.1708],[3.3361,44.1587],[3.3203,44.1359],[3.3244,44.1153],[3.264,44.0916],[3.2903,44.0717],[3.3289,44.079],[3.3408,44.0568],[3.3671,44.0582],[3.4323,44.0326],[3.4499,44.0203],[3.4392,43.998],[3.4205,43.9941],[3.4055,43.9703],[3.3782,43.9675],[3.3516,43.938],[3.3584,43.9138],[3.3179,43.891],[3.2751,43.8984],[3.2345,43.8576],[3.2511,43.8421],[3.249,43.8296],[3.2097,43.813],[3.1292,43.8169],[3.0892,43.8348],[3.0599,43.8316],[3.0603,43.8094],[3.0494,43.8038],[3.0571,43.7826],[3.0759,43.7685],[3.0531,43.7462],[3.0535,43.7162],[3.0681,43.7087],[3.0602,43.6929],[3.0335,43.6921],[2.9848,43.7089],[2.9466,43.6929],[2.9355,43.6947],[2.925,43.7072],[2.9211,43.7361],[2.8766,43.7404],[2.8137,43.7617],[2.7876,43.7521],[2.7816,43.7371],[2.7376,43.7291],[2.7121,43.7427],[2.6817,43.7435],[2.6292,43.7803],[2.5971,43.819],[2.5642,43.8413],[2.5653,43.8678],[2.5767,43.8817],[2.5505,43.8965],[2.5563,43.9187],[2.5378,43.9337],[2.4993,43.9506],[2.5206,43.9624],[2.5248,43.9781],[2.5021,43.9855],[2.4828,44.0263],[2.4635,44.035],[2.4601,44.0514],[2.4102,44.0558],[2.4008,44.0835],[2.3577,44.1016],[2.3236,44.1247],[2.2907,44.1247],[2.2849,44.1453],[2.2396,44.1345],[2.2006,44.1449],[2.2376,44.1586],[2.2069,44.1713],[2.1911,44.1623],[2.1753,44.181],[2.1566,44.1799],[2.1495,44.2003],[2.103,44.1924],[2.0594,44.1723],[2.0274,44.1677],[2.0297,44.157],[1.9902,44.1495],[1.9771,44.1626],[1.9767,44.1799],[1.9351,44.1814],[1.9037,44.1938],[1.9049,44.2102],[1.9431,44.2476],[1.9594,44.2412],[1.9704,44.2764],[1.9411,44.2824],[1.9014,44.2791],[1.8688,44.292],[1.8809,44.3035],[1.8595,44.3204],[1.8821,44.3401],[1.9068,44.3649],[1.8675,44.3981],[1.8732,44.4241],[1.8505,44.4355],[1.8527,44.4592],[1.8396,44.4759],[1.8616,44.4873],[1.88,44.4838],[1.8903,44.5059],[1.9061,44.4999],[1.9562,44.5185],[1.9885,44.5512],[2.0203,44.5555],[2.0574,44.5829],[2.083,44.5874],[2.1053,44.5712],[2.1269,44.5789],[2.1485,44.5706],[2.1698,44.5914],[2.1936,44.5859],[2.2075,44.6155]]]}},{"code":"30","nom":"Gard","geom":{"type":"Polygon","coordinates":[[[3.3736,44.1708],[3.4308,44.148],[3.4397,44.1291],[3.4814,44.124],[3.5058,44.1263],[3.5465,44.1138],[3.5684,44.1226],[3.6074,44.116],[3.6328,44.1212],[3.6375,44.1758],[3.6578,44.1733],[3.6835,44.1805],[3.7062,44.1647],[3.7256,44.1642],[3.7625,44.1488],[3.797,44.1274],[3.8224,44.1362],[3.8721,44.1289],[3.8949,44.1478],[3.9526,44.1708],[3.9599,44.1913],[3.9387,44.1937],[3.9502,44.2235],[3.9462,44.2424],[3.9731,44.2526],[3.9568,44.2718],[3.9356,44.2747],[3.9363,44.2935],[3.9229,44.3052],[3.9447,44.3191],[3.9128,44.3685],[3.8859,44.388],[3.9079,44.4026],[3.9444,44.3996],[3.9611,44.414],[3.9762,44.4411],[3.9982,44.4598],[4.0376,44.4457],[4.0478,44.4181],[4.0684,44.4051],[4.053,44.3787],[4.0534,44.3393],[4.0369,44.3308],[4.0515,44.3173],[4.0716,44.3273],[4.1268,44.3377],[4.1429,44.3134],[4.1777,44.3179],[4.1867,44.2997],[4.2153,44.2907],[4.2413,44.2701],[4.2588,44.2648],[4.2775,44.2747],[4.2894,44.2932],[4.2884,44.3147],[4.3217,44.324],[4.3361,44.3395],[4.3668,44.3395],[4.3865,44.3466],[4.4032,44.3339],[4.3908,44.303],[4.399,44.2889],[4.4328,44.287],[4.4484,44.2966],[4.4511,44.3346],[4.4576,44.3416],[4.5033,44.3392],[4.5445,44.3208],[4.5569,44.3041],[4.6068,44.2905],[4.6181,44.2785],[4.6381,44.283],[4.6492,44.2704],[4.6541,44.2543],[4.6748,44.2386],[4.6766,44.2126],[4.7065,44.2144],[4.7058,44.1928],[4.7221,44.1874],[4.7075,44.1037],[4.7301,44.079],[4.7579,44.0772],[4.788,44.0651],[4.7891,44.0522],[4.8377,44.0149],[4.8421,43.9865],[4.816,43.9888],[4.8151,43.9676],[4.779,43.9379],[4.7391,43.9241],[4.7234,43.906],[4.6933,43.885],[4.6419,43.8675],[4.6663,43.8448],[4.6424,43.8314],[4.6548,43.8023],[4.6512,43.7823],[4.63,43.7627],[4.6136,43.7298],[4.613,43.7143],[4.6277,43.6905],[4.593,43.6875],[4.5819,43.6964],[4.5369,43.7075],[4.4872,43.6992],[4.4755,43.6711],[4.4542,43.6666],[4.427,43.6207],[4.4397,43.6107],[4.4752,43.6083],[4.4503,43.5836],[4.4255,43.5852],[4.4093,43.5611],[4.3537,43.5474],[4.2959,43.5145],[4.2397,43.4992],[4.2303,43.4602],[4.1656,43.4719],[4.1272,43.4895],[4.1169,43.509],[4.1389,43.5321],[4.101,43.5544],[4.1094,43.5685],[4.0989,43.5852],[4.124,43.589],[4.1688,43.609],[4.191,43.6392],[4.1945,43.6534],[4.1628,43.6873],[4.1636,43.7066],[4.1448,43.7339],[4.114,43.7377],[4.0856,43.7675],[4.054,43.7722],[4.0535,43.7856],[4.002,43.8115],[3.9743,43.8015],[3.9617,43.8168],[3.9726,43.8372],[3.9221,43.8584],[3.9196,43.8813],[3.8583,43.8771],[3.8493,43.8682],[3.8061,43.8779],[3.7995,43.8908],[3.829,43.9245],[3.8203,43.9424],[3.7965,43.9436],[3.7837,43.9677],[3.7438,43.9666],[3.7322,43.972],[3.6823,43.9474],[3.6725,43.9116],[3.6236,43.917],[3.5754,43.8655],[3.5994,43.8547],[3.5779,43.8439],[3.5307,43.8556],[3.5233,43.8859],[3.5133,43.8962],[3.4826,43.8899],[3.4627,43.8721],[3.4314,43.8726],[3.4393,43.8979],[3.4244,43.9116],[3.3584,43.9138],[3.3516,43.938],[3.3782,43.9675],[3.4055,43.9703],[3.4205,43.9941],[3.4392,43.998],[3.4499,44.0203],[3.4323,44.0326],[3.3671,44.0582],[3.3408,44.0568],[3.3289,44.079],[3.2903,44.0717],[3.264,44.0916],[3.3244,44.1153],[3.3203,44.1359],[3.3361,44.1587],[3.3736,44.1708]]]}},{"code":"34","nom":"Hérault","geom":{"type":"Polygon","coordinates":[[[3.3584,43.9138],[3.4244,43.9116],[3.4393,43.8979],[3.4314,43.8726],[3.4627,43.8721],[3.4826,43.8899],[3.5133,43.8962],[3.5233,43.8859],[3.5307,43.8556],[3.5779,43.8439],[3.5994,43.8547],[3.5754,43.8655],[3.6236,43.917],[3.6725,43.9116],[3.6823,43.9474],[3.7322,43.972],[3.7438,43.9666],[3.7837,43.9677],[3.7965,43.9436],[3.8203,43.9424],[3.829,43.9245],[3.7995,43.8908],[3.8061,43.8779],[3.8493,43.8682],[3.8583,43.8771],[3.9196,43.8813],[3.9221,43.8584],[3.9726,43.8372],[3.9617,43.8168],[3.9743,43.8015],[4.002,43.8115],[4.0535,43.7856],[4.054,43.7722],[4.0856,43.7675],[4.114,43.7377],[4.1448,43.7339],[4.1636,43.7066],[4.1628,43.6873],[4.1945,43.6534],[4.191,43.6392],[4.1688,43.609],[4.124,43.589],[4.0989,43.5852],[4.1094,43.5685],[4.101,43.5544],[4.0561,43.5575],[4.0112,43.5524],[3.9686,43.54],[3.9071,43.5168],[3.8512,43.4865],[3.7967,43.441],[3.7249,43.4158],[3.7256,43.4012],[3.6928,43.3929],[3.6622,43.3923],[3.6026,43.3554],[3.5582,43.3189],[3.5098,43.2719],[3.4672,43.2768],[3.4303,43.2902],[3.3869,43.2841],[3.3439,43.2704],[3.2634,43.2289],[3.2406,43.2128],[3.2103,43.2356],[3.201,43.2492],[3.1754,43.2437],[3.1472,43.247],[3.122,43.2616],[3.1109,43.2535],[3.0783,43.2618],[3.0549,43.2797],[3.0059,43.2849],[3.0043,43.3201],[2.9469,43.3121],[2.8867,43.3299],[2.8902,43.3654],[2.872,43.3732],[2.8683,43.3296],[2.8386,43.3221],[2.7918,43.293],[2.7869,43.2735],[2.7722,43.2578],[2.7525,43.2546],[2.7379,43.2673],[2.7002,43.2823],[2.7068,43.2937],[2.6936,43.3205],[2.6588,43.294],[2.6016,43.2987],[2.5848,43.3336],[2.5474,43.3387],[2.5568,43.3671],[2.5532,43.3816],[2.5692,43.4003],[2.5935,43.4126],[2.5658,43.423],[2.6083,43.4333],[2.6404,43.4562],[2.6652,43.4656],[2.6549,43.4969],[2.6556,43.5266],[2.6156,43.5666],[2.6307,43.582],[2.6143,43.5992],[2.6286,43.6101],[2.6447,43.6545],[2.7202,43.6454],[2.7545,43.6141],[2.7949,43.6244],[2.8159,43.6401],[2.9074,43.6542],[2.9197,43.6622],[2.9191,43.6875],[2.9355,43.6947],[2.9466,43.6929],[2.9848,43.7089],[3.0335,43.6921],[3.0602,43.6929],[3.0681,43.7087],[3.0535,43.7162],[3.0531,43.7462],[3.0759,43.7685],[3.0571,43.7826],[3.0494,43.8038],[3.0603,43.8094],[3.0599,43.8316],[3.0892,43.8348],[3.1292,43.8169],[3.2097,43.813],[3.249,43.8296],[3.2511,43.8421],[3.2345,43.8576],[3.2751,43.8984],[3.3179,43.891],[3.3584,43.9138]]]}},{"code":"48","nom":"Lozère","geom":{"type":"Polygon","coordinates":[[[3.3613,44.9714],[3.3864,44.9527],[3.4046,44.9564],[3.4158,44.9285],[3.4104,44.9178],[3.4357,44.8802],[3.4418,44.8542],[3.4588,44.8399],[3.4782,44.8097],[3.5057,44.8238],[3.5397,44.8282],[3.5889,44.8264],[3.598,44.8595],[3.5943,44.8754],[3.6265,44.8803],[3.6549,44.8742],[3.6718,44.8434],[3.669,44.8289],[3.7229,44.831],[3.7444,44.8378],[3.7527,44.821],[3.8025,44.7822],[3.8429,44.7677],[3.8366,44.7478],[3.8625,44.7439],[3.8699,44.6789],[3.8947,44.6511],[3.8937,44.6178],[3.9083,44.6066],[3.9236,44.5719],[3.9488,44.5729],[3.9817,44.5151],[3.9877,44.4728],[3.9982,44.4598],[3.9762,44.4411],[3.9611,44.414],[3.9444,44.3996],[3.9079,44.4026],[3.8859,44.388],[3.9128,44.3685],[3.9447,44.3191],[3.9229,44.3052],[3.9363,44.2935],[3.9356,44.2747],[3.9568,44.2718],[3.9731,44.2526],[3.9462,44.2424],[3.9502,44.2235],[3.9387,44.1937],[3.9599,44.1913],[3.9526,44.1708],[3.8949,44.1478],[3.8721,44.1289],[3.8224,44.1362],[3.797,44.1274],[3.7625,44.1488],[3.7256,44.1642],[3.7062,44.1647],[3.6835,44.1805],[3.6578,44.1733],[3.6375,44.1758],[3.6328,44.1212],[3.6074,44.116],[3.5684,44.1226],[3.5465,44.1138],[3.5058,44.1263],[3.4814,44.124],[3.4397,44.1291],[3.4308,44.148],[3.3736,44.1708],[3.3578,44.1979],[3.3173,44.2002],[3.295,44.2069],[3.2403,44.1908],[3.2066,44.1899],[3.2251,44.2126],[3.2243,44.23],[3.1799,44.2457],[3.1607,44.2454],[3.1537,44.2738],[3.1242,44.2603],[3.1252,44.2845],[3.1543,44.3084],[3.1337,44.3303],[3.1193,44.3641],[3.1217,44.3887],[3.1406,44.3926],[3.1267,44.414],[3.1417,44.4285],[3.1352,44.4544],[3.1158,44.4756],[3.1003,44.48],[3.068,44.5029],[3.0836,44.559],[3.0759,44.573],[3.0332,44.5969],[3.0123,44.6219],[2.9817,44.6447],[3.016,44.7137],[3.0286,44.73],[3.0311,44.7494],[3.048,44.7655],[3.0481,44.8043],[3.0715,44.8341],[3.0995,44.8336],[3.0936,44.8537],[3.1055,44.8868],[3.1411,44.9033],[3.166,44.8743],[3.1823,44.8637],[3.216,44.875],[3.2366,44.888],[3.2291,44.9093],[3.2497,44.9162],[3.2438,44.9335],[3.286,44.9264],[3.2989,44.9386],[3.3379,44.9559],[3.3613,44.9714]]]}},{"code":"81","nom":"Tarn","geom":{"type":"Polygon","coordinates":[[[1.9902,44.1495],[2.0297,44.157],[2.0274,44.1677],[2.0594,44.1723],[2.103,44.1924],[2.1495,44.2003],[2.1566,44.1799],[2.1753,44.181],[2.1911,44.1623],[2.2069,44.1713],[2.2376,44.1586],[2.2006,44.1449],[2.2396,44.1345],[2.2849,44.1453],[2.2907,44.1247],[2.3236,44.1247],[2.3577,44.1016],[2.4008,44.0835],[2.4102,44.0558],[2.4601,44.0514],[2.4635,44.035],[2.4828,44.0263],[2.5021,43.9855],[2.5248,43.9781],[2.5206,43.9624],[2.4993,43.9506],[2.5378,43.9337],[2.5563,43.9187],[2.5505,43.8965],[2.5767,43.8817],[2.5653,43.8678],[2.5642,43.8413],[2.5971,43.819],[2.6292,43.7803],[2.6817,43.7435],[2.7121,43.7427],[2.7376,43.7291],[2.7816,43.7371],[2.7876,43.7521],[2.8137,43.7617],[2.8766,43.7404],[2.9211,43.7361],[2.925,43.7072],[2.9355,43.6947],[2.9191,43.6875],[2.9197,43.6622],[2.9074,43.6542],[2.8159,43.6401],[2.7949,43.6244],[2.7545,43.6141],[2.7202,43.6454],[2.6447,43.6545],[2.6286,43.6101],[2.6143,43.5992],[2.6307,43.582],[2.6156,43.5666],[2.6556,43.5266],[2.6549,43.4969],[2.6652,43.4656],[2.6404,43.4562],[2.6083,43.4333],[2.5658,43.423],[2.5192,43.4236],[2.4969,43.4369],[2.4522,43.4319],[2.4331,43.4352],[2.3951,43.4183],[2.3114,43.4416],[2.282,43.4412],[2.2648,43.4535],[2.2441,43.4459],[2.222,43.4278],[2.2297,43.4094],[2.215,43.3835],[2.1877,43.3939],[2.1716,43.4156],[2.1093,43.3946],[2.0708,43.4064],[2.0531,43.4302],[2.0291,43.4369],[2.0138,43.4499],[2.0181,43.4704],[2.0483,43.4857],[2.0375,43.5069],[2.0151,43.5044],[2.0102,43.4818],[1.99,43.4775],[1.9561,43.4941],[1.917,43.5016],[1.8934,43.5114],[1.8804,43.5403],[1.8507,43.5493],[1.8495,43.5675],[1.8335,43.5782],[1.7795,43.587],[1.764,43.6036],[1.745,43.6035],[1.6878,43.6307],[1.7056,43.6526],[1.7309,43.6578],[1.7167,43.6893],[1.6636,43.6941],[1.6689,43.7043],[1.7072,43.7124],[1.7,43.7253],[1.6499,43.7519],[1.6557,43.7643],[1.6425,43.7784],[1.6448,43.8003],[1.6265,43.8013],[1.5902,43.8145],[1.5932,43.8431],[1.5726,43.8488],[1.5595,43.8661],[1.5604,43.8819],[1.5467,43.9023],[1.5556,43.9183],[1.5744,43.92],[1.5688,43.9432],[1.5392,43.9461],[1.5668,43.9653],[1.6127,43.9591],[1.6209,43.9793],[1.6503,44.0097],[1.6714,44.0106],[1.6914,44.0243],[1.7042,44.0444],[1.6929,44.0613],[1.6637,44.0673],[1.6693,44.0898],[1.6531,44.0964],[1.659,44.1164],[1.6872,44.1115],[1.7064,44.1174],[1.7637,44.1079],[1.77,44.0981],[1.8061,44.1264],[1.8255,44.108],[1.8405,44.1143],[1.8306,44.1316],[1.8601,44.1429],[1.9193,44.1414],[1.8944,44.1556],[1.9197,44.1629],[1.9471,44.1467],[1.9695,44.1427],[1.9902,44.1495]]]}}];
-DEPTS.forEach(d=>d.bbox=geomBBox(d.geom));
-const REGION_BOUNDS = (()=>{ let s_=90,w_=180,n_=-90,e_=-180; for(const d of DEPTS){ s_=Math.min(s_,d.bbox[1]); n_=Math.max(n_,d.bbox[3]); w_=Math.min(w_,d.bbox[0]); e_=Math.max(e_,d.bbox[2]); } return [[s_,w_],[n_,e_]]; })();
+let DEPTS = [], REGION_BOUNDS = [[41.3,-5.2],[51.1,9.6]];
+/* Contours des 96 départements de métropole (fichier departements.json du site, gardé hors ligne) */
+async function loadDepts(){
+  if(DEPTS.length) return DEPTS;
+  let js=null;
+  try{ js = await fetchJSON("departements.json", {}, 30000); }catch(e){ console.warn("Départements", e); }
+  DEPTS = (js||[]).map(d=>({...d, bbox:geomBBox(d.geom)}));
+  if(DEPTS.length){ let s_=90,w_=180,n_=-90,e_=-180; for(const d of DEPTS){ s_=Math.min(s_,d.bbox[1]); n_=Math.max(n_,d.bbox[3]); w_=Math.min(w_,d.bbox[0]); e_=Math.max(e_,d.bbox[2]); } REGION_BOUNDS=[[s_,w_],[n_,e_]]; }
+  return DEPTS;
+}
 function deptAt(lat, lon){ for(const d of DEPTS){ if(lon<d.bbox[0]||lon>d.bbox[2]||lat<d.bbox[1]||lat>d.bbox[3]) continue; if(geomContains(d.geom, lon, lat)) return d; } return null; }
 function deptsNear(b){ return DEPTS.filter(d=>!(d.bbox[2]<b.w||d.bbox[0]>b.e||d.bbox[3]<b.s||d.bbox[1]>b.n)).map(d=>d.code); }
-/* Climat méditerranéen : basse altitude dans l’Hérault, le Gard ou l’Aude ; sinon espèces de moyenne montagne */
+/* Climat méditerranéen : basse altitude des départements méditerranéens ; ailleurs, espèces des forêts tempérées et de montagne */
 function isMedDefault(lat, lon, alt){
-  const d=deptAt(lat,lon), medDept = !!d && ["34","30","11"].includes(d.code);
-  return alt!=null ? (medDept && alt<450) : (medDept && lat<43.95 && lon>3.0);
+  // Départements du pourtour méditerranéen et de Corse ; la règle d’altitude départage plaines et reliefs
+  const d=deptAt(lat,lon), medDept = !!d && ["66","11","34","30","13","83","06","84","04","2A","2B"].includes(d.code);
+  const corse = !!d && (d.code==="2A" || d.code==="2B");
+  return alt!=null ? (medDept && alt < (corse ? 600 : 450)) : (medDept && (corse || lat<44.2));
 }
 function setSpeciesSet(med){ const L_ = med ? SPECIES_PSL : SPECIES_AIG; if(SPECIES===L_ && S.med===med) return false; S.med=med; SPECIES=L_; return true; }
 function drawZones(){
@@ -1923,17 +1934,18 @@ $("#sb-close").addEventListener("click", closeSearch);
    1) les communes des six départements (liste officielle, gardée sur l’appareil) comparées lettre à lettre,
    2) le géocodage de l’IGN pour les lieux-dits, forêts, sommets, cols, hameaux…, interrogé avec plusieurs graphies. */
 const normKey = t => norm(t).replace(/[-'’.,]/g," ").replace(/\bsainte\b/g,"ste").replace(/\bsaint\b/g,"st").replace(/\s+/g," ").trim();
-let COMMUNES=null;
+let COMMUNES=[]; const COMM={};
 async function loadCommunes(){
-  if(COMMUNES) return COMMUNES;
-  try{ const c=JSON.parse(localStorage.getItem("communes6")); if(c && Date.now()-c.t < 180*864e5){ COMMUNES=c.l.map(x=>({...x, k:normKey(x.n)})); return COMMUNES; } }catch(e){}
-  const all=[];
-  await Promise.all(["11","12","30","34","48","81"].map(async d=>{
+  const c=map.getCenter(), b={s:c.lat-0.9, n:c.lat+0.9, w:c.lng-1.3, e:c.lng+1.3};
+  const codes = deptsNear(b).slice(0,12);
+  await Promise.all(codes.map(async d=>{
+    if(COMM[d]) return;
+    try{ const ls=JSON.parse(localStorage.getItem("communes-"+d)); if(ls && Date.now()-ls.t < 180*864e5){ COMM[d]=ls.l; return; } }catch(e){}
     try{ const js=await fetchJSON(`https://geo.api.gouv.fr/departements/${d}/communes?fields=nom,centre,codesPostaux&format=json`,{},15000);
-      for(const c of js) if(c.centre && c.centre.coordinates) all.push({n:c.nom, la:c.centre.coordinates[1], lo:c.centre.coordinates[0], d, cp:(c.codesPostaux||[])[0]||""}); }catch(e){}
+      const l=[]; for(const x of js) if(x.centre && x.centre.coordinates) l.push({n:x.nom, la:x.centre.coordinates[1], lo:x.centre.coordinates[0], d, cp:(x.codesPostaux||[])[0]||""});
+      COMM[d]=l; try{ localStorage.setItem("communes-"+d, JSON.stringify({t:Date.now(), l})); }catch(e){} }catch(e){}
   }));
-  if(all.length){ try{ localStorage.setItem("communes6", JSON.stringify({t:Date.now(), l:all})); }catch(e){} }
-  COMMUNES = all.map(x=>({...x, k:normKey(x.n)}));
+  COMMUNES = Object.values(COMM).flat().map(x=>x.k ? x : Object.assign(x, {k:normKey(x.n)}));
   return COMMUNES;
 }
 function editDist(a, b){ // distance de Damerau-Levenshtein (lettre oubliée, en trop, remplacée ou inversée)
@@ -1947,7 +1959,7 @@ function editDist(a, b){ // distance de Damerau-Levenshtein (lettre oubliée, en
   return d[m][n];
 }
 function fuzzyCommunes(q){
-  const k=normKey(q), kc=k.replace(/ /g,""); if(k.length<2 || !COMMUNES) return [];
+  const k=normKey(q), kc=k.replace(/ /g,""); if(k.length<2 || !COMMUNES.length) return [];
   const tol = Math.max(1, Math.round(k.length/4));
   const res=[];
   for(const c of COMMUNES){
@@ -1964,7 +1976,7 @@ function fuzzyCommunes(q){
 async function geocode(q){
   const variants = [...new Set([q, q.replace(/[-'’]/g," "), normKey(q).replace(/\bst\b/g,"saint").replace(/\bste\b/g,"sainte")])];
   const one = async (url) => { try{ const js=await fetchJSON(url,{},10000); return js.features || []; }catch(e){ return []; } };
-  const comp = async (text) => { try{ const js=await fetchJSON(`https://data.geopf.fr/geocodage/completion?text=${encodeURIComponent(text)}&type=PositionOfInterest&terr=11,12,30,34,48,81&maximumResponses=10`,{},10000);
+  const comp = async (text) => { try{ const js=await fetchJSON(`https://data.geopf.fr/geocodage/completion?text=${encodeURIComponent(text)}&type=PositionOfInterest&terr=METROPOLE&maximumResponses=10`,{},10000);
       return (js.results||[]).map(r=>({geometry:{coordinates:[r.x,r.y]}, properties:{name:r.fulltext, category:[r.poiType||r.kind||"lieu"], city:r.city}})); }catch(e){ return []; } };
   const calls = [];
   for(const v of variants){
@@ -1999,7 +2011,7 @@ $("#sb-input").addEventListener("input", e=>{
   sbTimer=setTimeout(async ()=>{
     const res = await geocode(q); if(my!==sbSeq) return;
     ul.innerHTML = res.length ? res.map((r,i)=>`<li data-i="${i}"><b>${esc(r.nm)}</b><small>${esc(r.ctx)}</small></li>`).join("")
-      : '<li class="msg">Aucun lieu trouvé dans l’Aude, l’Aveyron, le Gard, l’Hérault, la Lozère ou le Tarn.</li>';
+      : '<li class="msg">Aucun lieu trouvé en France métropolitaine.</li>';
     ul._res = res;
   }, 300);
 });
@@ -2019,6 +2031,51 @@ function startScan(){
   if(why) openPicker(go, why==="far"); else go();
 }
 document.addEventListener("click", e=>{ if(e.target.closest && e.target.closest(".scanhere")){ map.closePopup(); if(sbMarker){ map.removeLayer(sbMarker); sbMarker=null; } startScan(); } });
+/* Ouvrir la fiche d’une espèce depuis la fenêtre de la carte */
+function openSpeciesCard(id){
+  map.closePopup();
+  setTab("carte");
+  if(window.matchMedia("(max-width:760px)").matches) setSheet("full");
+  setTimeout(()=>{
+    const row = document.querySelector(`#species .sp[data-id="${id}"]`); if(!row) return;
+    const det = row.querySelector(".details"), btn = row.querySelector(".more");
+    if(det && !det.classList.contains("open") && btn) btn.click();
+    const pn=document.getElementById("panel");
+    if(window.matchMedia("(max-width:760px)").matches) pn.scrollTop += row.getBoundingClientRect().top - pn.getBoundingClientRect().top - 56;
+    else row.scrollIntoView({block:"start", behavior:"smooth"});
+    row.style.transition="background .6s"; row.style.background="var(--moss-soft)"; setTimeout(()=>row.style.background="", 1400);
+  }, 320);
+}
+document.addEventListener("click", e=>{ const l=e.target.closest && e.target.closest(".splink"); if(l){ e.preventDefault(); openSpeciesCard(l.dataset.sp); } });
+
+/* Pré-sélection régionale : les espèces de la liste les plus observées autour de la zone (données GBIF, observations naturalistes) */
+async function gbifKeys(){
+  let cache={}; try{ cache=JSON.parse(localStorage.getItem("gbifKeys"))||{}; }catch(e){}
+  const names=[...new Set([...SPECIES_PSL, ...SPECIES_AIG].map(x=>x.latin))].filter(n=>!(n in cache));
+  if(names.length){
+    await Promise.all(names.map(async n=>{ try{
+      const js=await fetchJSON(`https://api.gbif.org/v1/species/match?name=${encodeURIComponent(n.replace(/\s+spp\.?$/,""))}&kingdom=Fungi`,{},10000);
+      cache[n] = js && js.usageKey ? {key: js.rank==="GENUS" ? js.genusKey||js.usageKey : (js.speciesKey||js.usageKey), genus: js.rank==="GENUS"} : null;
+    }catch(e){} }));
+    try{ localStorage.setItem("gbifKeys", JSON.stringify(cache)); }catch(e){}
+  }
+  return cache;
+}
+async function gbifCounts(lat, lon){
+  const ck=`gbif-${(Math.round(lat*2)/2).toFixed(1)}-${(Math.round(lon*2)/2).toFixed(1)}`;
+  try{ const c=JSON.parse(localStorage.getItem(ck)); if(c && Date.now()-c.t < 30*864e5) return c.n; }catch(e){}
+  const keys = await gbifKeys(), all=[...SPECIES_PSL, ...SPECIES_AIG], counts={};
+  const box = `country=FR&hasCoordinate=true&decimalLatitude=${(lat-0.45).toFixed(2)},${(lat+0.45).toFixed(2)}&decimalLongitude=${(lon-0.6).toFixed(2)},${(lon+0.6).toFixed(2)}`;
+  const sp = [...new Set(all.map(x=>keys[x.latin]).filter(k=>k && !k.genus).map(k=>k.key))];
+  const js = await fetchJSON(`https://api.gbif.org/v1/occurrence/search?${box}&${sp.map(k=>"taxonKey="+k).join("&")}&facet=speciesKey&facetLimit=100&limit=0`,{},15000);
+  const f = (js.facets||[]).find(x=>/species_?key/i.test(x.field)) || (js.facets||[])[0] || {counts:[]};
+  const byKey = {}; for(const c of f.counts||[]) byKey[String(c.name)] = c.count;
+  for(const x of all){ const k=keys[x.latin]; if(k && !k.genus) counts[x.id] = byKey[String(k.key)] || 0; }
+  for(const x of all){ const k=keys[x.latin]; if(k && k.genus){ try{ const g=await fetchJSON(`https://api.gbif.org/v1/occurrence/search?${box}&taxonKey=${k.key}&limit=0`,{},10000); counts[x.id]=g.count||0; }catch(e){} } }
+  try{ localStorage.setItem(ck, JSON.stringify({t:Date.now(), n:counts})); }catch(e){}
+  return counts;
+}
+let pickCounts = null;
 /* Choix des champignons : obligatoire avant le premier scan, mémorisé ensuite */
 function saveMySpecies(){ try{ localStorage.setItem("mySpecies", JSON.stringify(S.allMode && !S.species.length ? {all:true} : S.species)); }catch(e){} }
 function loadMySpecies(){ try{ const v=JSON.parse(localStorage.getItem("mySpecies")); if(Array.isArray(v)){ S.species=v.slice(0,3); S.allMode=false; } else if(v && v.all){ S.species=[]; S.allMode=true; } }catch(e){} }
@@ -2027,7 +2084,7 @@ function lastScanCenter(){ try{ return JSON.parse(localStorage.getItem("lastScan
 function needPick(lat, lon){
   if(!hasChoice()) return "first";
   const l = lastScanCenter();
-  return (l && haversine([l.lat,l.lon],[lat,lon]) > 30000) ? "far" : null;
+  return (l && haversine([l.lat,l.lon],[lat,lon]) > 30000) ? "far" : "again"; // demandé à chaque scan, avec le dernier choix déjà coché
 }
 /* Lance un scan de la vue actuelle, en demandant d’abord les champignons si nécessaire */
 function scanWithPick(onStart, onEnd){
@@ -2038,12 +2095,25 @@ function scanWithPick(onStart, onEnd){
 const countLabel = () => S.species.length ? `${S.species.length} sur 3 choisis` : (S.allMode ? "tous les champignons" : "");
 let pickThen = null;
 function openPicker(then, far=false){
-  pickThen = then || null; $("#pk-new").hidden = !far;
+  pickThen = then || null; $("#pk-new").hidden = !(far===true || far==="far");
   const m=monthOfDay(), sel=new Set(S.species), list=[...SPECIES].sort((a,b)=>prio(a.id)-prio(b.id));
-  const top = list.filter(sp=>prio(sp.id)<16), rest = list.filter(sp=>prio(sp.id)>=16);
-  const row = sp => `<label><input type="checkbox" value="${sp.id}" ${sel.has(sp.id)?"checked":""}>${esc(sp.nom)}${sp.mois.includes(m)?' <span class="season" title="de saison"></span>':""}<em>${esc(sp.comest)}</em></label>`;
-  $("#pk-list").innerHTML = `<label class="allrow"><input type="checkbox" value="__all" ${S.allMode && !S.species.length ? "checked":""}>Tous les champignons<em>découvrir la zone</em></label><p class="sep">Ou jusqu’à trois espèces précises</p>`
-    + top.map(row).join("") + `<p class="sep">Espèces plus communes ou moins recherchées</p>` + rest.map(row).join("");
+  const c0 = map.getCenter();
+  const renderPick = counts => {
+    const checked = new Set([...document.querySelectorAll("#pk-list input:checked")].map(i=>i.value));
+    const isSel = id => checked.size ? checked.has(id) : sel.has(id);
+    const local = counts ? list.filter(sp=>(counts[sp.id]||0)>0).sort((a,b)=>(counts[b.id]-counts[a.id]) || (prio(a.id)-prio(b.id))).slice(0,6) : [];
+    const lset = new Set(local.map(x=>x.id));
+    const top = list.filter(sp=>prio(sp.id)<16 && !lset.has(sp.id)), rest = list.filter(sp=>prio(sp.id)>=16 && !lset.has(sp.id));
+    const row = sp => `<label><input type="checkbox" value="${sp.id}" ${isSel(sp.id)?"checked":""}>${esc(sp.nom)}${sp.mois.includes(m)?' <span class="season" title="de saison"></span>':""}<em>${counts && counts[sp.id] ? `${fmt(counts[sp.id])} obs.` : esc(sp.comest)}</em></label>`;
+    const allChecked = checked.size ? checked.has("__all") : (S.allMode && !S.species.length);
+    $("#pk-list").innerHTML = `<label class="allrow"><input type="checkbox" value="__all" ${allChecked ? "checked":""}>Tous les champignons<em>découvrir la zone</em></label>`
+      + (local.length ? `<p class="sep">Les plus observés autour d’ici (observations naturalistes GBIF)</p>` + local.map(row).join("") : (counts===null ? `<p class="sep" id="pk-wait">Recherche des espèces observées autour d’ici…</p>` : ""))
+      + `<p class="sep">Les plus recherchés</p>` + top.map(row).join("") + `<p class="sep">Espèces plus communes ou moins recherchées</p>` + rest.map(row).join("");
+    updatePickOk();
+  };
+  renderPick(null);
+  gbifCounts(c0.lat, c0.lng).then(cn=>{ pickCounts=cn; if(!$("#sppick").hidden) renderPick(cn); })
+    .catch(()=>{ const w=document.getElementById("pk-wait"); if(w) w.remove(); });
   $("#pk-ok").textContent = then ? "Scanner" : "Valider";
   updatePickOk(); $("#sppick").hidden=false;
 }
@@ -2127,7 +2197,7 @@ async function analyze(origin){
   const wKm=(b.e-b.w)*111.32*kx, hKm=(b.n-b.s)*110.57;
   if(wKm*hKm > MAX_AREA_KM2){ const m=`La zone visible fait environ ${fmt(wKm*hKm)} km². Zoomez jusqu’à ${MAX_AREA_KM2} km² au plus, puis relancez le scan.`; setStatus(m, true); banner.show(m); return; }
   const cLat=(b.s+b.n)/2, cLon=(b.w+b.e)/2;
-  if(!deptAt(cLat,cLon)){ const m="Cette zone est en dehors des départements couverts (Aude, Aveyron, Gard, Hérault, Lozère, Tarn)."; setStatus(m,true); banner.show(m); return; }
+  if(!deptAt(cLat,cLon)){ const m="Cette zone est en dehors de la France métropolitaine couverte par la carte."; setStatus(m,true); banner.show(m); return; }
   if(banner && banner._d) banner._d.hidden = true;
   const amb=document.querySelector(".scanbtn"); if(amb) amb.classList.add("busy");
   if(S.scanning){ setStatus("Le scan du secteur est en cours : attendez la fin ou arrêtez-le avant d’analyser une zone.", true); return; }
@@ -2238,7 +2308,7 @@ function drawForest(){
 function currentStats(){ return W.ok ? W.pts.map(p=>pointStats(p,S.day)) : null; }
 function monthOfDay(){ return W.ok ? Number(W.days[S.day].slice(5,7)) : (new Date().getMonth()+1); }
 function cellWx(c, stats){
-  const _w = cellWxRaw(c, stats); if(_w) _w.alt = c.alt; return _w;
+  const _w = cellWxRaw(c, stats); if(_w){ _w.alt = c.alt; _w.lat = c.lat; } return _w;
 }
 function cellWxRaw(c, stats){
   if(!stats) return null; if(!c.ww) c.ww = nearestWeights(c.lat,c.lon);
@@ -2363,8 +2433,8 @@ map.on("click", e=>{
   }
   html+=`</table>`;
   if(ranked.length){
-    html += ranked.map(([sp,r])=>{ const sel=S.species.includes(sp.id); return `<div class="rk${sel?" sel":""}"><b>${esc(sp.nom)}</b><div class="bar"><span style="width:${Math.round(r.score*100)}%"></span></div><span>${pct(r.score)}</span></div>`; }).join("");
-    if(chosen.length && others.length) html = html.replace(`<div class="rk"><b>${esc(others[0][0].nom)}</b>`, `<p class="why" style="margin:6px 0 2px">Autres espèces possibles ici :</p><div class="rk"><b>${esc(others[0][0].nom)}</b>`);
+    html += ranked.map(([sp,r])=>{ const sel=S.species.includes(sp.id); return `<div class="rk${sel?" sel":""}"><b class="splink" data-sp="${sp.id}" role="button" tabindex="0">${esc(sp.nom)}</b><div class="bar"><span style="width:${Math.round(r.score*100)}%"></span></div><span>${pct(r.score)}</span></div>`; }).join("");
+    if(chosen.length && others.length){ const first = `<div class="rk"><b class="splink" data-sp="${others[0][0].id}"`; html = html.replace(first, `<p class="why" style="margin:6px 0 2px">Autres espèces possibles ici :</p>` + first); }
     const [sp0,r0]=ranked[0];
     let why=`Pour ${esc(sp0.nom)} : hôte ${pct(r0.t.host)}, sol ${pct(r0.t.soil)}, altitude ${pct(r0.t.alt)}, relief ×${fmt(r0.t.relief,2)}, structure ×${fmt(r0.t.struct,2)}`;
     if(r0.m) why+=`, saison ${pct(r0.m.season)}, eau ${pct(r0.m.water)}, température ${pct(r0.m.temp)}, air ${pct(r0.m.air)}${r0.m.frost<1?", gel récent":""}${r0.m.shock>1?", refroidissement du sol":""}`;
@@ -3175,6 +3245,7 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
 }
 
 (async function start(){
+  await loadDepts(); drawZones();
   if(!navigator.onLine){
     await migrateOldTrip();
     let n=0; try{ n=((await DB.all())||[]).length; }catch(e){}
