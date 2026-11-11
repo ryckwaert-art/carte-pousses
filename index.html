@@ -120,7 +120,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--ochre);outline-
 .scanbtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;width:60px;height:66px;padding:4px 0 3px;
   background:var(--panel);border:2px solid var(--ink);border-radius:12px;box-shadow:0 2px 6px rgba(0,0,0,.25);cursor:pointer;color:var(--ink)}
 .scanbtn svg{image-rendering:pixelated}
-.leaflet-left .leaflet-control.refreshbtn{clear:none;margin-top:21px;margin-left:8px}
+.leaflet-left .leaflet-control.refreshbtn{margin-top:8px;margin-left:8px}
 .refreshbtn{width:44px;height:44px;border-radius:50%;border:2px solid var(--ink);background:var(--panel);color:var(--ink);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.25);cursor:pointer}
 .refreshbtn.busy svg{animation:spin 1s linear infinite}
 .scanbtn span{font:700 11px/1 ui-monospace,"Courier New",monospace;letter-spacing:.08em;text-transform:uppercase}
@@ -141,13 +141,16 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--ochre);outline-
 #sb-results li small{display:block;color:var(--muted);font-size:12.5px}
 #sb-results li.msg{color:var(--muted);cursor:default;font-size:14px}
 .pop .scanhere{font:inherit;font-size:14px;font-weight:700;border:0;background:var(--ink);color:var(--panel);border-radius:999px;padding:8px 16px;margin-top:6px;min-height:38px}
-.daybar{display:flex;align-items:center;gap:6px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:6px 8px;box-shadow:0 2px 8px rgba(0,0,0,.18);width:340px;max-width:calc(100vw - 20px)}
+.daybar{position:absolute;z-index:900;top:calc(env(safe-area-inset-top,0px) + 10px);left:84px;right:70px;max-width:380px;margin:0 auto;
+  display:flex;align-items:center;gap:4px;color:var(--ink);border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:4px 6px;
+  background:color-mix(in srgb, var(--panel) 62%, transparent);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:0 1px 5px rgba(0,0,0,.12)}
+@supports not (background:color-mix(in srgb, red 50%, transparent)){ .daybar{background:rgba(247,245,238,.68)} @media (prefers-color-scheme: dark){ .daybar{background:rgba(35,36,30,.68)} } }
 .daybar[hidden]{display:none}
 .daybar .dmid{flex:1;display:flex;flex-direction:column;min-width:0}
 .daybar #mdlabel{font-family:var(--serif);font-size:15px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .daybar #mdlabel small{font-family:var(--sans);font-size:12px;color:var(--muted)}
 .daybar input{width:100%;margin:2px 0 0;accent-color:var(--moss);height:24px}
-.dstep{flex:none;width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--paper);color:var(--ink);font-size:22px;line-height:1;cursor:pointer}
+.dstep{flex:none;width:32px;height:32px;background:transparent !important;border-radius:50%;border:1px solid var(--line);background:var(--paper);color:var(--ink);font-size:22px;line-height:1;cursor:pointer}
 body.hiking .daybar{display:none}
 .map-banner{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 10px;max-width:340px;font-size:14px;box-shadow:0 1px 4px rgba(0,0,0,.2)}
 .leaflet-control-layers-toggle{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232B2620' stroke-width='1.8' stroke-linejoin='round'%3E%3Cpath d='M12 3 2 8l10 5 10-5-10-5Z'/%3E%3Cpath d='m2 13 10 5 10-5'/%3E%3Cpath d='m2 17.5 10 5 10-5' opacity='.5'/%3E%3C/svg%3E")!important;background-size:24px 24px!important;background-repeat:no-repeat;background-position:center}
@@ -282,10 +285,10 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
   .handle span{display:block;width:44px;height:5px;border-radius:3px;background:var(--line);margin:0 auto}
   .handle{min-height:36px}
   #panel.closed{transform:translateY(110%);pointer-events:none}
-  #sheetopen{position:fixed;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 74px);z-index:1100;display:flex;align-items:center;gap:4px;padding:9px 14px 9px 10px;border-radius:999px;border:1px solid var(--ink);background:var(--panel);color:var(--ink);font:inherit;font-weight:700;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+  #sheetopen{position:fixed;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 16px);z-index:1100;display:flex;align-items:center;gap:4px;padding:9px 14px 9px 10px;border-radius:999px;border:1px solid var(--ink);background:var(--panel);color:var(--ink);font:inherit;font-weight:700;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
   #sheetopen[hidden]{display:none}
   body.hiking #sheetopen{display:none}
-  .leaflet-bottom.leaflet-right{margin-bottom:66px}
+
   .leaflet-control-scale{display:none}
   .sheetbtn{position:absolute;right:12px;top:4px;font:inherit;font-size:14px;font-weight:700;color:var(--ink);background:var(--moss-soft);border:0;border-radius:999px;padding:7px 14px;min-height:34px}
   h1{display:none}
@@ -1266,7 +1269,7 @@ const DayCtl = L.Control.extend({ options:{position:"bottomleft"},
   onAdd(){ const d=L.DomUtil.create("div","daybar"); d.hidden=true;
     d.innerHTML='<button type="button" class="dstep" data-k="-1" aria-label="Jour précédent">‹</button><div class="dmid"><span id="mdlabel"></span><input type="range" id="mday" aria-label="Jour étudié"></div><button type="button" class="dstep" data-k="1" aria-label="Jour suivant">›</button>';
     L.DomEvent.disableClickPropagation(d); L.DomEvent.disableScrollPropagation(d); return d; } });
-const dayCtl = new DayCtl().addTo(map);
+{ const d=new DayCtl().onAdd(map); map.getContainer().appendChild(d); }
 function setDayFromMap(v){ const sl=$("#day"); v=clamp(v, Number(sl.min), Number(sl.max)); sl.value=v; if(W.ok) onDayChange(); }
 document.addEventListener("input", e=>{ if(e.target && e.target.id==="mday") setDayFromMap(Number(e.target.value)); });
 document.addEventListener("click", e=>{ const b=e.target.closest && e.target.closest(".dstep"); if(b) setDayFromMap(Number($("#day").value)+Number(b.dataset.k)); });
@@ -1279,12 +1282,13 @@ function syncMapDay(){
 }
 map.zoomControl.remove();
 new ScanCtl().addTo(map);
-new RefreshCtl().addTo(map);
+
 const SearchCtl = L.Control.extend({ options:{position:"topleft"},
   onAdd(){ const b=L.DomUtil.create("button","searchbtn"); b.type="button"; b.title="Rechercher une ville ou un lieu"; b.setAttribute("aria-label","Rechercher une ville ou un lieu");
     b.innerHTML='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>';
     L.DomEvent.disableClickPropagation(b); L.DomEvent.on(b,"click",ev=>{ L.DomEvent.stop(ev); openSearch(); }); return b; } });
 new SearchCtl().addTo(map);
+new RefreshCtl().addTo(map);
 L.control.zoom({position:"topleft"}).addTo(map);
 watchBase(basePlan, "Le Plan IGN", baseOrtho);
 function watchOverlay(layer, name){
@@ -1914,7 +1918,7 @@ $("#sb-results").addEventListener("click", e=>{
   map.setView([r.lat, r.lon], 13);
   if(sbMarker) map.removeLayer(sbMarker);
   sbMarker = L.circleMarker([r.lat,r.lon],{radius:7,color:"#2B2620",weight:3,fillColor:"#E2AF4F",fillOpacity:1}).addTo(map);
-  setTimeout(()=>L.popup({autoPanPaddingTopLeft:[14,84], autoPanPaddingBottomRight:[14, (sheetState==="closed"?0:SHEET.peek)+76]}).setLatLng([r.lat,r.lon])
+  setTimeout(()=>L.popup({autoPanPaddingTopLeft:[14,POP_TOP()], autoPanPaddingBottomRight:[14, (sheetState==="closed"?0:SHEET.peek)+20]}).setLatLng([r.lat,r.lon])
     .setContent(`<div class="pop"><h3>${esc(r.nm)}</h3><p class="why">${esc(r.ctx)}</p><button type="button" class="scanhere">Scanner ici</button></div>`).openOn(map), 350);
 });
 function startScan(){
@@ -2268,7 +2272,7 @@ map.on("click", e=>{
   if(window.matchMedia("(max-width:760px)").matches){
     // Fenêtre sur la carte, tenue à l’écart des boutons du haut (zoom, couches) et du volet du bas
     if(sheetState==="half" || sheetState==="full") setSheet("peek");
-    const sheetH = sheetState==="closed" ? 0 : SHEET.peek, top = 84, bottom = sheetH + 76;
+    const sheetH = sheetState==="closed" ? 0 : SHEET.peek, top = POP_TOP(), bottom = sheetH + 20;
     L.popup({maxWidth:Math.min(300, window.innerWidth-40), minWidth:200, maxHeight:Math.max(180, window.innerHeight - top - bottom - 40),
       autoPanPaddingTopLeft:[14, top], autoPanPaddingBottomRight:[14, bottom], className:"pop-mobile"})
       .setLatLng(e.latlng).setContent(html).openOn(map);
@@ -2607,6 +2611,7 @@ map.on("moveend", ()=>{ clearTimeout(viewTimer); viewTimer=setTimeout(()=>{ try{
    Téléphone : volet coulissant, position GPS, sortie hors ligne
    ============================================================ */
 const panel = $("#panel"), handle = $("#handle");
+const POP_TOP = () => window.matchMedia("(max-width:760px)").matches ? 196 : 84;
 const SHEET = { peek: 168, half: () => Math.round(window.innerHeight*0.5), full: () => Math.round(window.innerHeight*0.88) };
 let sheetState = "peek";
 function setSheet(state, px){
@@ -3005,7 +3010,7 @@ async function drawReps(){
     L.marker([r.lat,r.lon],{icon:L.divIcon({className:"rep-pin",html:todo?LOUPE_SVG:AMA_PIN,iconSize:[26,26],iconAnchor:[13,24]}),title:r.name, zIndexOffset: todo?0:100})
       .on("click", ev=>{ L.DomEvent.stopPropagation(ev);
         const img = r.photo ? `<img src="${URL.createObjectURL(r.photo)}" alt="" style="width:100%;max-height:140px;object-fit:cover;border-radius:8px;margin:4px 0">` : "";
-        L.popup({maxWidth:260, autoPanPaddingTopLeft:[14,84], autoPanPaddingBottomRight:[14, SHEET.peek+60]}).setLatLng([r.lat,r.lon]).setContent(
+        L.popup({maxWidth:260, autoPanPaddingTopLeft:[14,POP_TOP()], autoPanPaddingBottomRight:[14, (sheetState==="closed"?0:SHEET.peek)+20]}).setLatLng([r.lat,r.lon]).setContent(
           `<div class="pop"><h3>${esc(r.name)}</h3><p class="why">${todo?"À chercher":"Vérifié"}${r.folder?` · ${esc(r.folder)}`:""} · ${new Date(r.verifiedAt||r.date).toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})}</p>${img}${repLine(r)?`<p>${esc(repLine(r))}</p>`:""}${r.note?`<p>${esc(r.note)}</p>`:""}
           <button type="button" class="addrep editrep" data-id="${r.id}">Modifier</button>${todo?` <button type="button" class="addrep markok" data-id="${r.id}">Vérifié ✓</button>`:""}</div>`).openOn(map); })
       .addTo(repLayer);
