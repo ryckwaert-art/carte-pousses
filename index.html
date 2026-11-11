@@ -481,7 +481,7 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
   </div>
 </div>
 <div id="searchbox" hidden role="dialog" aria-label="Rechercher un lieu">
-  <div class="sb-row"><input type="search" id="sb-input" placeholder="Ville, village, lieu-dit…" autocomplete="off" enterkeyhint="search"><button type="button" id="sb-close" aria-label="Fermer la recherche">✕</button></div>
+  <div class="sb-row"><input type="search" id="sb-input" placeholder="Ville, village, lieu-dit, forêt, sommet…" autocomplete="off" enterkeyhint="search"><button type="button" id="sb-close" aria-label="Fermer la recherche">✕</button></div>
   <ul id="sb-results"></ul>
 </div>
 <button type="button" id="sheetopen" hidden aria-label="Ouvrir le menu"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg><span>Menu</span></button>
@@ -1876,29 +1876,80 @@ async function refreshWeather(){
 }
 /* Recherche d’un lieu (géocodage de l’IGN), limitée aux six départements couverts */
 let sbTimer=null, sbMarker=null, sbSeq=0;
-function openSearch(){ $("#searchbox").hidden=false; $("#sb-results").innerHTML=""; const i=$("#sb-input"); i.value=""; setTimeout(()=>i.focus(),50); }
+function openSearch(){ loadCommunes().catch(()=>{}); $("#searchbox").hidden=false; $("#sb-results").innerHTML=""; const i=$("#sb-input"); i.value=""; setTimeout(()=>i.focus(),50); }
 function closeSearch(){ $("#searchbox").hidden=true; $("#sb-input").blur(); }
 $("#sb-close").addEventListener("click", closeSearch);
-async function geocode(q){
-  const bases = ["https://data.geopf.fr/geocodage/search","https://api-adresse.data.gouv.fr/search/"];
-  const queries = [["address","&type=municipality"],["poi",""],["address",""]];
-  const out=[], seen=new Set();
-  const one = async (base, idx, extra) => { try{
-      const url = `${base}?q=${encodeURIComponent(q)}&limit=6${base.includes("geopf")?`&index=${idx}`:""}${extra}`;
-      const js = await fetchJSON(url, {}, 10000); return js.features || [];
-    }catch(e){ return null; } };
-  let feats = (await Promise.all(queries.map(([i,x])=>one(bases[0],i,x)))).filter(Boolean).flat();
-  if(!feats.length) feats = (await one(bases[1],"","&type=municipality")) || [];
-  for(const f of feats){
-    const [lon,lat] = f.geometry && f.geometry.coordinates || []; if(lat==null) continue;
-    const d = deptAt(lat, lon); if(!d) continue;
-    const pr=f.properties||{}, nm = Array.isArray(pr.name) ? pr.name[0] : (pr.name || pr.toponym || pr.label || pr.city || "");
-    const key = norm(nm)+"|"+lat.toFixed(2)+"|"+lon.toFixed(2); if(!nm || seen.has(key)) continue; seen.add(key);
-    const kind = pr.type==="municipality" || pr._type==="municipality" ? "commune" : (pr.category ? String(Array.isArray(pr.category)?pr.category[0]:pr.category).toLowerCase() : (pr.type==="street"?"rue":pr.type==="locality"?"lieu-dit":""));
-    out.push({nm, lat, lon, ctx:[kind, pr.city && pr.city!==nm ? (Array.isArray(pr.city)?pr.city[0]:pr.city) : "", d.nom].filter(Boolean).join(", "), muni: kind==="commune"});
+/* Recherche tolérante aux fautes :
+   1) les communes des six départements (liste officielle, gardée sur l’appareil) comparées lettre à lettre,
+   2) le géocodage de l’IGN pour les lieux-dits, forêts, sommets, cols, hameaux…, interrogé avec plusieurs graphies. */
+const normKey = t => norm(t).replace(/[-'’.,]/g," ").replace(/\bsainte\b/g,"ste").replace(/\bsaint\b/g,"st").replace(/\s+/g," ").trim();
+let COMMUNES=null;
+async function loadCommunes(){
+  if(COMMUNES) return COMMUNES;
+  try{ const c=JSON.parse(localStorage.getItem("communes6")); if(c && Date.now()-c.t < 180*864e5){ COMMUNES=c.l.map(x=>({...x, k:normKey(x.n)})); return COMMUNES; } }catch(e){}
+  const all=[];
+  await Promise.all(["11","12","30","34","48","81"].map(async d=>{
+    try{ const js=await fetchJSON(`https://geo.api.gouv.fr/departements/${d}/communes?fields=nom,centre,codesPostaux&format=json`,{},15000);
+      for(const c of js) if(c.centre && c.centre.coordinates) all.push({n:c.nom, la:c.centre.coordinates[1], lo:c.centre.coordinates[0], d, cp:(c.codesPostaux||[])[0]||""}); }catch(e){}
+  }));
+  if(all.length){ try{ localStorage.setItem("communes6", JSON.stringify({t:Date.now(), l:all})); }catch(e){} }
+  COMMUNES = all.map(x=>({...x, k:normKey(x.n)}));
+  return COMMUNES;
+}
+function editDist(a, b){ // distance de Damerau-Levenshtein (lettre oubliée, en trop, remplacée ou inversée)
+  const m=a.length, n=b.length; if(!m) return n; if(!n) return m;
+  const d=Array.from({length:m+1},(_,i)=>{ const r=new Array(n+1).fill(0); r[0]=i; return r; }); for(let j=0;j<=n;j++) d[0][j]=j;
+  for(let i=1;i<=m;i++) for(let j=1;j<=n;j++){
+    const c = a[i-1]===b[j-1] ? 0 : 1;
+    d[i][j] = Math.min(d[i-1][j]+1, d[i][j-1]+1, d[i-1][j-1]+c);
+    if(i>1 && j>1 && a[i-1]===b[j-2] && a[i-2]===b[j-1]) d[i][j] = Math.min(d[i][j], d[i-2][j-2]+1);
   }
-  out.sort((a,b)=>b.muni-a.muni);
-  return out.slice(0,8);
+  return d[m][n];
+}
+function fuzzyCommunes(q){
+  const k=normKey(q), kc=k.replace(/ /g,""); if(k.length<2 || !COMMUNES) return [];
+  const tol = Math.max(1, Math.round(k.length/4));
+  const res=[];
+  for(const c of COMMUNES){
+    const ck=c.k, cc=ck.replace(/ /g,"");
+    let sc;
+    if(ck===k || cc===kc) sc=0;
+    else if(ck.startsWith(k) || cc.startsWith(kc)) sc=0.2 + (cc.length-kc.length)/100;
+    else { const dFull=editDist(kc, cc), dPre=editDist(kc, cc.slice(0, kc.length));
+      const dd=Math.min(dFull, dPre+0.5); if(dd>tol) continue; sc = 1 + dd/kc.length; }
+    res.push({c, sc});
+  }
+  return res.sort((a,b)=>a.sc-b.sc).slice(0,5).map(({c,sc})=>({nm:c.n, lat:c.la, lon:c.lo, ctx:["commune", c.cp, (DEPTS.find(x=>x.code===c.d)||{}).nom].filter(Boolean).join(", "), muni:true, sc}));
+}
+async function geocode(q){
+  const variants = [...new Set([q, q.replace(/[-'’]/g," "), normKey(q).replace(/\bst\b/g,"saint").replace(/\bste\b/g,"sainte")])];
+  const one = async (url) => { try{ const js=await fetchJSON(url,{},10000); return js.features || []; }catch(e){ return []; } };
+  const comp = async (text) => { try{ const js=await fetchJSON(`https://data.geopf.fr/geocodage/completion?text=${encodeURIComponent(text)}&type=PositionOfInterest&terr=11,12,30,34,48,81&maximumResponses=10`,{},10000);
+      return (js.results||[]).map(r=>({geometry:{coordinates:[r.x,r.y]}, properties:{name:r.fulltext, category:[r.poiType||r.kind||"lieu"], city:r.city}})); }catch(e){ return []; } };
+  const calls = [];
+  for(const v of variants){
+    calls.push(one(`https://data.geopf.fr/geocodage/search?q=${encodeURIComponent(v)}&limit=8&index=poi`));
+    calls.push(one(`https://data.geopf.fr/geocodage/search?q=${encodeURIComponent(v)}&limit=5&index=address&type=municipality`));
+    calls.push(comp(v));
+  }
+  const [communesP, feats] = await Promise.all([loadCommunes().catch(()=>null), Promise.all(calls).then(x=>x.flat())]);
+  const out = fuzzyCommunes(q), seen = new Set(out.map(o=>normKey(o.nm)+"|"+o.lat.toFixed(2)+"|"+o.lon.toFixed(2)));
+  const qk = normKey(q).replace(/ /g,"");
+  for(const f of feats){
+    const [lon,lat] = f.geometry && f.geometry.coordinates || []; if(lat==null || isNaN(lat)) continue;
+    const d = deptAt(lat, lon); if(!d) continue;
+    const pr=f.properties||{}, nm = String(Array.isArray(pr.name) ? pr.name[0] : (pr.name || pr.toponym || pr.label || pr.city || "")).split(",")[0].trim();
+    const key = normKey(nm)+"|"+lat.toFixed(2)+"|"+lon.toFixed(2); if(!nm || seen.has(key)) continue; seen.add(key);
+    const muni = pr.type==="municipality";
+    const cat = Array.isArray(pr.category) ? pr.category[0] : pr.category;
+    const kind = muni ? "commune" : (cat ? String(cat).toLowerCase() : (pr.type==="locality" ? "lieu-dit" : "lieu"));
+    const city = Array.isArray(pr.city) ? pr.city[0] : pr.city;
+    const nk = normKey(nm).replace(/ /g,"");
+    const sc = (nk.includes(qk) ? 0.5 : 1 + editDist(qk, nk.slice(0, qk.length))/Math.max(1,qk.length)) + (muni ? 0 : 0.05);
+    out.push({nm, lat, lon, ctx:[kind, city && city!==nm ? city : "", d.nom].filter(Boolean).join(", "), muni, sc});
+  }
+  out.sort((a,b)=>a.sc-b.sc);
+  return out.slice(0,10);
 }
 $("#sb-input").addEventListener("input", e=>{
   clearTimeout(sbTimer); const q=e.target.value.trim(); const ul=$("#sb-results");
