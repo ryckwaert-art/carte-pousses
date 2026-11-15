@@ -451,6 +451,9 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
       <li>Collado et al., productivité primaire de l’année précédente (NDVI) et production de champignons, Agricultural and Forest Meteorology, 2020.</li>
       <li>Martín-Pinto et al., effets d’un incendie sur la production de champignons en pinède de pin maritime, 2006.</li>
       <li>EFFIS (Copernicus), surfaces incendiées ; Open-Meteo, réanalyse climatique ERA5 depuis 1991.</li>
+      <li>Beven et Kirkby, indice d’humidité topographique, 1979 ; IGN BD TOPO, cours d’eau et sources.</li>
+      <li>Hansen et al., carte mondiale des pertes de couvert forestier (Global Forest Watch), Science, 2013, mise à jour annuelle.</li>
+      <li>GBIF, observations naturalistes (sociétés mycologiques, INPN, iNaturalist).</li>
       <li>Ágreda et al., production des champignons comestibles en pinède de pin maritime (Soria), Mycorrhiza, 2014.</li>
     </ol>
     <p style="color:var(--muted);font-size:13px">Données : IGN Géoplateforme, ISRIC SoilGrids, BRGM, Météo-France (modèles et stations), Open-Meteo.</p>
@@ -1387,11 +1390,13 @@ function drawZones(){
 }
 const forestLayer = L.layerGroup();
 const repLayerRef = L.layerGroup();
+const waterLayerRef = L.layerGroup();
+const obsLayerRef = L.layerGroup();
 const accessLayerRef = L.layerGroup();
 let heatLayer = null;
 L.control.layers(
   {"Plan IGN":basePlan, "Photos aériennes":baseOrtho},
-  {"Départements couverts":zone, "Relief":relief, "Géologie (BRGM 1/50 000)":geol, "Forêts publiques":foretsPub, "Forêts anciennes":foretsAnc, "Peuplements analysés":forestLayer, "Mes repères":repLayerRef},
+  {"Départements couverts":zone, "Relief":relief, "Géologie (BRGM 1/50 000)":geol, "Forêts publiques":foretsPub, "Forêts anciennes":foretsAnc, "Peuplements analysés":forestLayer, "Cours d’eau et sources":waterLayerRef, "Observations naturalistes":obsLayerRef, "Mes repères":repLayerRef},
   {collapsed:true}).addTo(map);
 L.control.scale({imperial:false}).addTo(map);
 watchOverlay(relief,"Le relief IGN"); watchOverlay(geol,"La carte géologique du BRGM"); watchOverlay(foretsPub,"La couche des forêts publiques"); watchOverlay(foretsAnc,"La couche des forêts anciennes");
@@ -2217,6 +2222,127 @@ function fireFactor(sp, c){
   if(SAPRO.has(sp.id)) return y<1 ? 0.5 : y<2 ? 0.8 : 1;
   return y<1 ? 0.1 : y<3 ? 0.3 : y<5 ? 0.6 : 0.85;
 }
+
+/* ============================================================
+   Humidité du relief, cours d’eau, coupes récentes, observations naturalistes
+   ============================================================ */
+/* Indice d’humidité topographique (Beven et Kirkby) : ln(surface drainée / pente), calculé sur les altitudes du scan */
+function computeTWI(cells, rows, cols, b, cellM){
+  const at=(r,c)=>(r<0||c<0||r>=rows||c>=cols)?null:cells[r*cols+c];
+  const kx=Math.cos(((b.s+b.n)/2)*Math.PI/180), dx=(b.e-b.w)/cols*111320*kx, dy=(b.n-b.s)/rows*110574;
+  const acc=new Float64Array(cells.length).fill(1);
+  const order=cells.map((x,i)=>i).filter(i=>cells[i].alt!=null).sort((i,j)=>cells[j].alt-cells[i].alt);
+  for(const i of order){ const x=cells[i]; let best=null, bs=0;
+    for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){ if(!dr&&!dc) continue; const q=at(x.r+dr,x.c+dc); if(!q||q.alt==null) continue;
+      const dist=Math.hypot(dr*dy,dc*dx), sl=(x.alt-q.alt)/dist; if(sl>bs){ bs=sl; best=q; } }
+    if(best) acc[best.r*cols+best.c]+=acc[i]; }
+  const vals=[];
+  for(let i=0;i<cells.length;i++){ const x=cells[i]; x.twi=null; if(x.alt==null) continue;
+    const z=q=>q&&q.alt!=null?q.alt:x.alt;
+    const gx=(z(at(x.r,x.c+1))-z(at(x.r,x.c-1)))/(2*dx), gy=(z(at(x.r+1,x.c))-z(at(x.r-1,x.c)))/(2*dy);
+    x.twi=Math.log(acc[i]*Math.sqrt(dx*dy)/Math.max(0.01,Math.hypot(gx,gy))); vals.push(x.twi); }
+  const m=vals.reduce((a,v)=>a+v,0)/(vals.length||1), sd=Math.sqrt(vals.reduce((a,v)=>a+(v-m)**2,0)/(vals.length||1))||1;
+  for(const x of cells) x.twiZ = x.twi==null ? null : (x.twi-m)/sd;
+}
+/* Effet modéré : l’humidité du sol est l’un des meilleurs prédicteurs de la production (Collado et al. 2020) ;
+   il compte davantage par temps sec et pour les espèces des stations humides. */
+function twiFactor(sp, c, dry){
+  if(c.twiZ==null) return 1;
+  const k = sp.humide ? 1.6 : sp.milieu==="ouvert" ? 0.6 : 1;
+  return clamp(1 + clamp(c.twiZ,-2,2)*(0.03+0.05*(dry||0))*k, 0.75, 1.25);
+}
+/* Cours d’eau et sources (BD TOPO de l’IGN), distance calculée maille par maille */
+async function loadWater(b){
+  const feats=[];
+  for(const [layer,kind] of [["BDTOPO_V3:troncon_hydrographique","cours d’eau"],["BDTOPO_V3:detail_hydrographique","source"]]){
+    const url="https://data.geopf.fr/wfs/ows?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES="+layer
+      +"&OUTPUTFORMAT=application/json&SRSNAME=urn:ogc:def:crs:EPSG::4326&COUNT=5000"+`&BBOX=${b.s},${b.w},${b.n},${b.e},urn:ogc:def:crs:EPSG::4326`;
+    const js=await fetchJSON(url,{},45000);
+    for(const f of (js.features||[])){ const g=f.geometry, pr=f.properties||{}; if(!g) continue;
+      if(kind==="source" && !/source|résurgence|resurgence|fontaine/i.test(String(pr.nature||""))) continue;
+      const c0=firstCoord(g.coordinates); if(Math.abs(c0[0]-b.s) < Math.abs(c0[0]-b.w)) g.coordinates=swapCoords(g.coordinates);
+      const perm = /permanent/i.test(String(pr.persistance||""));
+      feats.push({g, kind: kind==="source" ? "source" : (perm ? "cours d’eau permanent" : "ruisseau intermittent"), nom: pr.nom_cours_d_eau||pr.toponyme||pr.cpx_toponyme_de_cours_d_eau||""}); }
+  }
+  return feats;
+}
+function waterDistance(cells, rows, cols, b, cellM, feats){
+  const N=rows*cols, D=new Float64Array(N).fill(Infinity), K=new Array(N).fill(null), Q=[];
+  const mark=(lon,lat,f)=>{ const c=Math.floor((lon-b.w)/(b.e-b.w)*cols), r=Math.floor((lat-b.s)/(b.n-b.s)*rows); if(r<0||c<0||r>=rows||c>=cols) return; const i=r*cols+c; if(D[i]>0){ D[i]=0; K[i]=f; Q.push(i); } };
+  const line=(pts,f)=>{ for(let i=0;i<pts.length;i++){ mark(pts[i][0],pts[i][1],f); if(i){ const [x0,y0]=pts[i-1],[x1,y1]=pts[i], n=Math.ceil(Math.hypot((x1-x0)/(b.e-b.w)*cols,(y1-y0)/(b.n-b.s)*rows)*2); for(let k=1;k<n;k++) mark(x0+(x1-x0)*k/n, y0+(y1-y0)*k/n, f); } } };
+  for(const f of feats){ const g=f.g, c=g.coordinates;
+    if(g.type==="Point") mark(c[0],c[1],f); else if(g.type==="MultiPoint") c.forEach(p=>mark(p[0],p[1],f));
+    else if(g.type==="LineString") line(c,f); else if(g.type==="MultiLineString") c.forEach(l=>line(l,f)); }
+  // Distance par propagation (pas de 1 ou √2 maille)
+  for(let h=0; h<Q.length; h++){ const i=Q[h], r=Math.floor(i/cols), c=i%cols;
+    for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){ if(!dr&&!dc) continue; const rr=r+dr, cc=c+dc; if(rr<0||cc<0||rr>=rows||cc>=cols) continue;
+      const j=rr*cols+cc, nd=D[i]+(dr&&dc?1.414:1)*cellM; if(nd<D[j]){ D[j]=nd; K[j]=K[i]; Q.push(j); } } }
+  cells.forEach((x,i)=>{ x.waterD = isFinite(D[i]) ? Math.max(cellM/2, D[i]) : null; x.waterKind = K[i] ? K[i].kind : null; x.waterNom = K[i] ? K[i].nom : null; });
+}
+function waterFactor(sp, c){
+  if(c.waterD==null) return 1;
+  if(sp.id==="morille") return c.waterD<120 ? 1.2 : c.waterD<250 ? 1.08 : 1; // ripisylves
+  if(sp.humide) return c.waterD<150 ? 1.12 : c.waterD<300 ? 1.05 : 1;
+  return 1;
+}
+const waterLayer = waterLayerRef;
+function drawWater(feats){ waterLayer.clearLayers();
+  for(const f of feats){ const g=f.g;
+    if(/Point/.test(g.type)){ (g.type==="Point"?[g.coordinates]:g.coordinates).forEach(p=>L.circleMarker([p[1],p[0]],{radius:4,color:"#1F6FB2",weight:2,fillColor:"#BFE0FA",fillOpacity:1,interactive:false}).addTo(waterLayer)); }
+    else L.geoJSON({type:"Feature",geometry:g},{style:{color:"#1F6FB2",weight:f.kind==="cours d’eau permanent"?2:1.2,opacity:0.7,dashArray:f.kind==="ruisseau intermittent"?"4 4":null},interactive:false}).addTo(waterLayer); } }
+
+/* Coupes et dépérissements récents : perte de couvert arboré par satellite (Hansen et al., Global Forest Watch), filtrée par années */
+function lon2px(lon,z){ return (lon+180)/360*256*2**z; }
+function lat2px(lat,z){ const s_=Math.sin(lat*Math.PI/180); return (0.5-Math.log((1+s_)/(1-s_))/(4*Math.PI))*256*2**z; }
+async function lossMask(b, cols, rows, y0, y1){
+  const z=12, X0=Math.floor(lon2px(b.w,z)/256), X1=Math.floor(lon2px(b.e,z)/256), Y0=Math.floor(lat2px(b.n,z)/256), Y1=Math.floor(lat2px(b.s,z)/256);
+  const tiles={};
+  await Promise.all([...Array((X1-X0+1)*(Y1-Y0+1)).keys()].map(async k=>{ const x=X0+k%(X1-X0+1), y=Y0+Math.floor(k/(X1-X0+1));
+    tiles[x+"/"+y] = await fetchImageData(`https://tiles.globalforestwatch.org/umd_tree_cover_loss/latest/dynamic/${z}/${x}/${y}.png?start_year=${y0}&end_year=${y1}&tcd=30`,256,256); }));
+  const out=new Float32Array(cols*rows), n=4;
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){ let hit=0;
+    for(let a=0;a<n;a++) for(let d=0;d<n;d++){ const lat=b.s+(r+(a+0.5)/n)*(b.n-b.s)/rows, lon=b.w+(c+(d+0.5)/n)*(b.e-b.w)/cols;
+      const px=lon2px(lon,z), py=lat2px(lat,z), t=tiles[Math.floor(px/256)+"/"+Math.floor(py/256)]; if(!t) continue;
+      const o=((Math.floor(py)%256)*256+(Math.floor(px)%256))*4; if(t[o+3]>40) hit++; }
+    out[r*cols+c]=hit/(n*n); }
+  return out;
+}
+async function loadLoss(b, cols, rows){
+  const Y=new Date().getFullYear();
+  const [recent, older] = await Promise.all([lossMask(b,cols,rows,Y-2,Y), lossMask(b,cols,rows,Y-5,Y-3)]);
+  return {recent, older};
+}
+/* Une forêt coupée ou morte ne nourrit plus ses champignons mycorhiziens (Egli 2011). Appliqué seulement si le LiDAR,
+   plus ancien, voit encore des arbres : sinon la coupe est déjà prise en compte. */
+function lossFactor(sp, c){
+  const lr=c.lossR||0, lo=c.lossO||0; if(!lr && !lo) return 1;
+  if(c.cover!=null && c.cover<0.25) return 1;
+  if(SAPRO.has(sp.id)) return 1 - 0.3*lr;
+  return clamp(1 - 0.85*lr - 0.5*lo, 0.1, 1);
+}
+
+/* Observations naturalistes (GBIF : sociétés mycologiques, INPN, iNaturalist…) des espèces choisies, dans la zone scannée */
+const obsLayer = obsLayerRef;
+async function loadObservations(b){
+  obsLayer.clearLayers(); S.obs=[];
+  const keys=await gbifKeys(), ids = S.species.length ? S.species : [...SPECIES].sort((a,c)=>prio(a.id)-prio(c.id)).slice(0,10).map(x=>x.id);
+  const sp = ids.map(id=>SPECIES.find(x=>x.id===id)).filter(Boolean), tk=[];
+  for(const x of sp){ const k=keys[x.latin]; if(k) tk.push([k.key,x]); }
+  if(!tk.length) return 0;
+  const js = await fetchJSON(`https://api.gbif.org/v1/occurrence/search?${tk.map(([k])=>"taxonKey="+k).join("&")}&hasCoordinate=true&hasGeospatialIssue=false&decimalLatitude=${b.s.toFixed(4)},${b.n.toFixed(4)}&decimalLongitude=${b.w.toFixed(4)},${b.e.toFixed(4)}&limit=300`, {}, 20000);
+  for(const o of (js.results||[])){
+    const ks=[o.speciesKey,o.genusKey,o.taxonKey].map(String), hit=tk.find(([k])=>ks.includes(String(k))); if(!hit) continue;
+    const prec=o.coordinateUncertaintyInMeters; if(prec && prec>2000) continue;
+    const ob={lat:o.decimalLatitude, lon:o.decimalLongitude, sp:hit[1], date:o.eventDate||(o.year?String(o.year):""), src:o.datasetName||o.institutionCode||"GBIF", prec};
+    S.obs.push(ob);
+    L.circleMarker([ob.lat,ob.lon],{radius:5,color:"#fff",weight:1.5,fillColor:S.species.includes(hit[1].id)?"#B3261E":"#7A4A26",fillOpacity:0.95})
+      .bindPopup(`<div class="pop"><h3>${esc(hit[1].nom)}</h3><p class="why">Observation ${ob.date?`du ${esc(String(ob.date).slice(0,10))}`:""}${prec?`, précision ${fmt(prec)} m`:""}<br>Source : ${esc(ob.src)} (via GBIF)</p></div>`,{maxWidth:240})
+      .addTo(obsLayer);
+  }
+  if(!map.hasLayer(obsLayer)) obsLayer.addTo(map);
+  return S.obs.length;
+}
+function obsNear(c, r=600){ return (S.obs||[]).filter(o=>haversine([o.lat,o.lon],[c.lat,c.lon])<=r); }
 const USER_SCAN = Symbol("scan demandé");
 
 /* Corine Land Cover 2018 (IGN) : grandes zones artificialisées (villes, zones industrielles, routes, parcs urbains).
@@ -2295,6 +2421,8 @@ async function analyze(origin){
     // Météo et terrain sont chargés en même temps ; le terrain d’une zone déjà scannée est réutilisé tel quel
     const meteoP = (!W.ok || haversine(CENTER,[cLat,cLon]) > 12000) ? setArea(cLat, cLon) : Promise.resolve();
     const legacyP = loadLegacy(cLat, cLon).then(v=>{ S.legacy=v; S.legacyOk=true; }).catch(e=>{ console.warn("Historique climatique", e); S.legacy=null; S.legacyOk=false; });
+    const waterP = loadWater(b).then(f=>{ S.waterOk=true; return f; }).catch(e=>{ console.warn("Cours d’eau", e); S.waterOk=false; return null; });
+    const lossP = loadLoss(b, cols, rows).then(l=>{ S.lossOk=true; return l; }).catch(e=>{ console.warn("Pertes de couvert", e); S.lossOk=false; return null; });
     const fireP = loadFires(b).then(f=>{ S.fireOk=true; return f; }).catch(e=>{ console.warn("Incendies EFFIS", e); S.fireOk=false; return []; });
     const reuse = await findTerrain(b, cellM);
     let alts;
@@ -2335,7 +2463,12 @@ async function analyze(origin){
     { const [fires] = await Promise.all([fireP, legacyP]);
       for(const x of cells){ x.fireY=null; x.fireDate=null;
         for(const f of fires){ if(x.lon<f.bbox[0]||x.lon>f.bbox[2]||x.lat<f.bbox[1]||x.lat>f.bbox[3]) continue; if(geomContains(f.geom,x.lon,x.lat) && (x.fireY==null || f.years<x.fireY)){ x.fireY=f.years; x.fireDate=f.date; } } }
-      S.nFire = cells.filter(x=>x.fireY!=null).length; }
+      S.nFire = cells.filter(x=>x.fireY!=null).length;
+      computeTWI(cells, rows, cols, b, cellM);
+      const [wf, loss] = await Promise.all([waterP, lossP]);
+      if(wf){ waterDistance(cells, rows, cols, b, cellM, wf); drawWater(wf); } else cells.forEach(x=>{ x.waterD=null; x.waterKind=null; });
+      cells.forEach((x,i)=>{ x.lossR = loss ? loss.recent[i] : 0; x.lossO = loss ? loss.older[i] : 0; });
+      S.nLoss = cells.filter(x=>(x.lossR>0.2 || x.lossO>0.2) && !(x.cover!=null && x.cover<0.25)).length; }
 
     setProgress(0.9,"Calcul des chances"); setStatus("Calcul des mailles…");
     if(!reuse){ const {forest, clcU, soil} = S._fresh;
@@ -2374,10 +2507,11 @@ async function analyze(origin){
     S.grid={cells,rows,cols,b,cellM};
     try{ localStorage.setItem("lastScanCenter", JSON.stringify({lat:cLat, lon:cLon})); }catch(e){}
     if(!reuse) saveTerrain(S.grid).catch(()=>{});
+    loadObservations(b).then(n=>{ S.obsOk=true; if(n) bgTask(`${n} observation${n>1?"s":""} naturaliste${n>1?"s":""} sur la carte`); setTimeout(()=>bgTask(null),3500); }).catch(e=>{ console.warn("Observations GBIF", e); S.obsOk=false; });
     drawForest(); render(); setProgress(1,"Terminé"); setTimeout(()=>setProgress(null), 600);
 
     const nf=cells.filter(x=>x.forest).length;
-    setStatus(`${fmt(cells.length)} mailles de ${fmt(cellM)} m analysées${S.altiSrc && S.altiSrc!=="IGN" ? ` (altitudes : ${S.altiSrc})` : ""}, dont ${fmt(100*nf/cells.length)} % en forêt. ${S.soilOk?"pH et sable : SoilGrids.":"SoilGrids n’a pas répondu : pH estimé d’après les arbres."} ${S.geoOk==="50k"?"Géologie : BRGM 1/50 000.":S.geoOk==="1M"?"Géologie : carte simplifiée au millionième seulement.":"Géologie détaillée indisponible."} ${S.lidarOk?"Hauteur des arbres : LiDAR HD.":"LiDAR HD indisponible ici."} ${S.legacy?`Climat des 12 derniers mois : ${legacyText().split(" :")[0]}. `:""}${S.nFire?`${fmt(100*S.nFire/cells.length)} % de la zone a brûlé ces dernières années. `:""}Zones bâties exclues : ${fmt(100*cells.filter(x=>x.urban).length/cells.length)} % (BD TOPO ${S.urbanOk?"✓":"✗"}, Corine ${S.clcOk?"✓":"✗"}, toits ${S.batiOk?"✓":"✗"} ; historique climatique ${S.legacyOk?"✓":"✗"}, incendies ${S.fireOk?"✓":"✗"}). Cliquez sur la carte pour le détail.`);
+    setStatus(`${fmt(cells.length)} mailles de ${fmt(cellM)} m analysées${S.altiSrc && S.altiSrc!=="IGN" ? ` (altitudes : ${S.altiSrc})` : ""}, dont ${fmt(100*nf/cells.length)} % en forêt. ${S.soilOk?"pH et sable : SoilGrids.":"SoilGrids n’a pas répondu : pH estimé d’après les arbres."} ${S.geoOk==="50k"?"Géologie : BRGM 1/50 000.":S.geoOk==="1M"?"Géologie : carte simplifiée au millionième seulement.":"Géologie détaillée indisponible."} ${S.lidarOk?"Hauteur des arbres : LiDAR HD.":"LiDAR HD indisponible ici."} ${S.legacy?`Climat des 12 derniers mois : ${legacyText().split(" :")[0]}. `:""}${S.nFire?`${fmt(100*S.nFire/cells.length)} % de la zone a brûlé ces dernières années. `:""}${S.nLoss?`${fmt(100*S.nLoss/cells.length)} % coupé ou dépéri récemment. `:""}Zones bâties exclues : ${fmt(100*cells.filter(x=>x.urban).length/cells.length)} % (BD TOPO ${S.urbanOk?"✓":"✗"}, Corine ${S.clcOk?"✓":"✗"}, toits ${S.batiOk?"✓":"✗"} ; historique climatique ${S.legacyOk?"✓":"✗"}, incendies ${S.fireOk?"✓":"✗"}, cours d’eau ${S.waterOk?"✓":"✗"}, coupes ${S.lossOk?"✓":"✗"}). Cliquez sur la carte pour le détail.`);
   }catch(e){
     console.error(e);
     setStatus("L’analyse a échoué : "+e.message+". Vérifiez la connexion et relancez ; si le problème persiste, essayez un autre navigateur.", true);
@@ -2410,7 +2544,8 @@ function dryness(w){ return w ? 1 - waterIndex({pluie:[40,90]}, w) : 0.5; }
 function scoreCell(sp, c, stats, month, wx){
   const w = wx !== undefined ? wx : cellWx(c, stats);
   const t = terrainParts(sp, c, dryness(w));
-  const fire = fireFactor(sp, c);
+  const fire = fireFactor(sp, c) * lossFactor(sp, c);
+  if(t.total>0){ const dz=dryness(w); t.twi=twiFactor(sp,c,dz); t.water=waterFactor(sp,c); t.total=clamp(t.total*t.twi*t.water,0,1); }
   if(S.mode==="terrain" || !w) return {score:clamp(t.total*fire,0,1), t, m:null, fire};
   if(t.total===0) return {score:0, t, m:null, fire};
   const m = weatherParts(sp, w, month), leg = legacyFactor(sp);
@@ -2519,6 +2654,10 @@ map.on("click", e=>{
   if(w && S.mode==="meteo"){
     html+=`<tr><td>Pluie 26 j</td><td>${fmt(w.P26raw)} mm (utile ${fmt(w.P26)} mm), bilan ${w.WB>=0?"+":""}${fmt(w.WB)} mm</td></tr>
       ${legacyText()?`<tr><td>12 derniers mois</td><td>${esc(legacyText())}</td></tr>`:""}
+      ${c.twiZ!=null?`<tr><td>Humidité du relief</td><td>${c.twiZ>1?"endroit où l’eau s’accumule":c.twiZ>0.3?"plutôt frais":c.twiZ<-1?"endroit qui s’assèche vite":c.twiZ<-0.3?"plutôt sec":"moyenne"}</td></tr>`:""}
+      ${c.waterD!=null?`<tr><td>Eau</td><td>${c.waterKind}${c.waterNom?` (${esc(c.waterNom)})`:""} à ${c.waterD<100?"moins de 100":fmt(Math.round(c.waterD/50)*50)} m</td></tr>`:""}
+      ${(c.lossR>0.2||c.lossO>0.2)?`<tr><td>Coupe récente</td><td><b style="color:#B3261E">perte de couvert ${c.lossR>0.2?"depuis 2 ans":"il y a 3 à 5 ans"}</b> (${fmt(100*Math.max(c.lossR,c.lossO))} % de la maille, satellite)</td></tr>`:""}
+      ${(()=>{ const ob=obsNear(c); return ob.length?`<tr><td>Observé ici</td><td>${[...new Set(ob.map(o=>o.sp.nom))].join(", ")} (${ob.length} obs. à moins de 600 m)</td></tr>`:""; })()}
       ${c.fireY!=null?`<tr><td>Incendie</td><td><b style="color:#B3261E">brûlé en ${new Date(c.fireDate).toLocaleDateString("fr-FR",{month:"long",year:"numeric"})}</b> (EFFIS)</td></tr>`:""}
       <tr><td>Bonne pluie</td><td>${w.lastBig==null?"aucune de 10 mm ou plus depuis plus de 6 semaines":w.lastBig===0?"aujourd’hui":`il y a ${w.lastBig} j (10 mm ou plus)`}</td></tr>
       <tr><td>Eau du sol</td><td>${isNaN(w.SM)?"—":fmt(w.SM*100)+" % vol."} (modèle régional)</td></tr>
@@ -2532,7 +2671,7 @@ map.on("click", e=>{
     const [sp0,r0]=ranked[0];
     let why=`Pour ${esc(sp0.nom)} : hôte ${pct(r0.t.host)}, sol ${pct(r0.t.soil)}, altitude ${pct(r0.t.alt)}, relief ×${fmt(r0.t.relief,2)}, structure ×${fmt(r0.t.struct,2)}`;
     if(r0.m) why+=`, saison ${pct(r0.m.season)}, eau ${pct(r0.m.water)}, température ${pct(r0.m.temp)}, air ${pct(r0.m.air)}${r0.m.frost<1?", gel récent":""}${r0.m.shock>1?", refroidissement du sol":""}`;
-    const fac = [["l’arbre hôte",r0.t.host],["le sol",r0.t.soil],["l’altitude",r0.t.alt]].concat(r0.m?[["la saison",r0.m.season],["l’eau",r0.m.water],["la température",r0.m.temp],["la sécheresse des derniers mois",r0.m.legacy]]:[]).concat(r0.fire<1?[["un incendie récent",r0.fire]]:[]).sort((a,b2)=>a[1]-b2[1])[0];
+    const fac = [["l’arbre hôte",r0.t.host],["le sol",r0.t.soil],["l’altitude",r0.t.alt]].concat(r0.m?[["la saison",r0.m.season],["l’eau",r0.m.water],["la température",r0.m.temp],["la sécheresse des derniers mois",r0.m.legacy]]:[]).concat(r0.fire<1?[["un incendie ou une coupe récente",r0.fire]]:[]).concat(r0.t.twi!=null&&r0.t.twi<1?[["un relief qui s’assèche vite",r0.t.twi]]:[]).sort((a,b2)=>a[1]-b2[1])[0];
     const verdict = r0.score>=0.75?"très favorable":r0.score>=0.5?"favorable":r0.score>=0.25?"possible":"peu probable";
     html += `<p class="why"><b>${esc(sp0.nom)} : ${verdict}.</b>${fac && fac[1]<0.8 ? ` Ce qui limite le plus ici : ${fac[0]} (${pct(fac[1])}).` : " Aucun facteur nettement limitant."}</p>`;
     html += `<p class="why">${why}.</p>`;
@@ -2974,7 +3113,7 @@ $("#triplist").addEventListener("click", async e=>{
 const r2 = v => v==null||isNaN(v) ? null : Math.round(v*100)/100;
 function packCells(cells){
   return cells.map(c=>({r:c.r,c:c.c,lat:Math.round(c.lat*1e5)/1e5,lon:Math.round(c.lon*1e5)/1e5,alt:c.alt==null?null:Math.round(c.alt),mapped:c.mapped,keys:[...c.keys],ouvert:c.ouvert,forest:c.forest,label:c.label,
-    ph:r2(c.ph),sand:r2(c.sand),clay:r2(c.clay),soc:r2(c.soc),cfvo:r2(c.cfvo),pub:c.pub,urban:c.urban,urbanWhy:c.urbanWhy,bfrac:r2(c.bfrac),priv:c.priv,privWhy:c.privWhy,geo:c.geo,h:r2(c.h),cover:r2(c.cover),anc:c.anc,
+    ph:r2(c.ph),sand:r2(c.sand),clay:r2(c.clay),soc:r2(c.soc),cfvo:r2(c.cfvo),pub:c.pub,urban:c.urban,urbanWhy:c.urbanWhy,bfrac:r2(c.bfrac),twiZ:r2(c.twiZ),waterD:c.waterD==null?null:Math.round(c.waterD),waterKind:c.waterKind,waterNom:c.waterNom,lossR:r2(c.lossR),lossO:r2(c.lossO),fireY:r2(c.fireY),fireDate:c.fireDate,priv:c.priv,privWhy:c.privWhy,geo:c.geo,h:r2(c.h),cover:r2(c.cover),anc:c.anc,
     edge:c.edge,slope:r2(c.slope),aspect:r2(c.aspect),tpi:r2(c.tpi),awc:r2(c.awc),relW:c.relW?Array.from(c.relW,v=>Math.round(v*100)/100):null}));
 }
 function unpackCells(arr){ return arr.map(c=>({...c, keys:new Set(c.keys), relW:c.relW?Float32Array.from(c.relW):null, ww:null})); }
