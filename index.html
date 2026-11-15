@@ -448,6 +448,9 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
       <li>Andrew et al., phénologie de la fructification en Europe et climat.</li>
       <li>Botanica Lithuanica, vol. 9, croissance de la girolle selon l’humidité et la pluie (1998-2002).</li>
       <li>Mihail, Bruhn et Bonello, sortie des morilles selon la température du sol et les pluies de plus de 10 mm, 2007.</li>
+      <li>Collado et al., productivité primaire de l’année précédente (NDVI) et production de champignons, Agricultural and Forest Meteorology, 2020.</li>
+      <li>Martín-Pinto et al., effets d’un incendie sur la production de champignons en pinède de pin maritime, 2006.</li>
+      <li>EFFIS (Copernicus), surfaces incendiées ; Open-Meteo, réanalyse climatique ERA5 depuis 1991.</li>
       <li>Ágreda et al., production des champignons comestibles en pinède de pin maritime (Soria), Mycorrhiza, 2014.</li>
     </ol>
     <p style="color:var(--muted);font-size:13px">Données : IGN Géoplateforme, ISRIC SoilGrids, BRGM, Météo-France (modèles et stations), Open-Meteo.</p>
@@ -2147,6 +2150,73 @@ $("#pk-ok").addEventListener("click", ()=>{
   const f=pickThen; pickThen=null; if(f) f();
 });
 $("#openpick").addEventListener("click", ()=>openPicker(null));
+
+/* ============================================================
+   Historique climatique : sécheresse des 12 et 24 derniers mois, incendies récents
+   ============================================================ */
+// Espèces qui décomposent la matière morte (saprophytes) : moins liées à la santé des arbres que les mycorhiziennes
+const SAPRO = new Set(["coulemelle","rose-pres","pied-bleu","clitocybe-geotrope","pleurote-panicaut","morille","sparassis","mousseron","langue-boeuf","saint-georges"]);
+/* Bilan pluie moins évaporation (ERA5, Open-Meteo) sur 12 et 24 mois, comparé à la normale 1991-2020 au même endroit */
+async function loadLegacy(lat, lon){
+  const ck = `legacy-${(Math.round(lat*4)/4).toFixed(2)}-${(Math.round(lon*4)/4).toFixed(2)}`;
+  try{ const c=JSON.parse(localStorage.getItem(ck)); if(c && Date.now()-c.t < 7*864e5) return c.v; }catch(e){}
+  const end = new Date(Date.now()-6*864e5).toISOString().slice(0,10);
+  const js = await fetchJSON(`https://archive-api.open-meteo.com/v1/archive?latitude=${lat.toFixed(3)}&longitude=${lon.toFixed(3)}&start_date=1991-01-01&end_date=${end}&daily=precipitation_sum,et0_fao_evapotranspiration&timezone=UTC`, {}, 45000);
+  const d = js.daily, n = d.time.length, B = new Float64Array(n+1);
+  for(let i=0;i<n;i++) B[i+1] = B[i] + ((d.precipitation_sum[i]||0) - (d.et0_fao_evapotranspiration[i]||0));
+  const win = (endIdx, len) => endIdx-len+1 < 0 ? null : B[endIdx+1]-B[endIdx-len+1];
+  const stat = len => {
+    const cur = win(n-1, len), md = d.time[n-1].slice(5), ref=[];
+    for(let y=1992; y<=2020; y++){ const k = d.time.indexOf(`${y}-${md==="02-29"?"02-28":md}`); if(k>=0){ const v=win(k,len); if(v!=null) ref.push(v); } }
+    const m = ref.reduce((a,b)=>a+b,0)/ref.length, sd = Math.sqrt(ref.reduce((a,b)=>a+(b-m)**2,0)/ref.length) || 1;
+    return {cur, normal:m, anom:cur-m, z:(cur-m)/sd};
+  };
+  const v = {y1:stat(365), y2:stat(730)};
+  try{ localStorage.setItem(ck, JSON.stringify({t:Date.now(), v})); }catch(e){}
+  return v;
+}
+/* Effet de mémoire : la production dépend aussi de la vigueur des arbres l’année précédente
+   (NDVI de l’année précédente, r = 0,41 à 0,6 ; Collado et al. 2020). Effet volontairement modéré : -22 % au plus. */
+function legacyFactor(sp){
+  const L_ = S.legacy; if(!L_ || !L_.y1 || isNaN(L_.y1.z)) return 1;
+  const z = 0.6*L_.y1.z + 0.4*(L_.y2 && !isNaN(L_.y2.z) ? L_.y2.z : L_.y1.z);
+  const k = SAPRO.has(sp.id) ? 0.5 : 1;
+  if(z < -0.5) return 1 - k*0.15*Math.min(1.5, -z-0.5);
+  if(z > 0.5) return 1 + k*0.05*Math.min(1, z-0.5);
+  return 1;
+}
+function legacyText(){
+  const L_ = S.legacy; if(!L_ || !L_.y1) return null;
+  const z = L_.y1.z, lab = z<=-2 ? "sécheresse sévère" : z<=-1.3 ? "sécheresse marquée" : z<=-0.5 ? "plutôt sec" : z<0.5 ? "proche de la normale" : z<1.3 ? "plutôt humide" : "très humide";
+  const a2 = L_.y2 ? `, ${L_.y2.anom>=0?"+":""}${fmt(L_.y2.anom)} mm sur 24 mois` : "";
+  return `${lab} : ${L_.y1.anom>=0?"+":""}${fmt(L_.y1.anom)} mm sur 12 mois par rapport à la normale 1991-2020${a2}`;
+}
+/* Incendies cartographiés par le système européen EFFIS (Copernicus), feux d’environ 30 ha et plus */
+async function loadFires(b){
+  const pad=0.01, bb=`${(b.w-pad).toFixed(4)},${(b.s-pad).toFixed(4)},${(b.e+pad).toFixed(4)},${(b.n+pad).toFixed(4)}`;
+  const url = `https://maps.effis.emergency.copernicus.eu/gwis?service=WFS&version=1.1.0&request=GetFeature&typename=nrt.ba.poly&outputformat=geojson&srsname=EPSG:4326&bbox=${bb},EPSG:4326`;
+  const js = await fetchJSON(url, {}, 25000);
+  const out=[];
+  for(const f of (js.features||[])){
+    const g=f.geometry; if(!g || !/Polygon/.test(g.type)) continue;
+    const pr=f.properties||{}; let dt=null;
+    for(const [k,v] of Object.entries(pr)) if(/date/i.test(k) && v){ const t=Date.parse(String(v).replace(" ","T")); if(!isNaN(t)){ dt=t; break; } }
+    if(!dt) continue;
+    const y = (Date.now()-dt)/(365.25*864e5); if(y<0 || y>6) continue;
+    const c0 = firstCoord(g.coordinates); if(Math.abs(c0[0]) > 30 && Math.abs(c0[1]) < 30) g.coordinates = swapCoords(g.coordinates);
+    out.push({geom:g, bbox:geomBBox(g), date:dt, years:y});
+  }
+  return out;
+}
+/* Après un feu : les mycorhiziennes perdent leurs arbres et chutent fortement plusieurs années (Martín-Pinto et al. 2006) ;
+   les morilles fructifient en masse le printemps qui suit (Pilz et al. 2004 ; observations nord-américaines et européennes). */
+function fireFactor(sp, c){
+  if(!c.fireY && c.fireY!==0) return 1;
+  const y = c.fireY;
+  if(sp.id==="morille") return (y>0.2 && y<1.6) ? 1.5 : 1;
+  if(SAPRO.has(sp.id)) return y<1 ? 0.5 : y<2 ? 0.8 : 1;
+  return y<1 ? 0.1 : y<3 ? 0.3 : y<5 ? 0.6 : 0.85;
+}
 const USER_SCAN = Symbol("scan demandé");
 
 /* Corine Land Cover 2018 (IGN) : grandes zones artificialisées (villes, zones industrielles, routes, parcs urbains).
@@ -2224,6 +2294,8 @@ async function analyze(origin){
 
     // Météo et terrain sont chargés en même temps ; le terrain d’une zone déjà scannée est réutilisé tel quel
     const meteoP = (!W.ok || haversine(CENTER,[cLat,cLon]) > 12000) ? setArea(cLat, cLon) : Promise.resolve();
+    const legacyP = loadLegacy(cLat, cLon).then(v=>{ S.legacy=v; S.legacyOk=true; }).catch(e=>{ console.warn("Historique climatique", e); S.legacy=null; S.legacyOk=false; });
+    const fireP = loadFires(b).then(f=>{ S.fireOk=true; return f; }).catch(e=>{ console.warn("Incendies EFFIS", e); S.fireOk=false; return []; });
     const reuse = await findTerrain(b, cellM);
     let alts;
     if(reuse){
@@ -2260,6 +2332,10 @@ async function analyze(origin){
       S._fresh = {forest, clcU, soil};
     }
     { const ok=alts.filter(v=>v!=null).sort((a,c)=>a-c); if(ok.length && setSpeciesSet(isMedDefault(cLat,cLon, ok[ok.length>>1]))) buildSpecies(); }
+    { const [fires] = await Promise.all([fireP, legacyP]);
+      for(const x of cells){ x.fireY=null; x.fireDate=null;
+        for(const f of fires){ if(x.lon<f.bbox[0]||x.lon>f.bbox[2]||x.lat<f.bbox[1]||x.lat>f.bbox[3]) continue; if(geomContains(f.geom,x.lon,x.lat) && (x.fireY==null || f.years<x.fireY)){ x.fireY=f.years; x.fireDate=f.date; } } }
+      S.nFire = cells.filter(x=>x.fireY!=null).length; }
 
     setProgress(0.9,"Calcul des chances"); setStatus("Calcul des mailles…");
     if(!reuse){ const {forest, clcU, soil} = S._fresh;
@@ -2301,7 +2377,7 @@ async function analyze(origin){
     drawForest(); render(); setProgress(1,"Terminé"); setTimeout(()=>setProgress(null), 600);
 
     const nf=cells.filter(x=>x.forest).length;
-    setStatus(`${fmt(cells.length)} mailles de ${fmt(cellM)} m analysées${S.altiSrc && S.altiSrc!=="IGN" ? ` (altitudes : ${S.altiSrc})` : ""}, dont ${fmt(100*nf/cells.length)} % en forêt. ${S.soilOk?"pH et sable : SoilGrids.":"SoilGrids n’a pas répondu : pH estimé d’après les arbres."} ${S.geoOk==="50k"?"Géologie : BRGM 1/50 000.":S.geoOk==="1M"?"Géologie : carte simplifiée au millionième seulement.":"Géologie détaillée indisponible."} ${S.lidarOk?"Hauteur des arbres : LiDAR HD.":"LiDAR HD indisponible ici."} Zones bâties exclues : ${fmt(100*cells.filter(x=>x.urban).length/cells.length)} % (BD TOPO ${S.urbanOk?"✓":"✗"}, Corine ${S.clcOk?"✓":"✗"}, toits ${S.batiOk?"✓":"✗"}). Cliquez sur la carte pour le détail.`);
+    setStatus(`${fmt(cells.length)} mailles de ${fmt(cellM)} m analysées${S.altiSrc && S.altiSrc!=="IGN" ? ` (altitudes : ${S.altiSrc})` : ""}, dont ${fmt(100*nf/cells.length)} % en forêt. ${S.soilOk?"pH et sable : SoilGrids.":"SoilGrids n’a pas répondu : pH estimé d’après les arbres."} ${S.geoOk==="50k"?"Géologie : BRGM 1/50 000.":S.geoOk==="1M"?"Géologie : carte simplifiée au millionième seulement.":"Géologie détaillée indisponible."} ${S.lidarOk?"Hauteur des arbres : LiDAR HD.":"LiDAR HD indisponible ici."} ${S.legacy?`Climat des 12 derniers mois : ${legacyText().split(" :")[0]}. `:""}${S.nFire?`${fmt(100*S.nFire/cells.length)} % de la zone a brûlé ces dernières années. `:""}Zones bâties exclues : ${fmt(100*cells.filter(x=>x.urban).length/cells.length)} % (BD TOPO ${S.urbanOk?"✓":"✗"}, Corine ${S.clcOk?"✓":"✗"}, toits ${S.batiOk?"✓":"✗"} ; historique climatique ${S.legacyOk?"✓":"✗"}, incendies ${S.fireOk?"✓":"✗"}). Cliquez sur la carte pour le détail.`);
   }catch(e){
     console.error(e);
     setStatus("L’analyse a échoué : "+e.message+". Vérifiez la connexion et relancez ; si le problème persiste, essayez un autre navigateur.", true);
@@ -2334,10 +2410,12 @@ function dryness(w){ return w ? 1 - waterIndex({pluie:[40,90]}, w) : 0.5; }
 function scoreCell(sp, c, stats, month, wx){
   const w = wx !== undefined ? wx : cellWx(c, stats);
   const t = terrainParts(sp, c, dryness(w));
-  if(S.mode==="terrain" || !w) return {score:t.total, t, m:null};
-  if(t.total===0) return {score:0, t, m:null};
-  const m = weatherParts(sp, w, month);
-  return {score:t.total*m.total, t, m};
+  const fire = fireFactor(sp, c);
+  if(S.mode==="terrain" || !w) return {score:clamp(t.total*fire,0,1), t, m:null, fire};
+  if(t.total===0) return {score:0, t, m:null, fire};
+  const m = weatherParts(sp, w, month), leg = legacyFactor(sp);
+  m.legacy = leg;
+  return {score:clamp(t.total*m.total*leg*fire, 0, 1), t, m, fire};
 }
 
 map.createPane("zoneHeat").style.zIndex = 380;
@@ -2440,6 +2518,8 @@ map.on("click", e=>{
     <tr><td>Accès</td><td><span class="acc ${accessText(c).cls}">${esc(accessText(c).txt)}</span><span id="pubinfo"></span></td></tr>`;
   if(w && S.mode==="meteo"){
     html+=`<tr><td>Pluie 26 j</td><td>${fmt(w.P26raw)} mm (utile ${fmt(w.P26)} mm), bilan ${w.WB>=0?"+":""}${fmt(w.WB)} mm</td></tr>
+      ${legacyText()?`<tr><td>12 derniers mois</td><td>${esc(legacyText())}</td></tr>`:""}
+      ${c.fireY!=null?`<tr><td>Incendie</td><td><b style="color:#B3261E">brûlé en ${new Date(c.fireDate).toLocaleDateString("fr-FR",{month:"long",year:"numeric"})}</b> (EFFIS)</td></tr>`:""}
       <tr><td>Bonne pluie</td><td>${w.lastBig==null?"aucune de 10 mm ou plus depuis plus de 6 semaines":w.lastBig===0?"aujourd’hui":`il y a ${w.lastBig} j (10 mm ou plus)`}</td></tr>
       <tr><td>Eau du sol</td><td>${isNaN(w.SM)?"—":fmt(w.SM*100)+" % vol."} (modèle régional)</td></tr>
       <tr><td>Temp. 20 j</td><td>${fmt(w.T20,1)} °C à cette altitude</td></tr>
@@ -2452,7 +2532,7 @@ map.on("click", e=>{
     const [sp0,r0]=ranked[0];
     let why=`Pour ${esc(sp0.nom)} : hôte ${pct(r0.t.host)}, sol ${pct(r0.t.soil)}, altitude ${pct(r0.t.alt)}, relief ×${fmt(r0.t.relief,2)}, structure ×${fmt(r0.t.struct,2)}`;
     if(r0.m) why+=`, saison ${pct(r0.m.season)}, eau ${pct(r0.m.water)}, température ${pct(r0.m.temp)}, air ${pct(r0.m.air)}${r0.m.frost<1?", gel récent":""}${r0.m.shock>1?", refroidissement du sol":""}`;
-    const fac = [["l’arbre hôte",r0.t.host],["le sol",r0.t.soil],["l’altitude",r0.t.alt]].concat(r0.m?[["la saison",r0.m.season],["l’eau",r0.m.water],["la température",r0.m.temp]]:[]).sort((a,b2)=>a[1]-b2[1])[0];
+    const fac = [["l’arbre hôte",r0.t.host],["le sol",r0.t.soil],["l’altitude",r0.t.alt]].concat(r0.m?[["la saison",r0.m.season],["l’eau",r0.m.water],["la température",r0.m.temp],["la sécheresse des derniers mois",r0.m.legacy]]:[]).concat(r0.fire<1?[["un incendie récent",r0.fire]]:[]).sort((a,b2)=>a[1]-b2[1])[0];
     const verdict = r0.score>=0.75?"très favorable":r0.score>=0.5?"favorable":r0.score>=0.25?"possible":"peu probable";
     html += `<p class="why"><b>${esc(sp0.nom)} : ${verdict}.</b>${fac && fac[1]<0.8 ? ` Ce qui limite le plus ici : ${fac[0]} (${pct(fac[1])}).` : " Aucun facteur nettement limitant."}</p>`;
     html += `<p class="why">${why}.</p>`;
@@ -2616,7 +2696,7 @@ function drawCharts(lat, lon, alt){
     ? `Au point cliqué, ramené à ${fmt(alt)} m d’altitude. La bande verte marque les 20 jours pris pour la température.`
     : `${Z.lieu}. Cliquez sur une maille analysée pour voir sa météo. La bande verte marque les 20 jours pris pour la température.`;
   const st=W.pts.map(p=>pointStats(p,S.day)), w=blendWeather(ww,st,alt);
-  const rows=[["Pluie des 26 derniers jours",`${fmt(w.P26raw)} mm`],["Dernière bonne pluie (10 mm et plus)", w.lastBig==null?"plus de 6 semaines":w.lastBig===0?"aujourd’hui":`il y a ${w.lastBig} j`],["Bilan pluie moins évaporation",`${w.WB>=0?"+":""}${fmt(w.WB)} mm`],
+  const rows=[...(legacyText()?[["Bilan d’eau sur 12 mois", legacyText()]]:[]),["Pluie des 26 derniers jours",`${fmt(w.P26raw)} mm`],["Dernière bonne pluie (10 mm et plus)", w.lastBig==null?"plus de 6 semaines":w.lastBig===0?"aujourd’hui":`il y a ${w.lastBig} j`],["Bilan pluie moins évaporation",`${w.WB>=0?"+":""}${fmt(w.WB)} mm`],
     ["Eau du sol (9 à 27 cm)",isNaN(w.SM)?"—":`${fmt(w.SM*100)} % vol.`],["Température moyenne, 20 j",`${fmt(w.T20,1)} °C`],
     ["Maximales, 7 j",`${fmt(w.Tmax7,1)} °C`],["Humidité de l’air, 3 j",isNaN(w.RH)?"—":`${fmt(w.RH)} %`],
     ["Déficit de saturation (jour)",isNaN(w.VPD)?"—":`${fmt(w.VPD,1)} kPa`],["Sol : variation sur 10 j",isNaN(w.soilDrop)?"—":`${w.soilDrop>0?"−":"+"}${fmt(Math.abs(w.soilDrop),1)} °C`]];
