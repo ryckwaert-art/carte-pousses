@@ -1429,7 +1429,7 @@ async function loadSoilLayer(prop, b, depth="0-5cm"){
     + `&COVERAGEID=${prop}_${depth}_mean&FORMAT=image/tiff`
     + `&SUBSET=long(${(b.w-pad).toFixed(4)},${(b.e+pad).toFixed(4)})&SUBSET=lat(${(b.s-pad).toFixed(4)},${(b.n+pad).toFixed(4)})`
     + `&SUBSETTINGCRS=http://www.opengis.net/def/crs/EPSG/0/4326&OUTPUTCRS=http://www.opengis.net/def/crs/EPSG/0/4326`;
-  const buf = await fetchBuf(url);
+  const buf = await fetchBuf(url, 25000);
   const tiff = await GeoTIFF.fromArrayBuffer(buf);
   const img = await tiff.getImage();
   const r = await img.readRasters();
@@ -1998,7 +1998,7 @@ async function gfiText(base, layer, lat, lon){
     const url = `${base}${base.includes("?")?"&":"?"}SERVICE=WMS&VERSION=1.3.0&REQUEST=GetFeatureInfo&LAYERS=${layer}&QUERY_LAYERS=${layer}&STYLES=&CRS=EPSG:4326`
       + `&BBOX=${lat-e},${lon-e},${lat+e},${lon+e}&WIDTH=101&HEIGHT=101&I=50&J=50&INFO_FORMAT=${encodeURIComponent(f)}&FEATURE_COUNT=1`;
     try{
-      const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),15000);
+      const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),8000);
       const r=await fetch(url,{signal:ctl.signal}); clearTimeout(t);
       if(!r.ok) continue;
       let txt = await r.text();
@@ -2011,6 +2011,9 @@ async function gfiText(base, layer, lat, lon){
   }
   return null;
 }
+async function runPool(jobs, n){ let k=0; const worker=async()=>{ while(k<jobs.length){ const j=jobs[k++]; try{ await j(); }catch(e){} } }; await Promise.all(Array.from({length:Math.min(n,jobs.length)}, worker)); }
+function colorMemo(){ let v={}; try{ v=JSON.parse(localStorage.getItem("colorMemo-v1"))||{}; }catch(e){}
+  return {v, save(){ try{ const e=Object.entries(this.v).sort((a,b)=>b[1].t-a[1].t).slice(0,3000); localStorage.setItem("colorMemo-v1", JSON.stringify(Object.fromEntries(e))); }catch(e){} }}; }
 async function classifyByColor(base, layer, b, cols, rows, classify, onProgress, maxColors=40, lookup=null){
   const W2=cols*2, H2=rows*2;
   const url = `${base}${base.includes("?")?"&":"?"}SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=${layer}&STYLES=&CRS=EPSG:4326`
@@ -2030,15 +2033,20 @@ async function classifyByColor(base, layer, b, cols, rows, classify, onProgress,
   const rgb=k=>[(k>>10)&31,(k>>5)&31,k&31];
   const nearest=k=>{ const a=rgb(k); let best=null,bd=1e9; for(const q of known){ const c=rgb(q), dd=(a[0]-c[0])**2+(a[1]-c[1])**2+(a[2]-c[2])**2; if(dd<bd){ bd=dd; best=q; } } return best; };
   const meaning=new Map(); let i=0;
-  for(const k of known){
+  // Chaque couleur de la légende n’est interrogée qu’une fois, six à la fois ; les réponses sont gardées 60 jours par secteur de 25 km
+  const memo = lookup ? null : colorMemo();
+  const jobs = known.map(k=>async()=>{
     let idx = rep.has(k) ? rep.get(k) : cellKey.indexOf(k);
     const r=Math.floor(idx/cols), c=idx%cols;
     const lat=b.s+(r+0.5)*(b.n-b.s)/rows, lon=b.w+(c+0.5)*(b.e-b.w)/cols;
-    if(lookup){ let v=null; try{ v = await lookup(lat, lon); }catch(e){} meaning.set(k, v); }
-    else { const txt = await gfiText(base, layer, lat, lon); meaning.set(k, txt ? classify(txt) : null); }
+    const mk = `${layer}|${Math.round(lat*4)}|${Math.round(lon*4)}|${k}`;
+    if(memo && memo.v[mk] && Date.now()-memo.v[mk].t < 60*864e5){ meaning.set(k, memo.v[mk].m); }
+    else if(lookup){ let v=null; try{ v = await lookup(lat, lon); }catch(e){} meaning.set(k, v); }
+    else { const txt = await gfiText(base, layer, lat, lon); const m = txt ? classify(txt) : null; meaning.set(k, m); if(txt!=null && memo) memo.v[mk]={t:Date.now(), m}; }
     onProgress && onProgress(++i, known.length);
-    await sleep(120);
-  }
+  });
+  await runPool(jobs, 6);
+  if(memo) memo.save();
   const out = new Array(cols*rows).fill(null);
   for(let j=0;j<out.length;j++){ const k=cellKey[j]; if(k<0) continue; const kk = meaning.has(k) ? k : nearest(k); out[j] = kk!=null ? meaning.get(kk) : null; }
   return out;
@@ -2440,21 +2448,21 @@ async function loadAccessAfter(g){
   }finally{ if(S.grid===g) S.osmPending=false; }
 }
 /* Terrain des scans récents, gardé 30 jours : un nouveau scan à l’intérieur d’une zone déjà scannée est quasi instantané */
-const TERRAIN_DAYS = 30;
+const TERRAIN_DAYS = 30, GRACE_S = 12;
 async function saveTerrain(g){
   const id = `terrain-${Date.now()}`;
   const rec = {id, savedAt:Date.now(), b:g.b, rows:g.rows, cols:g.cols, cellM:g.cellM, cells:packCells(g.cells).map(c=>({...c, relW:null})),
-    flags:{soilOk:S.soilOk, geoOk:S.geoOk, lidarOk:S.lidarOk, urbanOk:S.urbanOk, clcOk:S.clcOk, batiOk:S.batiOk, pubOk:S.pubOk}};
+    flags:{incomplete: !!S.incomplete || !S.soilOk || !S.geoOk || !S.lidarOk, soilOk:S.soilOk, geoOk:S.geoOk, lidarOk:S.lidarOk, urbanOk:S.urbanOk, clcOk:S.clcOk, batiOk:S.batiOk, pubOk:S.pubOk}};
   await ZDB.put(rec);
   let idx=[]; try{ idx=JSON.parse(localStorage.getItem("terrainIdx"))||[]; }catch(e){}
-  idx.push({id, b:g.b, cellM:g.cellM, savedAt:rec.savedAt});
+  idx.push({id, b:g.b, cellM:g.cellM, savedAt:rec.savedAt, inc:rec.flags.incomplete});
   idx = idx.filter(t=>(Date.now()-t.savedAt)/864e5 < TERRAIN_DAYS);
   while(idx.length>8){ const old=idx.shift(); ZDB.del(old.id).catch(()=>{}); }
   try{ localStorage.setItem("terrainIdx", JSON.stringify(idx)); }catch(e){}
 }
 async function findTerrain(b, cellM){
   let idx=[]; try{ idx=JSON.parse(localStorage.getItem("terrainIdx"))||[]; }catch(e){}
-  const cand = idx.filter(t=>(Date.now()-t.savedAt)/864e5 < TERRAIN_DAYS && b.s>=t.b.s && b.n<=t.b.n && b.w>=t.b.w && b.e<=t.b.e && t.cellM <= cellM*1.35)
+  const cand = idx.filter(t=>(Date.now()-t.savedAt)/864e5 < (t.inc ? 2 : TERRAIN_DAYS) && b.s>=t.b.s && b.n<=t.b.n && b.w>=t.b.w && b.e<=t.b.e && t.cellM <= cellM*1.35)
                  .sort((a,c)=>a.cellM-c.cellM || c.savedAt-a.savedAt)[0];
   if(!cand) return null;
   let rec=null; try{ rec=await ZDB.get(cand.id); }catch(e){}
@@ -2770,11 +2778,11 @@ function twiFactor(sp, c, dry){
 }
 /* Cours d’eau et sources (BD TOPO de l’IGN), distance calculée maille par maille */
 async function loadWater(b){
-  const feats=[];
-  for(const [layer,kind] of [["BDTOPO_V3:troncon_hydrographique","cours d’eau"],["BDTOPO_V3:detail_hydrographique","source"]]){
-    const url="https://data.geopf.fr/wfs/ows?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES="+layer
-      +"&OUTPUTFORMAT=application/json&SRSNAME=urn:ogc:def:crs:EPSG::4326&COUNT=5000"+`&BBOX=${b.s},${b.w},${b.n},${b.e},urn:ogc:def:crs:EPSG::4326`;
-    const js=await fetchJSON(url,{},45000);
+  const feats=[], LAY=[["BDTOPO_V3:troncon_hydrographique","cours d’eau"],["BDTOPO_V3:detail_hydrographique","source"]];
+  const all = await Promise.all(LAY.map(([layer])=>fetchJSON("https://data.geopf.fr/wfs/ows?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES="+layer
+      +"&OUTPUTFORMAT=application/json&SRSNAME=urn:ogc:def:crs:EPSG::4326&COUNT=5000"+`&BBOX=${b.s},${b.w},${b.n},${b.e},urn:ogc:def:crs:EPSG::4326`,{},30000)));
+  for(const [li,[layer,kind]] of LAY.entries()){
+    const js=all[li];
     for(const f of (js.features||[])){ const g=f.geometry, pr=f.properties||{}; if(!g) continue;
       if(kind==="source" && !/source|résurgence|resurgence|fontaine/i.test(String(pr.nature||""))) continue;
       const c0=firstCoord(g.coordinates); if(Math.abs(c0[0]-b.s) < Math.abs(c0[0]-b.w)) g.coordinates=swapCoords(g.coordinates);
@@ -2900,12 +2908,12 @@ async function loadCLCUrban(b, cols, rows){
 
 /* Zones bâties (BD TOPO de l’IGN) : zones d’habitation et zones d’activité, exclues des prévisions */
 async function loadUrban(b){
-  const out=[];
-  for(const [layer,label] of [["BDTOPO_V3:zone_d_habitation","zone habitée"],["BDTOPO_V3:zone_d_activite_ou_d_interet","zone d’activité"]]){
-    const url = "https://data.geopf.fr/wfs/ows?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES="+layer
+  const out=[], LAY=[["BDTOPO_V3:zone_d_habitation","zone habitée"],["BDTOPO_V3:zone_d_activite_ou_d_interet","zone d’activité"]];
+  const all = await Promise.all(LAY.map(([layer])=>fetchJSON("https://data.geopf.fr/wfs/ows?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES="+layer
       + "&OUTPUTFORMAT=application/json&SRSNAME=urn:ogc:def:crs:EPSG::4326&COUNT=5000"
-      + `&BBOX=${b.s},${b.w},${b.n},${b.e},urn:ogc:def:crs:EPSG::4326`;
-    const js = await fetchJSON(url, {}, 45000);
+      + `&BBOX=${b.s},${b.w},${b.n},${b.e},urn:ogc:def:crs:EPSG::4326`, {}, 30000)));
+  for(const [li,[layer,label]] of LAY.entries()){
+    const js = all[li];
     for(const f of (js.features||[])){
       const g=f.geometry; if(!g || !/Polygon/.test(g.type)) continue;
       const pr=f.properties||{}, nat=String(pr.nature||pr.categorie||"");
@@ -2941,6 +2949,7 @@ async function analyze(origin){
     const legacyP = loadLegacy(cLat, cLon).then(v=>{ S.legacy=v; S.legacyOk=true; }).catch(e=>{ console.warn("Historique climatique", e); S.legacy=null; S.legacyOk=false; });
     const waterP = loadWater(b).then(f=>{ S.waterOk=true; return f; }).catch(e=>{ console.warn("Cours d’eau", e); S.waterOk=false; return null; });
     const lossP = loadLoss(b, cols, rows).then(l=>{ S.lossOk=true; return l; }).catch(e=>{ console.warn("Pertes de couvert", e); S.lossOk=false; return null; });
+    S.late = []; S.incomplete = false; S.timing = null; S.scanT0 = Date.now();
     const fireP = loadFires(b).then(f=>{ S.fireOk=true; return f; }).catch(e=>{ console.warn("Incendies EFFIS", e); S.fireOk=false; return []; });
     const reuse = await findTerrain(b, cellM);
     let alts;
@@ -2951,12 +2960,19 @@ async function analyze(origin){
       S.forest = []; S.soilOk = reuse.flags.soilOk; S.geoOk = reuse.flags.geoOk; S.lidarOk = reuse.flags.lidarOk; S.urbanOk=reuse.flags.urbanOk; S.clcOk=reuse.flags.clcOk; S.batiOk=reuse.flags.batiOk; S.pubOk=reuse.flags.pubOk;
       await meteoP;
     } else {
-      const KL = 6, tasks = [], names = [];
-      let done = 0;
-      const track = (name, p) => { names.push(name); tasks.push(p.then(v=>{ done++; setProgress(0.05+0.85*done/9, `${name} ✓ (${done} sur 9)`); setStatus(`Chargement en parallèle : ${done} sur 9 sources prêtes…`); return v; },
-        e=>{ done++; console.warn(name, e); setProgress(0.05+0.85*done/9, `${name} indisponible (${done} sur 9)`); return null; })); };
+      const KL = 6, tasks = [], names = [], t0 = Date.now(), pending = new Set(), late = [];
+      S.timing = {}; let done = 0, ess = 0, graceStart = null;
+      // Les peuplements et les altitudes sont indispensables ; une fois arrivés, les autres sources ont encore GRACE_S secondes
+      let releaseGrace; const grace = new Promise(r=>releaseGrace=r);
+      const label = () => pending.size && pending.size<=3 ? `En attente : ${[...pending].join(", ")}` : `${done} sur 9 sources prêtes`;
+      const finish = (name, essential, ok)=>{ pending.delete(name); done++; S.timing[name]=Math.round((Date.now()-t0)/100)/10;
+        if(essential && ++ess===2){ graceStart=Date.now(); setTimeout(releaseGrace, GRACE_S*1000); }
+        setProgress(0.05+0.85*done/9, ok ? `${name} ✓ · ${label()}` : `${name} indisponible · ${label()}`); setStatus(`Chargement en parallèle : ${done} sur 9 sources prêtes…`); };
+      const track = (name, p, essential=false) => { names.push(name); pending.add(name);
+        const q = p.then(v=>{ finish(name, essential, true); return v; }, e=>{ console.warn(name, e); finish(name, essential, false); return null; });
+        tasks.push(essential ? q : Promise.race([q, grace.then(()=>{ if(pending.has(name)){ late.push(name); S.timing[name]="trop lent"; } return null; })])); };
       setProgress(0.04,"Chargement des 9 sources en parallèle");
-      track("Peuplements forestiers", loadForest(b));
+      track("Peuplements forestiers", loadForest(b), true);
       track("Zones bâties", loadUrban(b));
       track("Corine Land Cover", loadCLCUrban(b, cols, rows));
       track("Forêts publiques", loadPublicMask(b, cols, rows));
@@ -2964,8 +2980,9 @@ async function analyze(origin){
       track("Arbres et bâtiments (LiDAR)", (async()=>{ let bm=null; try{ bm=(await loadBuildings(b, cols*KL, rows*KL)).mask; S.batiOk=true; }catch(e){ S.batiOk=false; } return await loadCanopy(b, cols, rows, KL, bm); })());
       track("Forêts anciennes", loadAncient(b, cols, rows));
       track("Sols", loadSoil(b));
-      track("Altitudes", loadAltitudes(cells.map(x=>[x.lat,x.lon])));
+      track("Altitudes", loadAltitudes(cells.map(x=>[x.lat,x.lon])), true);
       const [forest, urban, clcU, pubMask, geo, can, anc, soil, alts_] = await Promise.all(tasks);
+      S.late = late; S.incomplete = late.length>0;
       await meteoP;
       if(!forest) throw new Error("la BD Forêt n’a pas répondu");
       if(!alts_) throw new Error("les altitudes n’ont pas pu être chargées");
@@ -2978,12 +2995,13 @@ async function analyze(origin){
       S._fresh = {forest, clcU, soil};
     }
     { const ok=alts.filter(v=>v!=null).sort((a,c)=>a-c); if(ok.length && setSpeciesSet(isMedDefault(cLat,cLon, ok[ok.length>>1]))) buildSpecies(); }
-    { const [fires] = await Promise.all([fireP, legacyP]);
+    const capped = (p, dflt, name) => Promise.race([p, sleep(10000).then(()=>{ if(name){ S.late.push(name); } return dflt; })]);
+    { const [fires] = await Promise.all([capped(fireP, [], "Incendies"), capped(legacyP, null)]);
       for(const x of cells){ x.fireY=null; x.fireDate=null;
         for(const f of fires){ if(x.lon<f.bbox[0]||x.lon>f.bbox[2]||x.lat<f.bbox[1]||x.lat>f.bbox[3]) continue; if(geomContains(f.geom,x.lon,x.lat) && (x.fireY==null || f.years<x.fireY)){ x.fireY=f.years; x.fireDate=f.date; } } }
       S.nFire = cells.filter(x=>x.fireY!=null).length;
       computeTWI(cells, rows, cols, b, cellM);
-      const [wf, loss] = await Promise.all([waterP, lossP]);
+      const [wf, loss] = await Promise.all([capped(waterP, null, "Cours d’eau"), capped(lossP, null, "Coupes récentes")]);
       if(wf){ waterDistance(cells, rows, cols, b, cellM, wf); drawWater(wf); } else cells.forEach(x=>{ x.waterD=null; x.waterKind=null; });
       cells.forEach((x,i)=>{ x.lossR = loss ? loss.recent[i] : 0; x.lossO = loss ? loss.older[i] : 0; });
       S.nLoss = cells.filter(x=>(x.lossR>0.2 || x.lossO>0.2) && !(x.cover!=null && x.cover<0.25)).length; }
@@ -3029,7 +3047,11 @@ async function analyze(origin){
     drawForest(); render(); setProgress(1,"Terminé"); setTimeout(()=>setProgress(null), 600);
 
     const nf=cells.filter(x=>x.forest).length;
-    setStatus(`${fmt(cells.length)} mailles de ${fmt(cellM)} m analysées${S.altiSrc && S.altiSrc!=="IGN" ? ` (altitudes : ${S.altiSrc})` : ""}, dont ${fmt(100*nf/cells.length)} % en forêt. ${S.soilOk?"pH et sable : SoilGrids.":"SoilGrids n’a pas répondu : pH estimé d’après les arbres."} ${S.geoOk==="50k"?"Géologie : BRGM 1/50 000.":S.geoOk==="1M"?"Géologie : carte simplifiée au millionième seulement.":"Géologie détaillée indisponible."} ${S.lidarOk?"Hauteur des arbres : LiDAR HD.":"LiDAR HD indisponible ici."} ${legacyText()?`Climat des 12 derniers mois : ${legacyText().split(" :")[0]}. `:""}${S.nFire?`${fmt(100*S.nFire/cells.length)} % de la zone a brûlé ces dernières années. `:""}${S.nLoss?`${fmt(100*S.nLoss/cells.length)} % coupé ou dépéri récemment. `:""}Zones bâties exclues : ${fmt(100*cells.filter(x=>x.urban).length/cells.length)} % (BD TOPO ${S.urbanOk?"✓":"✗"}, Corine ${S.clcOk?"✓":"✗"}, toits ${S.batiOk?"✓":"✗"} ; historique climatique ${S.legacyOk?"✓":"✗"}, incendies ${S.fireOk?"✓":"✗"}, cours d’eau ${S.waterOk?"✓":"✗"}, coupes ${S.lossOk?"✓":"✗"}). Cliquez sur la carte pour le détail.`);
+    const tScan = Math.round((Date.now()-S.scanT0)/1000);
+    const slow = S.timing ? Object.entries(S.timing).filter(([k,v])=>typeof v==="number").sort((a,c)=>c[1]-a[1])[0] : null;
+    const timeTxt = `Scan en ${tScan} s${reuse?" (terrain déjà connu)":""}.${slow && slow[1]>=8 ? ` Source la plus lente : ${slow[0]} (${fmt(slow[1])} s).` : ""}${S.late && S.late.length ? ` Trop lent, ignoré pour ce scan : ${S.late.join(", ")} ; il sera retenté au prochain scan.` : ""} `;
+    try{ localStorage.setItem("lastScanTiming", JSON.stringify({t:Date.now(), total:tScan, timing:S.timing||null, late:S.late||[]})); }catch(e){}
+    setStatus(timeTxt + `${fmt(cells.length)} mailles de ${fmt(cellM)} m analysées${S.altiSrc && S.altiSrc!=="IGN" ? ` (altitudes : ${S.altiSrc})` : ""}, dont ${fmt(100*nf/cells.length)} % en forêt. ${S.soilOk?"pH et sable : SoilGrids.":"SoilGrids n’a pas répondu : pH estimé d’après les arbres."} ${S.geoOk==="50k"?"Géologie : BRGM 1/50 000.":S.geoOk==="1M"?"Géologie : carte simplifiée au millionième seulement.":"Géologie détaillée indisponible."} ${S.lidarOk?"Hauteur des arbres : LiDAR HD.":"LiDAR HD indisponible ici."} ${legacyText()?`Climat des 12 derniers mois : ${legacyText().split(" :")[0]}. `:""}${S.nFire?`${fmt(100*S.nFire/cells.length)} % de la zone a brûlé ces dernières années. `:""}${S.nLoss?`${fmt(100*S.nLoss/cells.length)} % coupé ou dépéri récemment. `:""}Zones bâties exclues : ${fmt(100*cells.filter(x=>x.urban).length/cells.length)} % (BD TOPO ${S.urbanOk?"✓":"✗"}, Corine ${S.clcOk?"✓":"✗"}, toits ${S.batiOk?"✓":"✗"} ; historique climatique ${S.legacyOk?"✓":"✗"}, incendies ${S.fireOk?"✓":"✗"}, cours d’eau ${S.waterOk?"✓":"✗"}, coupes ${S.lossOk?"✓":"✗"}). Cliquez sur la carte pour le détail.`);
     { const when=new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}); $("#zonesub").textContent=`Scannée à ${when} · ${fmt(cells.length)} mailles de ${fmt(cellM)} m`; $("#zname").textContent = Z && Z.court || "Zone scannée";
       placeName(cLat,cLon).then(n=>{ if(n) $("#zname").textContent = n.split(",").pop().trim() || n; }).catch(()=>{}); updateSummary(); }
   }catch(e){
