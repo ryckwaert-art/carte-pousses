@@ -8,5 +8,11 @@ geotiff.js 2.1.3 (lib/geotiff.js)
 Copyright (c) 2015 EOX IT Services GmbH.
 Licence MIT : https://github.com/geotiffjs/geotiff.js/blob/master/LICENSE
 
+HK Grotesk (fonts/), convertie au format WOFF2 sans modification des dessins
+Copyright (c) 2015, Alfredo Marco Pradil, avec le nom de police réservé « HK Grotesk ».
+Licence SIL Open Font License 1.1 : https://openfontlicense.org
+
+Photos des fiches espèces : Wikimedia Commons, chargées à la demande, auteur et licence affichés sous chaque photo.
+
 Données affichées : IGN Géoplateforme, ONF, BRGM, ISRIC SoilGrids, Météo-France, Open-Meteo,
 OpenStreetMap et OpenTopoMap, selon leurs licences respectives (mentions en bas de la carte).

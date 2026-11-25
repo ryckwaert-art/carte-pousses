@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Carte des pousses</title>
-<meta name="description" content="Chances de pousse des champignons : Aigoual, Pic Saint-Loup, Haut-Languedoc.">
+<meta name="description" content="Chances de pousse des champignons en France métropolitaine.">
 <meta name="theme-color" content="#5A6B3A">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -14,15 +14,14 @@
 <link rel="apple-touch-icon" href="icon2-180.png">
 <link rel="icon" type="image/png" href="icon2-192.png">
 <link rel="stylesheet" href="lib/leaflet.css">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,500;0,700;1,400&family=Alegreya+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="preload" href="fonts/HKGrotesk-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/HKGrotesk-Bold.woff2" as="font" type="font/woff2" crossorigin>
 <style>
 :root{
   --paper:#EFEDE4; --panel:#F7F5EE; --ink:#2B2620; --muted:#6B675C; --line:#D2CEBF;
   --moss:#5A6B3A; --moss-soft:#E0E3D0; --ochre:#B07A1E; --water:#3E6E8C; --danger:#8E2B2B;
-  --serif:"Alegreya", Georgia, "Times New Roman", serif;
-  --sans:"Alegreya Sans", "Gill Sans", "Segoe UI", system-ui, sans-serif;
+  --serif:"HK Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --sans:"HK Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark){
@@ -159,6 +158,8 @@ body.hiking .daybar{display:none}
   display:flex;align-items:center;gap:7px;max-width:calc(100% - 170px);padding:5px 11px;border-radius:999px;background:var(--panel);color:var(--muted);
   border:1px solid var(--line);box-shadow:0 1px 5px rgba(0,0,0,.12);font-size:12px}
 #bgtask[hidden]{display:none}
+@media (min-width:761px){ #bgtask{top:auto;bottom:28px;left:calc(50% + 180px)} }
+body.popup-open #bgtask{display:none}
 #bgtxt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .spin{flex:none;width:12px;height:12px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--moss);animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -298,8 +299,6 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
   .mstatus{display:block;font-size:13px;color:var(--muted);margin:4px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .mstatus.err{color:var(--danger)}
   .sub{font-size:14px;margin-bottom:10px}
-  #tab-carte{display:flex;flex-direction:column}
-  #sec-calcul{order:1} #sec-especes{order:2} #sec-jour{order:3} #tab-carte .caution{order:4} #tab-carte .fine{order:5}
   .leaflet-top{top:env(safe-area-inset-top,0px)}
   .leaflet-control-zoom{display:none}
   .leaflet-bottom{bottom:var(--sheet,180px)}
@@ -312,102 +311,280 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
   .sprow{padding:9px 0}
   input[type=range]{height:28px}
 }
+/* ===== Nouvelle interface : police HK Grotesk, onglets en bas ===== */
+@font-face{font-family:"HK Grotesk";src:url(fonts/HKGrotesk-Regular.woff2) format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"HK Grotesk";src:url(fonts/HKGrotesk-Italic.woff2) format("woff2");font-weight:400;font-style:italic;font-display:swap}
+@font-face{font-family:"HK Grotesk";src:url(fonts/HKGrotesk-Medium.woff2) format("woff2");font-weight:500;font-style:normal;font-display:swap}
+@font-face{font-family:"HK Grotesk";src:url(fonts/HKGrotesk-SemiBold.woff2) format("woff2");font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:"HK Grotesk";src:url(fonts/HKGrotesk-Bold.woff2) format("woff2");font-weight:700;font-style:normal;font-display:swap}
+:root{--tabh:calc(60px + env(safe-area-inset-bottom,0px)); --red:#A3251D; --blue:#2E5A88}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --red:#E8836F; --blue:#8DB8D3 } }
+:root[data-theme="dark"]{ --red:#E8836F; --blue:#8DB8D3 }
+body{font-size:15.5px}
+h1{font-weight:700;font-size:26px;letter-spacing:-.015em;margin:0}
+h2{font-weight:700;font-size:18px;letter-spacing:-.01em}
+h3{font-weight:600;font-size:16px}
+.daylabel,.place,.now .sky,.days b,.spname,.trips li b,.rep b,.folder > summary,#sb-results li b,.zi-head,.pop h3,#pk-list label{font-weight:600}
+.now .big{font-weight:700}
+#panel{padding-bottom:calc(var(--tabh) + 24px)}
+.view{display:flex;flex-direction:column;gap:10px;border-top:0;padding-top:0}
+.mstatus,.mstatus.err{display:none !important}
+#status{font-size:13px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer}
+#status.open{display:block}
+#status:empty{display:none}
+.view[hidden]{display:none}
+.view > section{border-top:1px solid var(--line);padding-top:4px;margin-top:6px}
+.vhead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-top:4px}
+.vtitle{min-width:0}
+.vtitle h1{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+#zname,#wx-place{font-size:23px;line-height:1.1}
+.vhead .sub{margin:2px 0 0;font-size:13px}
+.pill{flex:none;font:inherit;font-size:13px;font-weight:700;min-height:36px;padding:0 13px;border-radius:999px;border:1px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer}
+h2.cap{font-size:12.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:14px 0 0}
+.topsum{display:flex;flex-direction:column;gap:9px}
+.topsum .row{display:grid;grid-template-columns:minmax(0,150px) minmax(0,1fr) 46px;align-items:center;gap:10px}
+.topsum .row b{font-size:15px;font-weight:700;color:var(--red);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topsum .row b.oth{color:var(--ink);font-weight:600}
+.topsum .track{height:8px;border-radius:4px;background:var(--moss-soft);overflow:hidden}
+.topsum .track span{display:block;height:100%;border-radius:4px;background:var(--red)}
+.topsum .row.oth .track span{background:var(--ochre)}
+.topsum .row em{font-style:normal;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+.topsum .hint{font-size:14px;color:var(--muted);margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips:empty{display:none}
+.chips span{padding:5px 10px;border-radius:999px;background:var(--moss-soft);font-size:13px}
+.chips span.warm{background:#F1E3C4;color:#5A4318}
+.quick{margin:2px 0 0}
+.quick button{min-height:46px;border-radius:12px;border:1px solid var(--ink);background:transparent}
+.quick button.dark{background:var(--ink);color:var(--panel)}
+#status{margin:0}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.bigbtn{min-height:52px;border-radius:14px;border:1px solid var(--ink);background:transparent;color:var(--ink);font:inherit;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;padding:0 8px}
+.bigbtn.blue{background:var(--blue);border-color:var(--blue);color:#fff}
+.seg,.modes{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);padding:3px;border-radius:12px;background:var(--moss-soft);border:0;overflow:visible;margin:6px 0 0}
+.seg label,.modes label{position:relative;display:flex;align-items:center;justify-content:center;min-height:38px;border-radius:9px;font-size:14px;font-weight:500;color:var(--muted);cursor:pointer;text-align:center;padding:0 6px}
+.seg input,.modes input{position:absolute;opacity:0;pointer-events:none}
+.seg label:has(input:checked),.modes label:has(input:checked){background:var(--panel);color:var(--ink);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.14)}
+.seg label:has(input:focus-visible){outline:2px solid var(--ochre);outline-offset:-3px}
+.seg label.disabled{opacity:.45;cursor:not-allowed}
+.opt{min-height:56px;border-radius:12px;border:1px solid var(--line);background:var(--panel);font:inherit;font-weight:500;font-size:14px;color:var(--ink);cursor:pointer}
+.opt[aria-pressed="true"]{border:2px solid var(--moss);background:var(--moss-soft);font-weight:700}
+.rangel{display:flex;flex-direction:column;gap:2px;font-size:14px;margin-top:8px}
+#overlays label{display:flex;justify-content:space-between;align-items:center;min-height:42px;border-bottom:1px solid var(--line);font-size:15px;cursor:pointer}
+#overlays label:last-child{border-bottom:0}
+#overlays input{width:20px;height:20px;accent-color:var(--moss);margin:0}
+.searchf{display:flex;align-items:center;gap:8px;padding:0 12px;min-height:44px;border-radius:12px;background:var(--paper);color:var(--muted)}
+.searchf input{flex:1;border:0;background:transparent;font:inherit;font-size:16px;color:var(--ink);outline:none;min-width:0}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.filters button{min-height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);font:inherit;font-size:13px;font-weight:500;cursor:pointer}
+.filters button[aria-checked="true"]{background:var(--ink);border-color:var(--ink);color:var(--panel);font-weight:700}
+.cat-h{font-size:12.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:10px 0 2px}
+.cat-h.dg{color:var(--danger)}
+.cat-it{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer;width:100%;background:none;border-left:0;border-right:0;border-top:0;font:inherit;color:inherit;text-align:left}
+.cat-it .thumb{width:52px;height:52px;border-radius:12px;overflow:hidden;background:var(--paper);display:flex;align-items:center;justify-content:center}
+.cat-it .thumb img{width:100%;height:100%;object-fit:cover}
+.cat-it b{display:block;font-size:16px;font-weight:700}
+.cat-it i{display:block;font-size:13px;color:var(--muted)}
+.badge{flex:none;padding:3px 9px;border-radius:999px;background:var(--moss-soft);font-size:12px;font-weight:700;color:var(--moss);white-space:nowrap}
+.badge.mortel{background:var(--danger);color:#fff}
+.badge.toxique{background:#F1D6C9;color:#8E2B2B}
+.badge.pct{background:transparent;color:var(--red);padding-right:0}
+.cat-empty{color:var(--muted);font-size:14px;padding:10px 0}
+/* Fiche guide */
+#guide{display:flex;flex-direction:column;gap:12px}
+#guide[hidden]{display:none}
+.g-back{align-self:flex-start;font:inherit;font-size:14px;font-weight:700;border:0;background:var(--moss-soft);color:var(--ink);border-radius:999px;padding:0 14px 0 10px;min-height:36px;cursor:pointer}
+.g-title{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.g-title i{display:block;color:var(--muted);font-size:14px;margin-top:2px}
+.gal{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:8px;margin:0 -16px;padding:0 16px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.gal::-webkit-scrollbar{display:none}
+.gal figure{flex:none;width:84%;margin:0;scroll-snap-align:center}
+.gal figure.solo{width:100%}
+.gal img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:14px;background:var(--moss-soft)}
+.gal figcaption{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.3}
+.gal figcaption a{color:inherit}
+.gal .ph{display:flex;align-items:center;justify-content:center;aspect-ratio:4/3;border-radius:14px;background:var(--paper)}
+.galnote{font-size:12px;color:var(--muted);margin:-4px 0 0}
+.g-facts{display:flex;flex-wrap:wrap;gap:6px}
+.g-facts span{padding:4px 10px;border-radius:999px;background:var(--paper);font-size:13px}
+.g-now{border-radius:12px;background:var(--moss-soft);padding:10px 12px;font-size:14px}
+.g-sec h2{margin:6px 0 6px}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;counter-reset:st}
+.steps li{display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px;counter-increment:st}
+.steps li::before{content:counter(st);width:28px;height:28px;border-radius:50%;background:var(--ink);color:var(--panel);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center}
+.steps b{display:block;font-size:15px}
+.steps p{margin:2px 0 0;font-size:14.5px}
+.faux{display:flex;flex-direction:column;gap:8px}
+.faux .f{border:1px solid var(--line);border-left:4px solid var(--danger);border-radius:10px;padding:9px 11px}
+.faux .f.immangeable,.faux .f.a-ecarter{border-left-color:var(--ochre)}
+.faux .f header{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.faux .f b{font-size:15px}
+.faux .f b.lnk{text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.faux .f i{display:block;font-size:12.5px;color:var(--muted)}
+.faux .f p{margin:4px 0 0;font-size:14px}
+.g-rules{margin:0;padding-left:18px;font-size:14px}
+.g-rules li{margin:3px 0}
+.urg{border-radius:12px;background:#8E2B2B;color:#fff;padding:12px 14px;font-size:14px}
+.urg a{color:#fff;font-weight:700}
+.urg .call{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:0 16px;border-radius:999px;background:#fff;color:#8E2B2B;text-decoration:none;margin:8px 8px 0 0}
+.g-src{font-size:12px;color:var(--muted)}
+.g-act{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+/* Météo */
+.wx-now{display:flex;align-items:center;gap:14px}
+.wx-now .big{font-size:46px;font-weight:700;line-height:1}
+.wx-now .sky{font-size:14px;color:var(--muted)}
+.wx-myco{border-radius:14px;background:var(--moss-soft);padding:12px 14px}
+.wx-myco h2{margin:0 0 8px;font-size:15px}
+.wx-myco .g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;text-align:center}
+.wx-myco b{display:block;font-size:19px}
+.wx-myco small{font-size:12px;color:var(--muted)}
+.hours{display:flex;gap:4px;overflow-x:auto;margin:0 -16px;padding:0 16px 4px;scrollbar-width:none}
+.hours::-webkit-scrollbar{display:none}
+.hours div{flex:none;width:54px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 0;border-radius:10px}
+.hours div.rain{background:color-mix(in srgb, var(--water) 16%, transparent)}
+.hours span{font-size:12px;color:var(--muted)}
+.hours b{font-size:16px}
+.hours .mm{color:var(--water);font-weight:700;font-size:12px}
+.dlist .d{display:grid;grid-template-columns:76px 26px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:15px}
+.dlist .d:last-child{border-bottom:0}
+.dlist .d .mm{color:var(--muted)}
+.dlist .d .mm.wet{color:var(--water);font-weight:700}
+.wx-src{font-size:12px;color:var(--muted)}
+/* Onglets */
+#tabbar{position:fixed;left:0;bottom:0;width:390px;z-index:1300;height:var(--tabh);padding-bottom:env(safe-area-inset-bottom,0px);display:grid;grid-template-columns:repeat(5,minmax(0,1fr));background:var(--panel);border-top:1px solid var(--line);border-right:1px solid var(--line)}
+#tabbar button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:0;background:transparent;color:var(--muted);font:inherit;font-size:11px;font-weight:500;cursor:pointer;padding:6px 0 4px}
+#tabbar button[aria-current="page"]{color:var(--moss);font-weight:700}
+body.hiking #tabbar{display:none}
+.sp .more{color:var(--moss);font-weight:700}
+@media (max-width:760px){
+  #tabbar{width:auto;right:0;border-right:0}
+  .sheetbtn{display:none}
+  .handle{margin-bottom:-4px}
+  #panel{bottom:var(--tabh);padding:0 16px 24px}
+  h1{display:block}
+  .leaflet-bottom{bottom:calc(var(--sheet,180px) + var(--tabh))}
+  body.hiking .leaflet-bottom{bottom:150px}
+  #panel.closed{transform:translateY(calc(100% + var(--tabh)))}
+}
 </style>
 </head>
 <body>
 <aside id="panel">
-  <div class="handle" id="handle" role="button" aria-label="Agrandir ou réduire le panneau" tabindex="0"><span></span><button class="sheetbtn" id="sheetbtn" type="button" aria-label="Fermer le menu"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></div>
-  <h1>Carte des pousses</h1>
-  <div class="quick">
-    <button id="aroundme">Analyser autour de moi</button>
-    <button id="hike" aria-pressed="false">Mode randonnée</button>
-  </div>
-  <p class="mstatus" id="mstatus"></p>
-  <div id="zoneinfo" hidden>
-    <div class="zi-head"><b>Détail de la zone touchée</b><button type="button" id="zoneclose">Fermer</button></div>
-    <div id="zonebody"></div>
-  </div>
-  <p class="sub" id="zonesub">France métropolitaine : zoomez où vous voulez, puis touchez l’amanite « Scan ».</p>
-  <div class="tabs" role="tablist">
-    <button role="tab" id="tb-carte" aria-selected="true" aria-controls="tab-carte">Pousses</button>
-    <button role="tab" id="tb-meteo" aria-selected="false" aria-controls="tab-meteo">Météo</button>
-    <button role="tab" id="tb-carnet" aria-selected="false" aria-controls="tab-carnet">Carnet</button>
-  </div>
-  <div id="tab-meteo" role="tabpanel" hidden>
-    <p class="sub" style="margin-top:12px">Conditions actuelles et prévisions des prochaines heures, d’après les modèles Météo-France AROME et ARPÈGE.</p>
-    <div class="modes" style="margin-bottom:6px">
-      <label><input type="radio" name="wxwhere" value="gps">Ma position</label>
-      <label><input type="radio" name="wxwhere" value="map" checked>Point de la carte</label>
+  <div class="handle" id="handle" role="button" aria-label="Agrandir ou réduire le panneau" tabindex="0"><span></span><button class="sheetbtn" id="sheetbtn" type="button" aria-label="Replier le panneau"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></div>
+
+  <!-- ===== Carte ===== -->
+  <section class="view" id="v-carte" aria-label="Carte">
+    <div class="vhead">
+      <div class="vtitle"><h1 id="zname">Carte des pousses</h1><p class="sub" id="zonesub">Chances de pousse en France métropolitaine</p></div>
+      <button type="button" class="pill" id="openpick">Mes champignons</button>
     </div>
-    <p class="chartnote" id="wxwherenote">Cliquez sur la carte pour choisir un lieu, ou utilisez votre position.</p>
-    <div id="wxnow"></div>
-  </div>
-  <div id="tab-carnet" role="tabpanel" hidden>
-    <h2>Mes repères</h2>
+    <p class="mstatus" id="mstatus"></p>
+    <div id="zoneinfo" hidden>
+      <div class="zi-head"><b>Détail de la zone touchée</b><button type="button" id="zoneclose">Fermer</button></div>
+      <div id="zonebody"></div>
+    </div>
+    <div id="topsum" class="topsum"></div>
+    <div class="chips" id="chips"></div>
     <div class="quick">
-      <button id="addrep-gps">Repère à ma position</button>
+      <button type="button" id="aroundme" class="dark">Autour de moi</button>
+      <button type="button" id="hike" aria-pressed="false">Randonnée</button>
     </div>
-    <p class="chartnote">Pour un autre endroit, touche la carte puis « Ajouter un repère ici ». Tout reste sur ton téléphone.</p>
-    <div class="modes" role="radiogroup" aria-label="Type de repères">
+    <p id="status" title="Toucher pour lire en entier"></p>
+    <button class="primary" id="go" hidden>Analyser la zone visible</button>
+
+    <section id="sec-especes">
+      <h2>Toutes les espèces <small id="sp-count"></small></h2>
+      <p class="chartnote" id="sporder">Classées par saison. Lance un scan pour les classer de la plus probable à la moins probable.</p>
+      <div id="species"></div>
+    </section>
+
+    <section id="sec-jour">
+      <h2>Jour étudié</h2>
+      <p class="daylabel" id="daylabel">Chargement de la météo…</p>
+      <input type="range" id="day" min="0" max="0" value="0" aria-label="Jour étudié" disabled>
+      <canvas class="chart" id="chart1" aria-label="Pluie et humidité du sol"></canvas>
+      <div class="keys"><span><i style="background:var(--ochre)"></i>pluie des 26 derniers jours</span><span><i style="background:var(--line)"></i>autre pluie</span><span><i class="l" style="background:var(--water)"></i>eau du sol (9 à 27 cm)</span></div>
+      <canvas class="chart" id="chart2" aria-label="Température et humidité de l’air"></canvas>
+      <div class="keys"><span><i class="l" style="background:var(--moss)"></i>température moyenne</span><span><i class="l" style="background:var(--muted)"></i>humidité de l’air</span></div>
+      <p class="chartnote" id="chartnote"></p>
+      <dl class="wx" id="wx"></dl>
+    </section>
+    <div class="caution">Cet outil estime des chances de pousse, il n’identifie aucun champignon. Ne consomme jamais une récolte sans identification certaine, par exemple auprès d’un pharmacien ou d’une société mycologique.</div>
+  </section>
+
+  <!-- ===== Espèces ===== -->
+  <section class="view" id="v-especes" aria-label="Espèces" hidden>
+    <div id="catalog">
+      <div class="vhead"><h1>Espèces</h1></div>
+      <label class="searchf"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg><input type="search" id="cat-q" placeholder="Rechercher un champignon" aria-label="Rechercher un champignon" autocomplete="off"></label>
+      <div class="filters" role="radiogroup" aria-label="Filtrer les espèces">
+        <button type="button" role="radio" data-f="saison" aria-checked="true">De saison</button>
+        <button type="button" role="radio" data-f="comest" aria-checked="false">Comestibles</button>
+        <button type="button" role="radio" data-f="danger" aria-checked="false">Dangereux</button>
+        <button type="button" role="radio" data-f="tous" aria-checked="false">Tous</button>
+      </div>
+      <div id="cat-list"></div>
+    </div>
+    <article id="guide" hidden></article>
+  </section>
+
+  <!-- ===== Carnet ===== -->
+  <section class="view" id="v-carnet" aria-label="Carnet" hidden>
+    <div class="vhead"><h1>Carnet</h1></div>
+    <div class="grid2">
+      <button type="button" class="bigbtn blue" id="sharepos"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>Partager ma position</button>
+      <button type="button" class="bigbtn" id="addrep-gps"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Repère ici</button>
+    </div>
+    <p class="chartnote" id="repnote">Pour un autre endroit, touche la carte puis « Ajouter un repère ici ». Tout reste sur ton téléphone.</p>
+    <div class="seg" role="radiogroup" aria-label="Type de repères">
       <label><input type="radio" name="rtype" value="todo" checked>À chercher</label>
       <label><input type="radio" name="rtype" value="ok">Vérifiés</label>
       <label><input type="radio" name="rtype" value="all">Tous</label>
     </div>
-    <label class="rf-l" style="margin-top:4px">Dossier<select id="rfolder"><option value="">Tous les dossiers</option></select></label>
-    <p class="chartnote" id="repnote"></p>
+    <label class="rf-l" style="margin-top:8px">Dossier<select id="rfolder"><option value="">Tous les dossiers</option></select></label>
     <div id="replist"></div>
-  </div>
-  <div id="tab-carte" role="tabpanel">
-
-  <section id="sec-jour">
-    <h2>Jour étudié</h2>
-    <p class="daylabel" id="daylabel">Chargement de la météo…</p>
-    <input type="range" id="day" min="0" max="0" value="0" aria-label="Jour étudié" disabled>
-    <canvas class="chart" id="chart1" aria-label="Pluie et humidité du sol"></canvas>
-    <div class="keys"><span><i style="background:var(--ochre)"></i>pluie des 26 derniers jours</span><span><i style="background:var(--line)"></i>autre pluie</span><span><i class="l" style="background:var(--water)"></i>eau du sol (9 à 27 cm)</span></div>
-    <canvas class="chart" id="chart2" aria-label="Température et humidité de l’air"></canvas>
-    <div class="keys"><span><i class="l" style="background:var(--moss)"></i>température moyenne</span><span><i class="l" style="background:var(--muted)"></i>humidité de l’air</span></div>
-    <p class="chartnote" id="chartnote"></p>
-    <dl class="wx" id="wx"></dl>
   </section>
 
-  <section id="sec-calcul">
-    <h2>Calcul</h2>
+  <!-- ===== Météo ===== -->
+  <section class="view" id="v-meteo" aria-label="Météo" hidden>
+    <div class="vhead">
+      <div class="vtitle"><h1 id="wx-place">Météo</h1><p class="sub" id="wxwherenote">Touche la carte pour choisir un lieu, ou utilise ta position.</p></div>
+      <button type="button" class="pill" id="wx-gps">Ma position</button>
+    </div>
+    <div id="wxnow"></div>
+  </section>
 
-    <div class="modes" role="radiogroup" aria-label="Mode de calcul">
+  <!-- ===== Réglages ===== -->
+  <section class="view" id="v-reglages" aria-label="Réglages" hidden>
+    <div class="vhead"><h1>Réglages</h1></div>
+    <h2 class="cap">Fond de carte</h2>
+    <div class="grid2" id="basepick">
+      <button type="button" class="opt" data-base="plan" aria-pressed="true">Plan IGN</button>
+      <button type="button" class="opt" data-base="ortho" aria-pressed="false">Photos aériennes</button>
+    </div>
+    <h2 class="cap">Calcul</h2>
+    <div class="seg" role="radiogroup" aria-label="Mode de calcul">
       <label id="lab-meteo"><input type="radio" name="mode" value="meteo" checked>Terrain et météo</label>
       <label><input type="radio" name="mode" value="terrain">Terrain seul</label>
     </div>
-    <button class="primary" id="go" hidden>Analyser la zone visible</button>
-    <p id="status">Zoomez sur un secteur (15 km de côté au plus), puis lancez l’analyse.</p>
-    <div class="legend"><span>faible</span><div class="ramp"></div><span>forte</span></div>
-    <label class="chartnote" style="display:flex;align-items:center;gap:8px;margin-top:6px">Opacité de la coloration<input type="range" id="heatop" min="0.2" max="1" step="0.05" value="0.7" style="flex:1"></label>
-    <h3>Terrains affichés</h3>
-    <div class="modes" role="radiogroup" aria-label="Terrains affichés">
-      <label><input type="radio" name="land" value="tous" checked>Tous</label>
+    <div class="seg" role="radiogroup" aria-label="Terrains affichés">
+      <label><input type="radio" name="land" value="tous" checked>Tous les terrains</label>
       <label><input type="radio" name="land" value="public">Forêts publiques</label>
     </div>
-    <h3>Mes sorties</h3>
+    <p class="chartnote" id="landnote">Forêts publiques (domaniales, communales, gérées par l’ONF) : cueillette familiale tolérée, en général 5 litres par personne et par jour. En forêt privée, la cueillette demande l’accord du propriétaire.</p>
+    <label class="rangel">Opacité de la coloration<input type="range" id="heatop" min="0.2" max="1" step="0.05" value="0.7"></label>
+    <div class="legend"><span>faible</span><div class="ramp"></div><span>forte</span></div>
+    <h2 class="cap">Afficher sur la carte</h2>
+    <div id="overlays"></div>
+    <h2 class="cap">Mes sorties hors ligne</h2>
     <p class="chartnote">À faire en wifi avant de partir : enregistre l’analyse et le fond de carte de la zone, pour les retrouver en forêt sans réseau. Le GPS fonctionne sans réseau.</p>
     <button class="secondary" id="savetrip">Enregistrer cette analyse comme sortie</button>
     <p class="chartnote" id="tripnote"></p>
     <ul class="trips" id="triplist"></ul>
-    <p class="chartnote" id="landnote">Forêts publiques (domaniales, communales, gérées par l’ONF) : cueillette familiale tolérée, en général 5 litres par personne et par jour. En forêt privée, la promenade est possible là où il n’y a ni clôture ni panneau, mais la cueillette demande l’accord du propriétaire.</p>
-  </section>
 
-  <section id="sec-especes">
-    <h2>Espèces <small id="sp-count" style="font-family:var(--sans);font-size:13px;color:var(--muted)"></small></h2>
-    <button class="secondary" id="openpick" type="button" style="margin:0 0 8px">Choisir mes champignons</button>
-    <p class="chartnote" id="sporder" style="margin-top:-4px">Classées par saison. Lancez une analyse pour les classer de la plus probable à la moins probable.</p>
-    <div id="species"></div>
-  </section>
-
-  <div class="caution">Cet outil estime des chances de pousse, il n’identifie aucun champignon. Ne consommez jamais une récolte sans identification certaine, par exemple auprès d’un pharmacien ou d’une société mycologique.</div>
-
-  <section class="fine">
-    <h2>Avant de partir</h2>
-    <p>Le cœur du Parc national des Cévennes, côté Aigoual, a sa propre réglementation de la cueillette ; côté Haut-Languedoc, renseignez-vous aussi auprès du Parc naturel régional et des communes. Dans les forêts publiques, la cueillette familiale est tolérée dans des limites raisonnables, souvent 5 litres par personne et par jour ; en forêt privée, il faut l’accord du propriétaire. Dans l’Hérault, le Gard et les départements voisins, des arrêtés préfectoraux réglementent aussi l’accès aux massifs forestiers en période de risque d’incendie, jusqu’à fin septembre au moins. La couche « Forêts publiques » aide à savoir où l’on se trouve.</p>
-
+    <section class="fine">
+      <h2>Avant de partir</h2>
+      <p>Dans les cœurs de parcs nationaux et dans certains parcs naturels régionaux, la cueillette a sa propre réglementation ; renseigne-toi aussi auprès des communes. Dans les forêts publiques, la cueillette familiale est tolérée dans des limites raisonnables, souvent 5 litres par personne et par jour ; en forêt privée, il faut l’accord du propriétaire. En période de risque d’incendie, des arrêtés préfectoraux peuvent fermer l’accès aux massifs forestiers.</p>
     <details class="more-info"><summary>Comment c’est calculé, sources et services</summary>
     <p>Chaque maille reçoit un score de terrain et un score météo, multipliés entre eux. Le détail par facteur s’affiche quand on clique sur la carte.</p>
     <h3>Terrain</h3>
@@ -427,7 +604,7 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
     <h3>Terrains publics et privés</h3>
     <p>Les forêts publiques viennent de la couche de l’ONF diffusée par l’IGN. Tout ce qui n’en fait pas partie est classé « privé », ce qui est vrai dans la grande majorité des cas, mais pas toujours (chemins, terrains communaux non forestiers). En cas de doute, le cadastre fait foi, et un panneau à l’entrée d’une parcelle prime sur la carte.</p>
     <h3>D’où vient la météo</h3>
-    <p>Pluie, températures, humidité de l’air et évaporation viennent des modèles de Météo-France, AROME (maille de 1,3 km) puis ARPÈGE, servis par Open-Meteo : ce sont les modèles que l’on consulte sur Météociel. L’humidité et la température du sol, que Météo-France ne fournit pas par cette voie, viennent du modèle par défaut d’Open-Meteo. Ensuite, la pluie des jours passés est remplacée, quand c’est possible, par celle mesurée aux stations Météo-France des départements voisins (données ouvertes, mises à jour avec quelques jours de retard). La mention sous les graphiques indique jusqu’à quelle date la pluie est mesurée.</p>
+    <p>Pluie, températures, humidité de l’air et évaporation viennent des modèles de Météo-France, AROME puis ARPÈGE, servis par Open-Meteo ; l’onglet Météo utilise en plus AROME France HD, le plus fin (maille d’environ 1 km), pour les prochaines heures. L’humidité et la température du sol, que Météo-France ne fournit pas par cette voie, viennent du modèle par défaut d’Open-Meteo. Ensuite, la pluie des jours passés est remplacée, quand c’est possible, par celle mesurée aux stations Météo-France des départements voisins (données ouvertes, mises à jour avec quelques jours de retard). La mention sous les graphiques indique jusqu’à quelle date la pluie est mesurée.</p>
     <p>Les seuils de chaque espèce sont des valeurs de départ, en partie tirées des études ci-dessous, en partie de l’expérience courante. Ils sont à recaler avec vos observations.</p>
     <h3>Sources</h3>
     <ol>
@@ -458,10 +635,17 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
     </ol>
     <p style="color:var(--muted);font-size:13px">Données : IGN Géoplateforme, ISRIC SoilGrids, BRGM, Météo-France (modèles et stations), Open-Meteo.</p>
     </details>
+    </section>
   </section>
-  </div>
 </aside>
 <main id="map" aria-label="Carte"></main>
+<nav id="tabbar" aria-label="Navigation principale">
+  <button type="button" data-tab="carte" aria-current="page"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg>Carte</button>
+  <button type="button" data-tab="especes"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 12a8 6 0 0 1 16 0z"/><path d="M10 12v6a2 2 0 0 0 4 0v-6"/></svg>Espèces</button>
+  <button type="button" data-tab="carnet"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h11a1 1 0 0 1 1 1v17l-6.5-4L5 21V4a1 1 0 0 1 1-1z"/></svg>Carnet</button>
+  <button type="button" data-tab="meteo"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M7 17a4 4 0 0 1 .5-8A5.5 5.5 0 0 1 18 10a3.5 3.5 0 0 1-.5 7z"/><path d="M9 20l-1 2M13 20l-1 2"/></svg>Météo</button>
+  <button type="button" data-tab="reglages"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>Réglages</button>
+</nav>
 <div id="hud" hidden>
   <div class="hud-stats"><span><b id="hud-time">0:00</b>durée</span><span><b id="hud-dist">0,0 km</b>distance</span><span><b id="hud-alt">—</b>altitude</span></div>
   <p id="hud-zone"></p>
@@ -500,7 +684,6 @@ details.more-info summary{font-family:var(--serif);font-size:20px;cursor:pointer
   <div class="sb-row"><input type="search" id="sb-input" placeholder="Ville, village, lieu-dit, forêt, sommet…" autocomplete="off" enterkeyhint="search"><button type="button" id="sb-close" aria-label="Fermer la recherche">✕</button></div>
   <ul id="sb-results"></ul>
 </div>
-<button type="button" id="sheetopen" hidden aria-label="Ouvrir le menu"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg><span>Menu</span></button>
 <div id="bgtask" hidden aria-live="polite"><span class="spin" aria-hidden="true"></span><span id="bgtxt"></span></div>
 <div id="loader" hidden aria-live="polite">
   <div class="lbar"><div class="lfill" id="lfill"></div></div>
@@ -724,6 +907,338 @@ const ZONES = {
     sub:"Haut-Languedoc, rayon de 50 km autour de La Salvetat-sur-Agout : gneiss et granites des Monts de Lacaune, du Somail et de l’Espinouse, hêtraies et résineux, lacs ; vallées méditerranéennes de l’Orb et du Jaur au sud."}
 };
 let SPECIES = SPECIES_PSL;
+/* ============================================================
+   Fiches espèces : reconnaître pas à pas, faux amis, avant de manger
+   D’après les guides de référence (Courtecuisse et Duhem ; Eyssartier et Roux)
+   et les recommandations de l’ANSES sur la cueillette.
+   ============================================================ */
+const FAUX = {
+  phalloide:{nom:"Amanite phalloïde",latin:"Amanita phalloides",niv:"mortel",id:"amanite-phalloide"},
+  tueMouches:{nom:"Amanite tue-mouches",latin:"Amanita muscaria",niv:"toxique",id:"amanite-tue-mouches"},
+  panthere:{nom:"Amanite panthère",latin:"Amanita pantherina",niv:"toxique",id:"amanite-panthere"},
+  blanches:{nom:"Amanites blanches",latin:"Amanita virosa, A. verna",niv:"mortel",id:"amanite-phalloide"},
+  omphalote:{nom:"Clitocybe de l’olivier",latin:"Omphalotus olearius",niv:"toxique",id:"omphalote"},
+  rocou:{nom:"Cortinaire couleur de rocou",latin:"Cortinarius orellanus",niv:"mortel",id:"cortinaire-rocou"},
+  livide:{nom:"Entolome livide",latin:"Entoloma sinuatum",niv:"toxique",id:"entolome-livide"},
+  gyromitre:{nom:"Gyromitre",latin:"Gyromitra esculenta",niv:"mortel",id:"gyromitre"},
+  lepiotes:{nom:"Petites lépiotes",latin:"Lepiota brunneoincarnata et voisines",niv:"mortel",id:"lepiotes"},
+  patouillard:{nom:"Inocybe de Patouillard",latin:"Inocybe erubescens",niv:"mortel",id:"inocybe-patouillard"},
+  clitoBlancs:{nom:"Clitocybes blancs",latin:"Clitocybe rivulosa, C. dealbata",niv:"toxique",id:"clitocybes-blancs"},
+  satan:{nom:"Bolet de Satan",latin:"Rubroboletus satanas",niv:"toxique",id:"bolet-satan"},
+  amer:{nom:"Bolet amer",latin:"Tylopilus felleus",niv:"immangeable"},
+  fausseGirolle:{nom:"Fausse girolle",latin:"Hygrophoropsis aurantiaca",niv:"à écarter"},
+  toison:{nom:"Lactaire à toison",latin:"Lactarius torminosus",niv:"toxique"},
+  jaunissant:{nom:"Agaric jaunissant",latin:"Agaricus xanthodermus",niv:"toxique"},
+  cortiViolets:{nom:"Cortinaires violets",latin:"Cortinarius spp.",niv:"toxique"},
+  russulesAcres:{nom:"Russules âcres",latin:"Russula emetica et voisines",niv:"toxique"},
+  petitsBruns:{nom:"Petits champignons bruns à lames",latin:"Galerina, Cortinarius",niv:"mortel"},
+  verpe:{nom:"Verpe de Bohême",latin:"Verpa bohemica",niv:"toxique"},
+  tigre:{nom:"Tricholome tigré",latin:"Tricholoma pardinum",niv:"toxique"}
+};
+const F = (k, diff) => ({...FAUX[k], diff});
+
+const GUIDE = {
+ "cepe-bordeaux":{forme:"bolet",col:"#8A5A35",
+  steps:[["Le chapeau","Brun noisette à brun foncé, souvent bordé d’un fin liseré plus pâle. Lisse, un peu gras par temps humide. De 8 à 25 cm."],
+   ["Le dessous","Des tubes, pas des lames : une surface d’éponge blanche chez le jeune, puis jaunâtre à vert olive. Elle ne bleuit pas quand on appuie."],
+   ["Le pied","Ventru, blanchâtre à brun clair, couvert en haut d’un fin réseau blanc en relief."],
+   ["La chair","Blanche et ferme, elle ne change pas de couleur à la coupe. Odeur agréable, saveur douce."]],
+  faux:[F("amer","Pores rosés en vieillissant, réseau brun foncé à grosses mailles sur le pied, goût très amer : une miette sur le bout de la langue suffit à le reconnaître (la recracher)."),
+   F("satan","Pores rouges, réseau rouge sur le pied, chair qui bleuit. Plutôt sur calcaire, en terrain chaud.")],
+  cuisine:"Bien cuire. Écarter les exemplaires ramollis, véreux ou détrempés."},
+ "cepe-pins":{forme:"bolet",col:"#7A3B2A",
+  steps:[["Le chapeau","Brun rouge acajou à brun pourpré, souvent bosselé ou granuleux. De 8 à 20 cm."],
+   ["Le dessous","Tubes et pores blancs, puis jaunes à vert olive. Pas de bleuissement."],
+   ["Le pied","Massif, ventru, blanchâtre lavé de brun rouge, avec un réseau blanc en haut."],
+   ["La chair","Blanche, teintée de rouge vineux sous la peau du chapeau, immuable à la coupe."]],
+  faux:[F("amer","Pores rosés, réseau brun foncé sur le pied, goût très amer."),F("satan","Pores rouges, réseau rouge sur le pied, chair bleuissante.")],
+  cuisine:"Bien cuire. Écarter les exemplaires abîmés."},
+ "cepe-bronze":{forme:"bolet",col:"#3E2B22",
+  steps:[["Le chapeau","Brun très foncé, presque noir, mat et comme velouté. De 8 à 20 cm."],
+   ["Le dessous","Tubes et pores blancs, puis jaune verdâtre. Pas de bleuissement."],
+   ["Le pied","Trapu, brun clair à brun, couvert d’un réseau brunâtre."],
+   ["La chair","Blanche et ferme, immuable à la coupe."]],
+  faux:[F("amer","Pores rosés, réseau brun foncé, goût très amer."),F("satan","Pores rouges, réseau rouge sur le pied, chair bleuissante, souvent sur calcaire chaud.")],
+  cuisine:"Bien cuire."},
+ "cepe-ete":{forme:"bolet",col:"#A57B52",
+  steps:[["Le chapeau","Brun clair noisette, mat, souvent finement craquelé par temps sec. De 8 à 20 cm."],
+   ["Le dessous","Tubes et pores blancs, puis jaunâtres à olive. Pas de bleuissement."],
+   ["Le pied","Couvert d’un réseau blanchâtre à brunâtre sur toute sa hauteur, jusqu’en bas."],
+   ["La chair","Blanche, immuable. Souvent visitée par les vers : couper le pied pour vérifier."]],
+  faux:[F("amer","Pores rosés, réseau brun foncé à grosses mailles, goût très amer.")],
+  cuisine:"Bien cuire. Écarter les exemplaires véreux."},
+ "oronge":{forme:"amanite",col:"#E0601E",
+  steps:[["L’œuf","Jeune, elle sort d’un « œuf » blanc. Ne jamais cueillir un œuf sans le couper en deux : l’intérieur doit montrer un chapeau orange et des lames jaunes."],
+   ["Le chapeau","Orange vif à rouge orangé, lisse, strié au bord, en général sans flocons blancs."],
+   ["Le dessous","Des lames jaune d’or, libres, sans attache au pied."],
+   ["Le pied","Jaune, avec un anneau jaune, et à la base une grande volve blanche en forme de sac."]],
+  faux:[F("tueMouches","Chapeau rouge à flocons blancs (la pluie peut les enlever), lames et pied blancs, volve en bourrelets."),
+   F("phalloide","À l’état d’œuf, seule la coupe les distingue : chapeau verdâtre ou blanc et lames blanches chez la phalloïde.")],
+  cuisine:"Bien cuire, comme tous les champignons sauvages. Espèce rare par endroits : prélever avec modération."},
+ "girolle":{forme:"entonnoir",col:"#E7B53C",
+  steps:[["La forme","Chapeau jaune d’œuf à orangé, en entonnoir irrégulier, bord ondulé et enroulé. Pousse dans la mousse et la terre, jamais en touffe serrée sur le bois."],
+   ["Le dessous","Pas de vraies lames : des plis épais, fourchus, qui descendent sur le pied et font corps avec la chair. On ne peut pas les détacher."],
+   ["Le pied","Plein, de la même couleur que le chapeau, s’amincit vers la base. Ni anneau ni volve."],
+   ["La chair et l’odeur","Chair blanc jaunâtre, ferme, fibreuse. Odeur fruitée d’abricot."]],
+  faux:[F("omphalote","Orange vif, vraies lames minces et serrées, pousse en touffes sur les souches de chêne ou d’olivier. Très commun en région méditerranéenne."),
+   F("rocou","Chapeau fauve orangé, vraies lames couleur rouille, fine toile (cortine) sous le chapeau chez le jeune. Atteint les reins plusieurs jours après le repas."),
+   F("fausseGirolle","Vraies lames minces, serrées, orange vif, chair molle, souvent près des souches de résineux.")],
+  cuisine:"Bien cuire. Nettoyer à sec, sans tremper."},
+ "chanterelle-tube":{forme:"entonnoir",col:"#8C7A55",
+  steps:[["Le chapeau","Brun gris, creusé au centre, souvent percé ; bord ondulé. De 2 à 6 cm."],
+   ["Le dessous","Des plis espacés, ramifiés, gris jaunâtre, qui descendent sur le pied. Pas de vraies lames."],
+   ["Le pied","Creux, jaune grisâtre, souvent aplati et sillonné."],
+   ["Où","En grandes troupes dans les mousses humides sous les résineux, jusqu’aux gelées."]],
+  faux:[F("petitsBruns","Ils ont de vraies lames minces et un pied plein ou fibreux ; certains, comme la galère marginée, sont mortels. Rejeter tout ce qui a des lames.")],
+  cuisine:"Bien cuire."},
+ "chanterelle-jaunissante":{forme:"entonnoir",col:"#D9893A",
+  steps:[["Le chapeau","Brun gris foncé, en entonnoir, bord ondulé."],
+   ["Le dessous","Orangé saumon, presque lisse ou à plis très faibles."],
+   ["Le pied","Creux, jaune orangé vif."],
+   ["L’odeur","Fruitée, assez forte. En troupes dans les mousses très humides."]],
+  faux:[F("petitsBruns","Vraies lames minces, pied plein. Rejeter tout ce qui a des lames.")],
+  cuisine:"Bien cuire."},
+ "trompette":{forme:"trompette",col:"#2F2A28",
+  steps:[["La forme","Une trompette creuse jusqu’à la base : en regardant dedans, on voit le fond. Gris noir à brun noir, intérieur un peu écailleux."],
+   ["Le dessous","L’extérieur est lisse ou un peu ridé, gris cendré. Ni lames ni plis marqués."],
+   ["La chair","Mince et élastique. Odeur fruitée, plus forte une fois séchée."],
+   ["Où","En colonies dans les feuilles mortes des feuillus humides (hêtre, chêne, châtaignier)."]],
+  faux:[],
+  cuisine:"Bien cuire. Se sèche très bien. Peu de confusions dangereuses."},
+ "pied-mouton":{forme:"lames",col:"#E3B98A",
+  steps:[["Le chapeau","Crème à orangé pâle, irrégulier, mat comme une peau de chamois."],
+   ["Le dessous","Des aiguillons : de petites pointes serrées et cassantes, couleur crème. Ni lames ni tubes."],
+   ["Le pied","Court, blanchâtre, souvent décentré."],
+   ["La chair","Blanche, ferme et cassante, roussit au froissement."]],
+  faux:[],
+  cuisine:"Bien cuire. Les grands exemplaires peuvent être amers : retirer les aiguillons. Peu de confusions dangereuses."},
+ "lactaire-delicieux":{forme:"lames",col:"#E07A2E",
+  steps:[["Le chapeau","Orange carotte, marqué de cercles plus foncés, se tache de vert en vieillissant ou au toucher."],
+   ["Le dessous","Lames orange, serrées."],
+   ["Le lait","Casser un bout de lame : un lait orange carotte doit perler. Il verdit lentement."],
+   ["Le pied","Orange, creux, souvent marqué de petites fossettes."]],
+  faux:[F("toison","Chapeau rose saumon au bord très poilu, laineux ; lait blanc, saveur brûlante.")],
+  cuisine:"Bien cuire. Peut colorer les urines en rouge : c’est sans gravité."},
+ "lactaire-sanguin":{forme:"lames",col:"#B85A4A",
+  steps:[["Le chapeau","Orange rosé à vineux, plus ou moins zoné, se tache de vert."],
+   ["Le dessous","Lames rose vineux."],
+   ["Le lait","À la cassure, un lait rouge vin, et non orange, perle tout de suite."],
+   ["Le pied","Court, creux, avec des fossettes. Sous les pins, sur calcaire."]],
+  faux:[F("toison","Bord du chapeau très poilu, lait blanc et brûlant.")],
+  cuisine:"Bien cuire."},
+ "lactaire-saumon":{forme:"lames",col:"#E89A6A",
+  steps:[["Le chapeau","Orange saumon pâle, peu zoné, verdit peu."],
+   ["Le dessous","Lames orange pâle."],
+   ["Le lait","Orange, peu abondant."],
+   ["Où","Uniquement sous les sapins."]],
+  faux:[F("toison","Bord du chapeau poilu, lait blanc et brûlant.")],
+  cuisine:"Bien cuire."},
+ "bolet-jaune-pins":{forme:"bolet",col:"#9A6A3A",
+  steps:[["Le chapeau","Brun roux, visqueux par temps humide."],
+   ["Le dessous","Pores jaunes, petits."],
+   ["Le pied","Jaune, couvert de petites granulations ; la base montre un feutrage rose, typique de l’espèce."],
+   ["Où","Sous le pin d’Alep, en troupes."]],
+  faux:[],
+  cuisine:"Retirer la peau gluante du chapeau, qui peut déranger l’intestin. Bien cuire et ne pas en abuser."},
+ "bolet-bai":{forme:"bolet",col:"#6B3F25",
+  steps:[["Le chapeau","Brun chocolat, visqueux par temps humide."],
+   ["Le dessous","Pores crème à jaunâtres, qui bleuissent quand on appuie : c’est normal chez cette espèce."],
+   ["Le pied","Brun clair, strié, sans réseau."],
+   ["La chair","Blanc jaunâtre, bleuit un peu à la coupe."]],
+  faux:[F("amer","Pores rosés, réseau brun foncé sur le pied, goût très amer.")],
+  cuisine:"Bien cuire."},
+ "bolet-pied-rouge":{forme:"bolet",col:"#5A3A2A",
+  steps:[["Le chapeau","Brun foncé, velouté."],
+   ["Le dessous","Pores rouge orangé."],
+   ["Le pied","Jaune couvert de fines ponctuations rouges, sans réseau."],
+   ["La chair","Jaune, bleuit fortement et instantanément à la coupe."]],
+  faux:[F("satan","Chapeau blanchâtre à gris, pied ventru avec un réseau rouge, odeur désagréable en vieillissant ; sur calcaire chaud.")],
+  cuisine:"Toxique cru : toujours bien cuire, au moins 20 minutes."},
+ "russule-charbonniere":{forme:"lames",col:"#6E6A8E",
+  steps:[["Le chapeau","Couleurs mêlées : violet, bleu gris, vert, parfois tout à la fois."],
+   ["Le dessous","Lames blanches, souples et lardacées : elles plient sans casser sous le doigt, contrairement aux autres russules."],
+   ["Le pied","Blanc, parfois teinté de violet, sans anneau ni volve."],
+   ["La chair","Blanche, saveur douce."]],
+  faux:[F("phalloide","Chapeau vert olive, anneau, volve en sac à la base. Toujours déterrer le pied entier."),
+   F("russulesAcres","Goût piquant : une miette sur la langue, puis recracher.")],
+  cuisine:"Bien cuire."},
+ "russule-verdoyante":{forme:"lames",col:"#8FA37A",
+  steps:[["Le chapeau","Vert-de-gris pâle, sec, dont la peau se craquelle en petites plaques, comme une mosaïque."],
+   ["Le dessous","Lames blanc crème, cassantes."],
+   ["Le pied","Blanc, sans anneau ni volve."],
+   ["La chair","Blanche, douce, cassante comme de la craie."]],
+  faux:[F("phalloide","Chapeau vert lisse et soyeux, anneau, volve en sac. Toujours déterrer le pied entier.")],
+  cuisine:"Bien cuire."},
+ "hygrophore-rougissant":{forme:"lames",col:"#A0485A",
+  steps:[["Le chapeau","Rose vineux taché de pourpre, ferme et charnu. De 5 à 12 cm."],
+   ["Le dessous","Lames épaisses, espacées, un peu cireuses, blanchâtres puis tachées de vineux."],
+   ["Le pied","Blanc taché de vineux, plein."],
+   ["Où","En troupes, sous les chênes, sur calcaire, en fin de saison."]],
+  faux:[F("russulesAcres","Chair cassante comme de la craie, goût piquant.")],
+  cuisine:"Bien cuire."},
+ "pied-bleu":{forme:"lames",col:"#8A6EA8",
+  steps:[["Le chapeau","Violet lilas, puis brunâtre, lisse et charnu."],
+   ["Le dessous","Lames violettes, serrées, qui se détachent facilement de la chair."],
+   ["Le pied","Violet, fibreux, sans anneau ni toile."],
+   ["L’odeur et la sporée","Odeur fruitée, parfumée. Posé une nuit sur une feuille, le chapeau laisse une poudre rose pâle."]],
+  faux:[F("cortiViolets","Fine toile (cortine) entre le chapeau et le pied chez le jeune, traces rouille sur le pied ; poudre de spores rouille.")],
+  cuisine:"Toxique cru : toujours bien cuire."},
+ "clitocybe-geotrope":{forme:"entonnoir",col:"#D9C7A3",
+  steps:[["Le chapeau","Crème chamois, en entonnoir avec un petit mamelon au centre, bord enroulé. Jusqu’à 20 cm."],
+   ["Le dessous","Lames crème, serrées, qui descendent sur le pied."],
+   ["Le pied","Plus long que la largeur du chapeau, plein, renflé à la base."],
+   ["Où","En grands ronds dans les clairières et les lisières."]],
+  faux:[F("livide","Chapeau gris plombé, lames jaunâtres puis rose saumon, échancrées, odeur de farine."),
+   F("clitoBlancs","Petits, blancs comme poudrés, dans l’herbe des prés.")],
+  cuisine:"Bien cuire. Ne garder que les chapeaux."},
+ "coulemelle":{forme:"lepiote",col:"#B8977A",
+  steps:[["La taille","Grand : chapeau de 10 à 30 cm. Ne cueillir que les grands exemplaires."],
+   ["Le chapeau","Ovoïde puis étalé avec un mamelon, couvert d’écailles brunes sur fond crème."],
+   ["Le dessous","Lames blanches, libres, qui ne touchent pas le pied."],
+   ["Le pied","Haut, chiné de brun comme une peau de serpent, bulbeux à la base, sans volve. Anneau double qui coulisse le long du pied."]],
+  faux:[F("lepiotes","Moins de 10 cm, chapeau à écailles brun rosé, anneau fragile ou absent. Elles détruisent le foie, comme la phalloïde."),
+   F("panthere","Chapeau brun à flocons blancs, volve en bourrelet à la base.")],
+  cuisine:"Bien cuire. Ne garder que les chapeaux, le pied est coriace."},
+ "langue-boeuf":{forme:"console",col:"#9E2A2A",
+  steps:[["La forme","En forme de langue ou de foie, fixée sur le tronc d’un chêne ou d’un châtaignier."],
+   ["La couleur","Rouge sang, la surface suinte un jus rougeâtre."],
+   ["Le dessous","Crème, fait de petits tubes séparés les uns des autres."],
+   ["La chair","Rouge veiné de blanc, comme de la viande. Saveur acidulée."]],
+  faux:[],
+  cuisine:"Se mange cru en fines lamelles ou cuit. Peu de confusions possibles."},
+ "rose-pres":{forme:"lames",col:"#EDE6DA",
+  steps:[["Le chapeau","Blanc soyeux, de 5 à 10 cm."],
+   ["Le dessous","Lames libres, rose vif chez le jeune, puis brun chocolat à noires. Jamais blanches."],
+   ["Le pied","Court, blanc, avec un anneau fin et fragile. Pas de volve à la base."],
+   ["Le frottement","Frotter la base du pied : elle ne doit pas jaunir vivement. Odeur agréable de champignon."]],
+  faux:[F("blanches","Lames qui restent blanches, volve en sac à la base, anneau. Mortelles."),
+   F("jaunissant","Jaunit vivement au frottement de la base du pied, odeur d’encre ou de phénol.")],
+  cuisine:"Bien cuire. Ne pas cueillir au bord des routes ni des champs traités."},
+ "mousseron":{forme:"lames",col:"#D7B98A",
+  steps:[["Le chapeau","Crème chamois, petit (2 à 5 cm), avec un mamelon."],
+   ["Le dessous","Lames espacées, épaisses, blanchâtres, qui ne descendent pas sur le pied."],
+   ["Le pied","Fin et très coriace : on peut le tordre sans qu’il casse."],
+   ["Où","En ronds de sorcière dans les pelouses rases. Se réhydrate après la pluie."]],
+  faux:[F("clitoBlancs","Blancs comme poudrés, lames serrées qui descendent sur le pied, pied cassant. Mêmes pelouses, parfois les mêmes ronds.")],
+  cuisine:"Ne garder que les chapeaux. Bien cuire."},
+ "pleurote-panicaut":{forme:"lames",col:"#8C7B6A",
+  steps:[["Le chapeau","Brun gris, convexe puis creusé, de 3 à 10 cm."],
+   ["Le dessous","Lames blanc crème qui descendent sur le pied."],
+   ["Le pied","Court, souvent décentré, ancré dans la racine morte d’un panicaut (chardon bleuté à feuilles épineuses)."],
+   ["Où","Garrigues, friches et pelouses sèches, en automne."]],
+  faux:[F("clitoBlancs","Blancs, sans lien avec le panicaut. Vérifier que le pied part d’une racine de panicaut.")],
+  cuisine:"Bien cuire."},
+ "saint-georges":{forme:"lames",col:"#E9E0CC",
+  steps:[["Le chapeau","Blanc crème à beige, charnu, bord enroulé."],
+   ["Le dessous","Lames blanches, très serrées."],
+   ["Le pied","Court, blanc, plein."],
+   ["L’odeur","Forte odeur de farine fraîche. Au printemps, en ronds dans l’herbe près des haies."]],
+  faux:[F("patouillard","Même saison, mêmes haies : chapeau conique, fibreux, fendillé, qui rougit ; lames grises à brunes."),
+   F("livide","Lames jaunâtres puis rose saumon, plus espacées.")],
+  cuisine:"Bien cuire."},
+ "morille":{forme:"morille",col:"#8A6A4A",
+  steps:[["Le chapeau","Couvert d’alvéoles creuses, comme une éponge ou un nid d’abeille, soudé au pied."],
+   ["L’intérieur","Coupée en long, elle est entièrement creuse, d’une seule cavité du sommet à la base."],
+   ["Le pied","Blanchâtre, granuleux, creux."],
+   ["Où","Au printemps : lisières, bords de rivières, vergers, terrains remués ou brûlés."]],
+  faux:[F("gyromitre","Chapeau brun rouge en circonvolutions, comme un cerveau, sans alvéoles ; intérieur cloisonné en plusieurs cavités."),
+   F("verpe","Chapeau posé comme un dé à coudre sur le pied, libre à la base ; pied rempli de coton.")],
+  cuisine:"Toxiques crues ou mal cuites : toujours bien cuire, et en quantité raisonnable."},
+ "hygrophore-mars":{forme:"lames",col:"#6E7078",
+  steps:[["Quand","À la fonte des neiges, souvent à demi enterré sous la mousse et les aiguilles."],
+   ["Le chapeau","Gris argenté puis noirâtre, charnu, irrégulier."],
+   ["Le dessous","Lames épaisses, espacées, cireuses, blanches puis grises."],
+   ["La chair","Blanche et ferme."]],
+  faux:[F("tigre","Chapeau gris couvert de petites écailles, lames serrées, odeur de farine.")],
+  cuisine:"Bien cuire."},
+ "sparassis":{forme:"chou",col:"#E9D9AE",
+  steps:[["La forme","Une grosse boule crépue, comme un chou-fleur ou une éponge, faite de lanières aplaties et ondulées."],
+   ["La couleur","Crème à jaunâtre."],
+   ["Où","Au pied des pins vivants ou des souches de résineux ; revient au même endroit."],
+   ["La chair","Élastique, odeur agréable."]],
+  faux:[],
+  cuisine:"Bien nettoyer (aiguilles et terre) et bien cuire. Peu de confusions possibles."}
+};
+
+/* Champignons dangereux, à savoir reconnaître */
+const DANGER = [
+ {id:"amanite-phalloide",nom:"Amanite phalloïde",latin:"Amanita phalloides",comest:"mortel",mois:[7,8,9,10,11],forme:"amanite",col:"#AEB57E",
+  habitat:"Sous les chênes, hêtres et châtaigniers, de l’été à la fin de l’automne.",
+  steps:[["Le chapeau","Vert olive à jaunâtre, parfois presque blanc, soyeux, finement strié de fibres."],
+   ["Le dessous","Lames blanches, libres, qui restent blanches."],
+   ["Le pied","Blanc, avec un anneau blanc qui pend comme une jupe."],
+   ["La base","Une volve blanche en forme de sac, souvent cachée dans la terre : toujours déterrer le pied entier."]],
+  effets:"Responsable de la grande majorité des décès par champignons. Les premiers troubles arrivent 6 à 24 heures après le repas, puis le foie est détruit. Un seul chapeau peut suffire."},
+ {id:"cortinaire-rocou",nom:"Cortinaire couleur de rocou",latin:"Cortinarius orellanus",comest:"mortel",mois:[8,9,10,11],forme:"lames",col:"#C46A2A",
+  habitat:"Sous les chênes et les châtaigniers, sur sol acide.",
+  steps:[["Le chapeau","Fauve orangé, mat, finement fibreux."],
+   ["Le dessous","Lames espacées, couleur rouille orangé."],
+   ["Le pied","Jaune fauve, avec chez le jeune une fine toile entre le pied et le chapeau."]],
+  effets:"Les premiers signes arrivent 2 à 20 jours après le repas : soif, fatigue, puis atteinte grave des reins."},
+ {id:"omphalote",nom:"Clitocybe de l’olivier",latin:"Omphalotus olearius",comest:"toxique",mois:[8,9,10,11,12],forme:"touffe",col:"#E07A1F",
+  habitat:"En touffes sur les souches et racines de chêne vert, d’olivier et d’autres feuillus. Très commun en région méditerranéenne.",
+  steps:[["La forme","En touffes serrées, sur le bois."],
+   ["La couleur","Orange vif à orange rouge, partout."],
+   ["Le dessous","Vraies lames, minces et serrées, qui descendent sur le pied."]],
+  effets:"Vomissements et diarrhées violents, en général 1 à 3 heures après le repas. Souvent confondu avec la girolle."},
+ {id:"amanite-tue-mouches",nom:"Amanite tue-mouches",latin:"Amanita muscaria",comest:"toxique",mois:[8,9,10,11],forme:"amanite",col:"#D7262E",
+  habitat:"Sous les bouleaux, les pins et les épicéas, sur sol acide.",
+  steps:[["Le chapeau","Rouge vif couvert de flocons blancs (la pluie peut les enlever)."],
+   ["Le dessous","Lames blanches."],
+   ["Le pied","Blanc, avec un anneau ; base renflée couverte de bourrelets blancs."]],
+  effets:"Troubles nerveux (agitation, confusion, somnolence) dans les 3 heures. Parfois confondue avec l’amanite des Césars."},
+ {id:"amanite-panthere",nom:"Amanite panthère",latin:"Amanita pantherina",comest:"toxique",mois:[7,8,9,10],forme:"amanite",col:"#7A5A3A",
+  habitat:"Feuillus et résineux, souvent sur sol calcaire.",
+  steps:[["Le chapeau","Brun couvert de petits flocons blancs, bord strié."],
+   ["Le dessous","Lames blanches."],
+   ["La base","Bulbe avec un bourrelet net, comme le haut d’une chaussette."]],
+  effets:"Troubles nerveux sérieux dans les 3 heures. Parfois confondue avec la coulemelle ou l’amanite rougissante."},
+ {id:"lepiotes",nom:"Petites lépiotes",latin:"Lepiota brunneoincarnata et voisines",comest:"mortel",mois:[7,8,9,10,11],forme:"lepiote",col:"#B07A6A",
+  habitat:"Parcs, jardins, lisières, bords de chemins.",
+  steps:[["La taille","Moins de 10 cm de chapeau."],
+   ["Le chapeau","Couvert de petites écailles brun rosé sur fond clair."],
+   ["Le pied","Anneau fragile ou absent, souvent des fibres brunes sous la zone de l’anneau."]],
+  effets:"Même poison que l’amanite phalloïde : troubles 6 à 24 heures après, puis atteinte du foie."},
+ {id:"gyromitre",nom:"Gyromitre",latin:"Gyromitra esculenta",comest:"mortel",mois:[3,4,5],forme:"morille",col:"#8A3A2A",
+  habitat:"Au printemps, sous les résineux, sur sol sableux.",
+  steps:[["Le chapeau","Brun rouge, en circonvolutions comme un cerveau, sans vraies alvéoles."],
+   ["L’intérieur","Coupé en long, il est cloisonné en plusieurs cavités."]],
+  effets:"Troubles digestifs puis atteinte du foie et du système nerveux. Sa vente est interdite en France."},
+ {id:"inocybe-patouillard",nom:"Inocybe de Patouillard",latin:"Inocybe erubescens",comest:"mortel",mois:[5,6,7],forme:"lames",col:"#D9B2A0",
+  habitat:"Sous les haies et les feuillus, sur calcaire, au printemps et au début de l’été : mêmes lieux que le tricholome de la Saint-Georges.",
+  steps:[["Le chapeau","Blanchâtre à ocre, conique, fibreux, fendillé au bord, qui rougit en vieillissant."],
+   ["Le dessous","Lames grises puis brunes."]],
+  effets:"Sueurs, salivation, troubles cardiaques, de 15 minutes à 2 heures après le repas."},
+ {id:"entolome-livide",nom:"Entolome livide",latin:"Entoloma sinuatum",comest:"toxique",mois:[8,9,10],forme:"lames",col:"#9A9584",
+  habitat:"Sous les chênes et les hêtres, dans les lisières, sur sol argileux ou calcaire.",
+  steps:[["Le chapeau","Gris plombé à crème, charnu."],
+   ["Le dessous","Lames jaunâtres puis rose saumon, échancrées près du pied."],
+   ["L’odeur","Farine."]],
+  effets:"Gastro-entérite sévère, parfois avec atteinte du foie."},
+ {id:"clitocybes-blancs",nom:"Clitocybes blancs",latin:"Clitocybe rivulosa, C. dealbata",comest:"toxique",mois:[8,9,10,11],forme:"lames",col:"#E8E4DA",
+  habitat:"Pelouses, prés et bords de chemins, parfois dans les mêmes ronds que le faux mousseron.",
+  steps:[["Le chapeau","Blanc, comme poudré, petit."],
+   ["Le dessous","Lames serrées qui descendent sur le pied."]],
+  effets:"Sueurs, salivation, troubles visuels et cardiaques, de 15 minutes à 2 heures après le repas."},
+ {id:"bolet-satan",nom:"Bolet de Satan",latin:"Rubroboletus satanas",comest:"toxique",mois:[6,7,8,9],forme:"bolet",col:"#CFC8B8",
+  habitat:"Sous les chênes et les hêtres, sur sol calcaire, en terrain chaud.",
+  steps:[["Le chapeau","Blanchâtre à gris, massif."],
+   ["Le dessous","Pores rouges."],
+   ["Le pied","Ventru, jaune et rouge, couvert d’un réseau rouge."]],
+  effets:"Vomissements et diarrhées sévères."}
+];
+
+const SAFETY = {
+  regles:["Ne cueillir que les espèces que l’on connaît parfaitement. Au moindre doute, faire vérifier toute la récolte par un pharmacien ou une société mycologique.",
+   "Cueillir le champignon entier, pied compris, pour garder tous les caractères utiles à l’identification.",
+   "Séparer les espèces dans le panier, et jamais de sac plastique.",
+   "Photographier la récolte avant de la cuisiner : la photo aide les médecins en cas de problème.",
+   "Bien cuire, manger en quantité raisonnable, jamais aux jeunes enfants.",
+   "Ne pas se fier à une application d’identification par photo."],
+  urgence:"En cas de malaise après un repas de champignons, même plusieurs heures ou jours après : appeler le 15 (ou le 112), ou un centre antipoison. Garder les restes et les photos de la cueillette.",
+  sources:"Fiches rédigées d’après les guides de référence (Courtecuisse et Duhem, Guide des champignons de France et d’Europe ; Eyssartier et Roux, Le guide des champignons) et les recommandations de l’ANSES sur la cueillette. Elles aident à reconnaître, elles ne remplacent pas une vérification par un spécialiste."
+};
+
 
 
 /* ============================================================
@@ -1036,7 +1551,7 @@ async function findStationFiles(depts){
   return Object.values(found).map(f=>f.url);
 }
 async function loadStationRain(){
-  const urls = await findStationFiles(Z.depts);
+  const urls = await findStationFiles([...new Set((Z.depts||[]).map(d=>/^2[AB]$/.test(d)?"20":d))]);
   if(!urls.length) throw new Error("aucun fichier de stations trouvé");
   const first = W.days[0].replace(/-/g,""), last = W.days[W.todayIdx].replace(/-/g,"");
   const kx = Math.cos(CENTER[0]*Math.PI/180), maxD = (ZONE_KM+25)/111;
@@ -1369,17 +1884,25 @@ let DEPTS = [], REGION_BOUNDS = [[41.3,-5.2],[51.1,9.6]];
 async function loadDepts(){
   if(DEPTS.length) return DEPTS;
   let js=null;
-  try{ js = await fetchJSON("departements.json", {}, 30000); }catch(e){ console.warn("Départements", e); }
+  for(let k=0;k<2 && !js;k++){ try{ js = await fetchJSON("departements.json", {}, 30000); }catch(e){ console.warn("Départements", e); } }
+  if(!js) setTimeout(()=>banner.show("Le fichier des départements n’a pas pu être chargé (departements.json manquant sur le site ?). Les scans restent possibles partout en France."), 1500);
   DEPTS = (js||[]).map(d=>({...d, bbox:geomBBox(d.geom)}));
   if(DEPTS.length){ let s_=90,w_=180,n_=-90,e_=-180; for(const d of DEPTS){ s_=Math.min(s_,d.bbox[1]); n_=Math.max(n_,d.bbox[3]); w_=Math.min(w_,d.bbox[0]); e_=Math.max(e_,d.bbox[2]); } REGION_BOUNDS=[[s_,w_],[n_,e_]]; }
   return DEPTS;
 }
 function deptAt(lat, lon){ for(const d of DEPTS){ if(lon<d.bbox[0]||lon>d.bbox[2]||lat<d.bbox[1]||lat>d.bbox[3]) continue; if(geomContains(d.geom, lon, lat)) return d; } return null; }
+/* Les contours sont simplifiés : un point du littoral ou d’une frontière peut tomber juste à côté. On accepte alors le département le plus proche à moins de 5 km. */
+function deptNear(lat, lon){
+  const d0 = deptAt(lat, lon); if(d0) return d0;
+  for(const [dl,dg] of [[0.02,0],[-0.02,0],[0,0.03],[0,-0.03],[0.045,0],[-0.045,0],[0,0.06],[0,-0.06],[0.03,0.04],[-0.03,-0.04],[0.03,-0.04],[-0.03,0.04]]){ const d=deptAt(lat+dl, lon+dg); if(d) return d; }
+  return null;
+}
+const inMetro = (lat, lon) => lat>41.2 && lat<51.2 && lon>-5.3 && lon<9.7;
 function deptsNear(b){ return DEPTS.filter(d=>!(d.bbox[2]<b.w||d.bbox[0]>b.e||d.bbox[3]<b.s||d.bbox[1]>b.n)).map(d=>d.code); }
 /* Climat méditerranéen : basse altitude des départements méditerranéens ; ailleurs, espèces des forêts tempérées et de montagne */
 function isMedDefault(lat, lon, alt){
   // Départements du pourtour méditerranéen et de Corse ; la règle d’altitude départage plaines et reliefs
-  const d=deptAt(lat,lon), medDept = !!d && ["66","11","34","30","13","83","06","84","04","2A","2B"].includes(d.code);
+  const d=deptNear(lat,lon), medDept = !!d && ["66","11","34","30","13","83","06","84","04","2A","2B"].includes(d.code);
   const corse = !!d && (d.code==="2A" || d.code==="2B");
   return alt!=null ? (medDept && alt < (corse ? 600 : 450)) : (medDept && (corse || lat<44.2));
 }
@@ -2011,7 +2534,7 @@ async function geocode(q){
   const qk = normKey(q).replace(/ /g,"");
   for(const f of feats){
     const [lon,lat] = f.geometry && f.geometry.coordinates || []; if(lat==null || isNaN(lat)) continue;
-    const d = deptAt(lat, lon); if(!d) continue;
+    const d = deptNear(lat, lon); if(!d) continue;
     const pr=f.properties||{}, nm = String(Array.isArray(pr.name) ? pr.name[0] : (pr.name || pr.toponym || pr.label || pr.city || "")).split(",")[0].trim();
     const key = normKey(nm)+"|"+lat.toFixed(2)+"|"+lon.toFixed(2); if(!nm || seen.has(key)) continue; seen.add(key);
     const muni = pr.type==="municipality";
@@ -2023,7 +2546,9 @@ async function geocode(q){
     out.push({nm, lat, lon, ctx:[kind, city && city!==nm ? city : "", d.nom].filter(Boolean).join(", "), muni, sc});
   }
   out.sort((a,b)=>a.sc-b.sc);
-  return out.slice(0,10);
+  const seenK=new Set(), uniq=[];
+  for(const o of out){ const k=normKey(o.nm)+"|"+o.lat.toFixed(2)+"|"+o.lon.toFixed(2); if(seenK.has(k)) continue; seenK.add(k); uniq.push(o); }
+  return uniq.slice(0,10);
 }
 $("#sb-input").addEventListener("input", e=>{
   clearTimeout(sbTimer); const q=e.target.value.trim(); const ul=$("#sb-results");
@@ -2043,7 +2568,7 @@ $("#sb-results").addEventListener("click", e=>{
   map.setView([r.lat, r.lon], 13);
   if(sbMarker) map.removeLayer(sbMarker);
   sbMarker = L.circleMarker([r.lat,r.lon],{radius:7,color:"#2B2620",weight:3,fillColor:"#E2AF4F",fillOpacity:1}).addTo(map);
-  setTimeout(()=>L.popup({autoPanPaddingTopLeft:[14,POP_TOP()], autoPanPaddingBottomRight:[14, (sheetState==="closed"?0:SHEET.peek)+20]}).setLatLng([r.lat,r.lon])
+  setTimeout(()=>L.popup({autoPanPaddingTopLeft:[14,POP_TOP()], autoPanPaddingBottomRight:[14, botInset()+20]}).setLatLng([r.lat,r.lon])
     .setContent(`<div class="pop"><h3>${esc(r.nm)}</h3><p class="why">${esc(r.ctx)}</p><button type="button" class="scanhere">Scanner ici</button></div>`).openOn(map), 350);
 });
 function startScan(){
@@ -2054,20 +2579,7 @@ function startScan(){
 }
 document.addEventListener("click", e=>{ if(e.target.closest && e.target.closest(".scanhere")){ map.closePopup(); if(sbMarker){ map.removeLayer(sbMarker); sbMarker=null; } startScan(); } });
 /* Ouvrir la fiche d’une espèce depuis la fenêtre de la carte */
-function openSpeciesCard(id){
-  map.closePopup();
-  setTab("carte");
-  if(window.matchMedia("(max-width:760px)").matches) setSheet("full");
-  setTimeout(()=>{
-    const row = document.querySelector(`#species .sp[data-id="${id}"]`); if(!row) return;
-    const det = row.querySelector(".details"), btn = row.querySelector(".more");
-    if(det && !det.classList.contains("open") && btn) btn.click();
-    const pn=document.getElementById("panel");
-    if(window.matchMedia("(max-width:760px)").matches) pn.scrollTop += row.getBoundingClientRect().top - pn.getBoundingClientRect().top - 56;
-    else row.scrollIntoView({block:"start", behavior:"smooth"});
-    row.style.transition="background .6s"; row.style.background="var(--moss-soft)"; setTimeout(()=>row.style.background="", 1400);
-  }, 320);
-}
+function openSpeciesCard(id){ openGuide(id); }
 document.addEventListener("click", e=>{ const l=e.target.closest && e.target.closest(".splink"); if(l){ e.preventDefault(); openSpeciesCard(l.dataset.sp); } });
 
 /* Pré-sélection régionale : les espèces de la liste les plus observées autour de la zone (données GBIF, observations naturalistes) */
@@ -2167,16 +2679,21 @@ async function loadLegacy(lat, lon){
   try{ const c=JSON.parse(localStorage.getItem(ck)); if(c && Date.now()-c.t < 7*864e5) return c.v; }catch(e){}
   const end = new Date(Date.now()-6*864e5).toISOString().slice(0,10);
   const js = await fetchJSON(`https://archive-api.open-meteo.com/v1/archive?latitude=${lat.toFixed(3)}&longitude=${lon.toFixed(3)}&start_date=1991-01-01&end_date=${end}&daily=precipitation_sum,et0_fao_evapotranspiration&timezone=UTC`, {}, 45000);
-  const d = js.daily, n = d.time.length, B = new Float64Array(n+1);
+  const d = js.daily; let n = d.time.length;
+  while(n>0 && (d.precipitation_sum[n-1]==null || d.et0_fao_evapotranspiration[n-1]==null)) n--; // derniers jours pas encore disponibles
+  if(n < 800) throw new Error("historique trop court");
+  const B = new Float64Array(n+1);
   for(let i=0;i<n;i++) B[i+1] = B[i] + ((d.precipitation_sum[i]||0) - (d.et0_fao_evapotranspiration[i]||0));
   const win = (endIdx, len) => endIdx-len+1 < 0 ? null : B[endIdx+1]-B[endIdx-len+1];
   const stat = len => {
     const cur = win(n-1, len), md = d.time[n-1].slice(5), ref=[];
     for(let y=1992; y<=2020; y++){ const k = d.time.indexOf(`${y}-${md==="02-29"?"02-28":md}`); if(k>=0){ const v=win(k,len); if(v!=null) ref.push(v); } }
+    if(ref.length < 15 || cur==null) return null;
     const m = ref.reduce((a,b)=>a+b,0)/ref.length, sd = Math.sqrt(ref.reduce((a,b)=>a+(b-m)**2,0)/ref.length) || 1;
     return {cur, normal:m, anom:cur-m, z:(cur-m)/sd};
   };
   const v = {y1:stat(365), y2:stat(730)};
+  if(!v.y1) throw new Error("normale climatique introuvable");
   try{ localStorage.setItem(ck, JSON.stringify({t:Date.now(), v})); }catch(e){}
   return v;
 }
@@ -2298,7 +2815,8 @@ async function lossMask(b, cols, rows, y0, y1){
   const z=12, X0=Math.floor(lon2px(b.w,z)/256), X1=Math.floor(lon2px(b.e,z)/256), Y0=Math.floor(lat2px(b.n,z)/256), Y1=Math.floor(lat2px(b.s,z)/256);
   const tiles={};
   await Promise.all([...Array((X1-X0+1)*(Y1-Y0+1)).keys()].map(async k=>{ const x=X0+k%(X1-X0+1), y=Y0+Math.floor(k/(X1-X0+1));
-    tiles[x+"/"+y] = await fetchImageData(`https://tiles.globalforestwatch.org/umd_tree_cover_loss/latest/dynamic/${z}/${x}/${y}.png?start_year=${y0}&end_year=${y1}&tcd=30`,256,256); }));
+    try{ tiles[x+"/"+y] = await fetchImageData(`https://tiles.globalforestwatch.org/umd_tree_cover_loss/latest/dynamic/${z}/${x}/${y}.png?start_year=${y0}&end_year=${y1}&tcd=30`,256,256); }catch(e){} }));
+  if(!Object.keys(tiles).length) throw new Error("tuiles de pertes de couvert indisponibles");
   const out=new Float32Array(cols*rows), n=4;
   for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){ let hit=0;
     for(let a=0;a<n;a++) for(let d=0;d<n;d++){ const lat=b.s+(r+(a+0.5)/n)*(b.n-b.s)/rows, lon=b.w+(c+(d+0.5)/n)*(b.e-b.w)/cols;
@@ -2407,7 +2925,7 @@ async function analyze(origin){
   const wKm=(b.e-b.w)*111.32*kx, hKm=(b.n-b.s)*110.57;
   if(wKm*hKm > MAX_AREA_KM2){ const m=`La zone visible fait environ ${fmt(wKm*hKm)} km². Zoomez jusqu’à ${MAX_AREA_KM2} km² au plus, puis relancez le scan.`; setStatus(m, true); banner.show(m); return; }
   const cLat=(b.s+b.n)/2, cLon=(b.w+b.e)/2;
-  if(!deptAt(cLat,cLon)){ const m="Cette zone est en dehors de la France métropolitaine couverte par la carte."; setStatus(m,true); banner.show(m); return; }
+  if(DEPTS.length ? !deptNear(cLat,cLon) : !inMetro(cLat,cLon)){ const m="Cette zone est en dehors de la France métropolitaine couverte par la carte."; setStatus(m,true); banner.show(m); return; }
   if(banner && banner._d) banner._d.hidden = true;
   const amb=document.querySelector(".scanbtn"); if(amb) amb.classList.add("busy");
   if(S.scanning){ setStatus("Le scan du secteur est en cours : attendez la fin ou arrêtez-le avant d’analyser une zone.", true); return; }
@@ -2507,11 +3025,13 @@ async function analyze(origin){
     S.grid={cells,rows,cols,b,cellM};
     try{ localStorage.setItem("lastScanCenter", JSON.stringify({lat:cLat, lon:cLon})); }catch(e){}
     if(!reuse) saveTerrain(S.grid).catch(()=>{});
-    loadObservations(b).then(n=>{ S.obsOk=true; if(n) bgTask(`${n} observation${n>1?"s":""} naturaliste${n>1?"s":""} sur la carte`); setTimeout(()=>bgTask(null),3500); }).catch(e=>{ console.warn("Observations GBIF", e); S.obsOk=false; });
+    loadObservations(b).then(n=>{ S.obsOk=true; if(n) bgTask(`${n} observation${n>1?"s":""} sur la carte`); setTimeout(()=>bgTask(null),3500); }).catch(e=>{ console.warn("Observations GBIF", e); S.obsOk=false; });
     drawForest(); render(); setProgress(1,"Terminé"); setTimeout(()=>setProgress(null), 600);
 
     const nf=cells.filter(x=>x.forest).length;
-    setStatus(`${fmt(cells.length)} mailles de ${fmt(cellM)} m analysées${S.altiSrc && S.altiSrc!=="IGN" ? ` (altitudes : ${S.altiSrc})` : ""}, dont ${fmt(100*nf/cells.length)} % en forêt. ${S.soilOk?"pH et sable : SoilGrids.":"SoilGrids n’a pas répondu : pH estimé d’après les arbres."} ${S.geoOk==="50k"?"Géologie : BRGM 1/50 000.":S.geoOk==="1M"?"Géologie : carte simplifiée au millionième seulement.":"Géologie détaillée indisponible."} ${S.lidarOk?"Hauteur des arbres : LiDAR HD.":"LiDAR HD indisponible ici."} ${S.legacy?`Climat des 12 derniers mois : ${legacyText().split(" :")[0]}. `:""}${S.nFire?`${fmt(100*S.nFire/cells.length)} % de la zone a brûlé ces dernières années. `:""}${S.nLoss?`${fmt(100*S.nLoss/cells.length)} % coupé ou dépéri récemment. `:""}Zones bâties exclues : ${fmt(100*cells.filter(x=>x.urban).length/cells.length)} % (BD TOPO ${S.urbanOk?"✓":"✗"}, Corine ${S.clcOk?"✓":"✗"}, toits ${S.batiOk?"✓":"✗"} ; historique climatique ${S.legacyOk?"✓":"✗"}, incendies ${S.fireOk?"✓":"✗"}, cours d’eau ${S.waterOk?"✓":"✗"}, coupes ${S.lossOk?"✓":"✗"}). Cliquez sur la carte pour le détail.`);
+    setStatus(`${fmt(cells.length)} mailles de ${fmt(cellM)} m analysées${S.altiSrc && S.altiSrc!=="IGN" ? ` (altitudes : ${S.altiSrc})` : ""}, dont ${fmt(100*nf/cells.length)} % en forêt. ${S.soilOk?"pH et sable : SoilGrids.":"SoilGrids n’a pas répondu : pH estimé d’après les arbres."} ${S.geoOk==="50k"?"Géologie : BRGM 1/50 000.":S.geoOk==="1M"?"Géologie : carte simplifiée au millionième seulement.":"Géologie détaillée indisponible."} ${S.lidarOk?"Hauteur des arbres : LiDAR HD.":"LiDAR HD indisponible ici."} ${legacyText()?`Climat des 12 derniers mois : ${legacyText().split(" :")[0]}. `:""}${S.nFire?`${fmt(100*S.nFire/cells.length)} % de la zone a brûlé ces dernières années. `:""}${S.nLoss?`${fmt(100*S.nLoss/cells.length)} % coupé ou dépéri récemment. `:""}Zones bâties exclues : ${fmt(100*cells.filter(x=>x.urban).length/cells.length)} % (BD TOPO ${S.urbanOk?"✓":"✗"}, Corine ${S.clcOk?"✓":"✗"}, toits ${S.batiOk?"✓":"✗"} ; historique climatique ${S.legacyOk?"✓":"✗"}, incendies ${S.fireOk?"✓":"✗"}, cours d’eau ${S.waterOk?"✓":"✗"}, coupes ${S.lossOk?"✓":"✗"}). Cliquez sur la carte pour le détail.`);
+    { const when=new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}); $("#zonesub").textContent=`Scannée à ${when} · ${fmt(cells.length)} mailles de ${fmt(cellM)} m`; $("#zname").textContent = Z && Z.court || "Zone scannée";
+      placeName(cLat,cLon).then(n=>{ if(n) $("#zname").textContent = n.split(",").pop().trim() || n; }).catch(()=>{}); updateSummary(); }
   }catch(e){
     console.error(e);
     setStatus("L’analyse a échoué : "+e.message+". Vérifiez la connexion et relancez ; si le problème persiste, essayez un autre navigateur.", true);
@@ -2683,7 +3203,7 @@ map.on("click", e=>{
   if(window.matchMedia("(max-width:760px)").matches){
     // Fenêtre sur la carte, tenue à l’écart des boutons du haut (zoom, couches) et du volet du bas
     if(sheetState==="half" || sheetState==="full") setSheet("peek");
-    const sheetH = sheetState==="closed" ? 0 : SHEET.peek, top = POP_TOP(), bottom = sheetH + 20;
+    const sheetH = botInset(), top = POP_TOP(), bottom = sheetH + 20;
     L.popup({maxWidth:Math.min(300, window.innerWidth-40), minWidth:200, maxHeight:Math.max(180, window.innerHeight - top - bottom - 40),
       autoPanPaddingTopLeft:[14, top], autoPanPaddingBottomRight:[14, bottom], className:"pop-mobile"})
       .setLatLng(e.latlng).setContent(html).openOn(map);
@@ -2712,15 +3232,8 @@ function buildSpecies(){
       <input type="checkbox" name="sp" id="sp-${sp.id}" value="${sp.id}" ${S.species.includes(sp.id)?"checked":""}>
       <label class="spname" for="sp-${sp.id}"><span class="${inS?"":"off"}">${esc(sp.nom)}</span>${inS?'<span class="season" title="de saison"></span>':""}<em>${esc(sp.latin)}</em></label>
       <div class="rank"><div class="bar"><span style="width:0"></span></div><small></small></div>
-      <button class="more" aria-expanded="false">Fiche</button>
-      <div class="details">
-        <figure class="photo" data-latin="${esc(sp.latin)}" data-nom="${esc(sp.nom)}"></figure>
-        <p><span class="tag">${esc(sp.comest)}</span><span class="tag">sol ${esc(sp.sol)}</span><span class="tag">${fmt(sp.alt[0])} à ${fmt(sp.alt[1])} m</span></p>
-        <p>${esc(sp.habitat)}</p>
-        <p>Période : ${sp.mois.map(x=>MOIS[x-1]).join(", ")}. Pluie visée sur 26 jours : ${sp.pluie[0]} à ${sp.pluie[1]} mm. Température moyenne sur 20 jours : ${sp.temp[0]} à ${sp.temp[1]} °C ; la chaleur freine au-delà de ${sp.tmax} °C de maximales.</p>
-        <p class="warn">Confusions : ${esc(sp.confusion)}</p>
-        ${sp.src?`<p class="src">Sources : ${sp.src}</p>`:""}
-      </div></div>`;
+      <button class="more" type="button" data-guide="${sp.id}">Fiche ›</button>
+      </div>`;
     box.appendChild(d);
   }
   box.querySelectorAll('input[name="sp"]').forEach(r=>r.addEventListener("change",e=>{
@@ -2734,11 +3247,6 @@ function buildSpecies(){
     S.allMode = !S.species.length; saveMySpecies();
     const h=$("#sp-count"); if(h) h.textContent = countLabel();
     render();
-  }));
-  box.querySelectorAll(".more").forEach(btn=>btn.addEventListener("click",()=>{
-    const det=btn.nextElementSibling, open=det.classList.toggle("open");
-    btn.setAttribute("aria-expanded",open); btn.textContent=open?"Fermer":"Fiche";
-    if(open) loadPhoto(det.querySelector(".photo"));
   }));
 }
 const photoCache = {};
@@ -2770,6 +3278,7 @@ function updateSpeciesBars(per,total){
     const share = total ? p.good/total : 0;
     keys[id] = {k: 0.7*top + 0.3*Math.min(1, share*3), top, share, max:p.max};
   }
+  S.keys = keys; setTimeout(updateSummary, 0);
   const box=$("#species"), rows=[...box.querySelectorAll(".sp[data-id]")];
   rows.sort((a,b)=>(S.species.includes(b.dataset.id)-S.species.includes(a.dataset.id)) || (S.species.includes(a.dataset.id) ? keys[b.dataset.id].k-keys[a.dataset.id].k : prio(a.dataset.id)-prio(b.dataset.id)));
   rows.forEach(d=>{
@@ -2818,7 +3327,7 @@ function drawCharts(lat, lon, alt){
     const smv=sm.filter(v=>!isNaN(v));
     if(smv.length){ const lo=Math.min(...smv)-0.02, hi=Math.max(...smv)+0.02; drawLine(ctx,sm,i=>i*bw+bw/2,v=>bot-(v-lo)/(hi-lo)*h,col("--water")); }
     ctx.strokeStyle=col("--ink"); ctx.lineWidth=1; ctx.setLineDash([3,3]); const xs=S.day*bw+bw/2; ctx.beginPath(); ctx.moveTo(xs,2); ctx.lineTo(xs,bot); ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle=col("--muted"); ctx.font="12px 'Alegreya Sans', sans-serif"; ctx.fillText(`${fmt(maxR)} mm`,2,11);
+    ctx.fillStyle=col("--muted"); ctx.font="12px 'HK Grotesk', sans-serif"; ctx.fillText(`${fmt(maxR)} mm`,2,11);
     if(smv.length){ const t=`sol ${fmt(Math.min(...smv)*100)} à ${fmt(Math.max(...smv)*100)} %`; ctx.fillText(t,Wd-ctx.measureText(t).width-2,11); }
     const d0=W.days[0].slice(8,10)+"/"+W.days[0].slice(5,7), d1=W.days[n-1].slice(8,10)+"/"+W.days[n-1].slice(5,7);
     ctx.fillText(d0,2,Ht-3); ctx.fillText(d1,Wd-ctx.measureText(d1).width-2,Ht-3); }
@@ -2830,7 +3339,7 @@ function drawCharts(lat, lon, alt){
     drawLine(ctx,rh,i=>i*bw+bw/2,v=>bot-v/100*h,col("--muted"),1.5);
     drawLine(ctx,tm,i=>i*bw+bw/2,v=>bot-(v-lo)/(hi-lo)*h,col("--moss"));
     ctx.strokeStyle=col("--ink"); ctx.lineWidth=1; ctx.setLineDash([3,3]); const xs=S.day*bw+bw/2; ctx.beginPath(); ctx.moveTo(xs,2); ctx.lineTo(xs,bot); ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle=col("--muted"); ctx.font="12px 'Alegreya Sans', sans-serif"; const t=`${fmt(lo+1)} à ${fmt(hi-1)} °C`; ctx.fillText(t,2,10); }
+    ctx.fillStyle=col("--muted"); ctx.font="12px 'HK Grotesk', sans-serif"; const t=`${fmt(lo+1)} à ${fmt(hi-1)} °C`; ctx.fillText(t,2,10); }
   $("#chartnote").textContent = alt!=null && (lat!==CENTER[0]||lon!==CENTER[1])
     ? `Au point cliqué, ramené à ${fmt(alt)} m d’altitude. La bande verte marque les 20 jours pris pour la température.`
     : `${Z.lieu}. Cliquez sur une maille analysée pour voir sa météo. La bande verte marque les 20 jours pris pour la température.`;
@@ -2853,6 +3362,7 @@ function renderSoon(){ clearTimeout(renderTimer); renderTimer=setTimeout(render,
 function onDayChange(){
   S.day=Number($("#day").value); $("#daylabel").innerHTML=dayLabel(S.day); syncMapDay();
   if(chartTarget) drawCharts(chartTarget.lat,chartTarget.lon,chartTarget.alt);
+  updateChips();
   const pm=S.month; S.month=monthOfDay(); if(pm!==S.month) buildSpecies();
   renderSoon();
 }
@@ -2872,35 +3382,20 @@ const WMO = {0:"Ciel dégagé",1:"Plutôt dégagé",2:"Partiellement nuageux",3:
   66:"Pluie verglaçante",67:"Pluie verglaçante forte",71:"Neige faible",73:"Neige",75:"Neige forte",77:"Grains de neige",80:"Averses faibles",81:"Averses",
   82:"Averses violentes",85:"Averses de neige",86:"Fortes averses de neige",95:"Orage",96:"Orage avec grêle",99:"Orage avec forte grêle"};
 let wxPoint = null, lastClickLL = null;
-function setTab(which){
-  for(const t of ["carte","meteo","carnet"]){ $("#tab-"+t).hidden = t!==which; $("#tb-"+t).setAttribute("aria-selected", t===which); }
-  setTimeout(refreshMap, 30);
-  if(which==="carnet") refreshRepList();
-  if(which==="meteo"){
-    const mode = document.querySelector('input[name="wxwhere"]:checked').value;
-    if(mode==="gps") useGPS(); else showPlaceWeather(lastClickLL ? [lastClickLL.lat,lastClickLL.lng] : CENTER);
-  }
-}
-$("#tb-carte").addEventListener("click", ()=>setTab("carte"));
-$("#tb-meteo").addEventListener("click", ()=>setTab("meteo"));
-$("#tb-carnet").addEventListener("click", ()=>setTab("carnet"));
-document.querySelectorAll('input[name="wxwhere"]').forEach(r=>r.addEventListener("change",e=>{
-  if(e.target.value==="gps") useGPS(); else showPlaceWeather(lastClickLL ? [lastClickLL.lat,lastClickLL.lng] : CENTER);
-}));
-map.on("click", e=>{ lastClickLL=e.latlng; if(!$("#tab-meteo").hidden){ document.querySelector('input[value="map"]').checked=true; showPlaceWeather([e.latlng.lat,e.latlng.lng]); } });
+map.on("click", e=>{ lastClickLL=e.latlng; if(curTab==="meteo"){ wxMode="map"; showPlaceWeather([e.latlng.lat,e.latlng.lng]); } });
 function useGPS(){
-  if(!navigator.geolocation){ $("#wxwherenote").textContent="Ce navigateur ne donne pas accès à la position. Choisissez un point sur la carte."; return; }
-  $("#wxwherenote").textContent="Recherche de votre position…";
+  if(!navigator.geolocation){ $("#wxwherenote").textContent="Ce navigateur ne donne pas accès à la position. Touche un point de la carte."; return; }
+  $("#wxwherenote").textContent="Recherche de ta position…";
   navigator.geolocation.getCurrentPosition(
-    pos=>{ const ll=[pos.coords.latitude,pos.coords.longitude]; map.setView(ll, Math.max(map.getZoom(),13)); showPlaceWeather(ll, true); },
-    err=>{ $("#wxwherenote").textContent="Position indisponible ("+(err.code===1?"accès refusé":"signal introuvable")+"). Choisissez un point sur la carte."; },
+    pos=>{ const ll=[pos.coords.latitude,pos.coords.longitude]; lastGPS=ll; wxMode="gps"; showMe(pos); S.meAt=Date.now(); map.setView(ll, Math.max(map.getZoom(),13)); showPlaceWeather(ll, true); },
+    err=>{ $("#wxwherenote").textContent="Position indisponible ("+(err.code===1?"accès refusé":"signal introuvable")+"). Touche un point de la carte."; },
     {enableHighAccuracy:true, timeout:15000, maximumAge:120000});
 }
 let wxMarker=null;
 async function placeName(lat, lon){
   try{
     const js = await fetchJSON(`https://data.geopf.fr/geocodage/reverse?lon=${lon}&lat=${lat}&index=poi&limit=1`, {}, 10000);
-    const f = js.features && js.features[0]; if(f){ const p=f.properties||{}; const n = (p.toponym||p.name||p.label||""); const c = p.city||(Array.isArray(p.city)?p.city[0]:""); if(n||c) return [n, c].filter(Boolean).join(", "); }
+    const f = js.features && js.features[0]; if(f){ const p=f.properties||{}; const n = (p.toponym||p.name||p.label||""); const c = Array.isArray(p.city)?p.city[0]:(p.city||""); const nn=Array.isArray(n)?n[0]:n; if(nn||c) return [nn, c].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join(", "); }
   }catch(e){}
   try{
     const js = await fetchJSON(`https://data.geopf.fr/geocodage/reverse?lon=${lon}&lat=${lat}&index=address&limit=1`, {}, 10000);
@@ -2908,58 +3403,72 @@ async function placeName(lat, lon){
   }catch(e){}
   return null;
 }
+function wxIcon(code, size=24){
+  const c=Number(code), st=`width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" aria-hidden="true"`;
+  const cloud='<path d="M7 16a4 4 0 0 1 .5-8A5.5 5.5 0 0 1 18 9a3.5 3.5 0 0 1-.5 7z"/>';
+  if(c<=1) return `<svg ${st} stroke="var(--ochre)"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/></svg>`;
+  if(c===2) return `<svg ${st} stroke="var(--muted)"><path d="M8 4.5V3M3.5 8H2M4.8 4.8l1 1M12.5 5.5l1-1" stroke="var(--ochre)"/><circle cx="8" cy="8.5" r="3" stroke="var(--ochre)"/><path d="M9 19a3.5 3.5 0 0 1 .4-7A4.8 4.8 0 0 1 18.5 13a3 3 0 0 1-.5 6z"/></svg>`;
+  if(c===45||c===48) return `<svg ${st} stroke="var(--muted)"><path d="M4 9h16M3 13h18M5 17h14"/></svg>`;
+  if((c>=71&&c<=77)||c===85||c===86) return `<svg ${st} stroke="var(--water)">${cloud}<path d="M9 19.5h.01M13 21h.01M16 19h.01" stroke-width="3"/></svg>`;
+  if(c>=95) return `<svg ${st} stroke="var(--muted)">${cloud}<path d="M12 16l-2 4h3l-2 3" stroke="var(--ochre)"/></svg>`;
+  if(c>=51) return `<svg ${st} stroke="var(--water)">${cloud}<path d="M9 18l-1 3M13 18l-1 3M17 18l-1 3"/></svg>`;
+  return `<svg ${st} stroke="var(--muted)">${cloud}</svg>`;
+}
 async function showPlaceWeather(ll, fromGPS=false){
-  const [lat,lon]=ll; wxPoint=ll;
+  const [lat,lon]=ll; wxPoint=ll; wxStamp={k:ll.map(v=>v.toFixed(3)).join(","), t:Date.now()};
   if(wxMarker) map.removeLayer(wxMarker);
-  wxMarker = L.circleMarker(ll,{radius:7,color:"#B07A1E",weight:3,fillColor:"#fff",fillOpacity:1}).addTo(map);
-  $("#wxwherenote").textContent = fromGPS ? "Votre position." : "Point choisi sur la carte. Cliquez ailleurs pour changer.";
-  const box=$("#wxnow"); box.innerHTML='<p class="chartnote">Chargement…</p>';
-  const base = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&timezone=Europe%2FParis`
+  wxMarker = L.circleMarker(ll,{radius:7,color:"#B07A1E",weight:3,fillColor:"#fff",fillOpacity:1,interactive:false}).addTo(map);
+  $("#wxwherenote").textContent = fromGPS ? "Ta position." : "Point choisi sur la carte. Touche ailleurs pour changer.";
+  const box=$("#wxnow"); box.innerHTML='<p class="chartnote">Chargement de la météo…</p>';
+  const q = `latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&timezone=Europe%2FParis`;
+  const base = `https://api.open-meteo.com/v1/forecast?${q}`
     + `&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_gusts_10m`
     + `&hourly=temperature_2m,precipitation,relative_humidity_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum`
-    + `&past_days=3&forecast_days=3`;
-  let js=null, src="Météo-France AROME et ARPÈGE";
-  try{ js = await fetchJSON(base+"&models=meteofrance_seamless", {}, 30000); if(!js.current || js.current.temperature_2m==null || !js.hourly) throw new Error("vide"); }
-  catch(e){ try{ js = await fetchJSON(base, {}, 30000); src="modèle par défaut d’Open-Meteo"; } catch(e2){ box.innerHTML='<p class="chartnote" style="color:var(--danger)">La météo n’a pas pu être chargée. Vérifiez la connexion et réessayez.</p>'; return; } }
-  const [name, alt] = await Promise.all([placeName(lat,lon), altiBatch([[lat,lon]]).then(z=>{ const v=z&&z[0]; const n=(v&&typeof v==="object")?v.z:v; return (n==null||n<-1000)?null:n; }).catch(()=>null)]);
+    + `&past_days=27&forecast_days=6`;
+  // Heure par heure : AROME France HD (maille de 0,01°, environ 1 km), le modèle le plus fin de Météo-France
+  const hdP = fetchJSON(`https://api.open-meteo.com/v1/forecast?${q}&hourly=temperature_2m,precipitation,relative_humidity_2m,weather_code&models=meteofrance_arome_france_hd&forecast_days=2`, {}, 25000).catch(()=>null);
+  let js=null, src="Météo-France (AROME et ARPÈGE)";
+  try{ js = await fetchJSON(base+"&models=meteofrance_seamless", {}, 30000); if(!js.current || js.current.temperature_2m==null || !js.hourly || !js.daily) throw new Error("vide"); }
+  catch(e){ try{ js = await fetchJSON(base, {}, 30000); src="modèle par défaut d’Open-Meteo"; } catch(e2){ if(wxPoint===ll) box.innerHTML='<p class="chartnote" style="color:var(--danger)">La météo n’a pas pu être chargée. Vérifie la connexion et réessaie.</p>'; return; } }
+  const [name, alt, hd] = await Promise.all([placeName(lat,lon), altiBatch([[lat,lon]]).then(z=>{ const v=z&&z[0]; const n=(v&&typeof v==="object")?v.z:v; return (n==null||n<-1000)?null:n; }).catch(()=>null), hdP]);
   if(wxPoint!==ll) return;
   const c=js.current, h=js.hourly, d=js.daily;
-  if(!c || !h || !d){ box.innerHTML='<p class="chartnote" style="color:var(--danger)">Réponse météo incomplète pour ce point. Réessayez dans un instant.</p>'; return; }
-  const nowIdx = h.time.findIndex(t=>t>=c.time.slice(0,13)+":00");
-  const i0 = nowIdx<0?0:nowIdx;
+  if(!c || !h || !d){ box.innerHTML='<p class="chartnote" style="color:var(--danger)">Réponse météo incomplète pour ce point. Réessaie dans un instant.</p>'; return; }
+  $("#wx-place").textContent = name || `${fmt(lat,3)}, ${fmt(lon,3)}`;
+  const nowIdx = h.time.findIndex(t=>t>=c.time.slice(0,13)+":00"), i0 = nowIdx<0?0:nowIdx;
+  // Prochaines 24 heures, avec AROME HD quand il répond
+  const HD = {}; let nHD=0;
+  if(hd && hd.hourly && hd.hourly.time) hd.hourly.time.forEach((t,i)=>{ const T=hd.hourly.temperature_2m[i], P=hd.hourly.precipitation[i]; if(T!=null && P!=null) HD[t]={T,P,RH:hd.hourly.relative_humidity_2m?hd.hourly.relative_humidity_2m[i]:null,W:hd.hourly.weather_code?hd.hourly.weather_code[i]:null}; });
+  const hours=[]; for(let i=i0;i<Math.min(h.time.length,i0+24);i++){ const t=h.time[i], x=HD[t]; if(x) nHD++;
+    hours.push({t, T:x?x.T:h.temperature_2m[i], P:x?x.P:(h.precipitation[i]||0), RH:x&&x.RH!=null?x.RH:h.relative_humidity_2m[i], W:x&&x.W!=null?x.W:h.weather_code[i]}); }
   const sumRange=(a,b)=>h.precipitation.slice(Math.max(0,a),Math.max(0,b)).reduce((s,v)=>s+(v||0),0);
-  const r24=sumRange(i0-24,i0), r72=sumRange(i0-72,i0), next12=sumRange(i0,i0+12);
-  const firstRain = h.precipitation.slice(i0,i0+24).findIndex(v=>v>=0.2);
+  const r72=sumRange(i0-72,i0), next12=hours.slice(0,12).reduce((s,x)=>s+(x.P||0),0);
+  const firstRain = hours.findIndex(x=>x.P>=0.2);
+  // Pour les champignons : pluie des 26 jours passés, dernière pluie de 10 mm et plus, pluie annoncée
+  const di = Math.max(0, d.time.indexOf(c.time.slice(0,10)));
+  const p26 = d.precipitation_sum.slice(Math.max(0,di-26), di).reduce((s,v)=>s+(v||0),0);
+  let lastBig=null; for(let i=di;i>=0;i--){ if((d.precipitation_sum[i]||0)>=10){ lastBig=di-i; break; } }
+  const next3 = d.precipitation_sum.slice(di, di+3).reduce((s,v)=>s+(v||0),0);
   let verdict;
-  if(next12>=5) verdict=`Pluie attendue dans les 12 prochaines heures (${fmt(next12)} mm) : prévoyez l’imperméable, et sachez que les sols vont se recharger.`;
+  if(next12>=5) verdict=`Pluie attendue dans les 12 prochaines heures (${fmt(next12)} mm) : prévois l’imperméable ; les sols vont se recharger.`;
   else if(firstRain>=0) verdict=`Un peu de pluie possible ${firstRain===0?"dès maintenant":`d’ici ${firstRain} h`}.`;
   else verdict="Pas de pluie annoncée dans les 24 prochaines heures.";
-  if(r72>=20) verdict+=` Il est tombé ${fmt(r72)} mm ces 3 derniers jours : les champignons sortiront surtout dans 1 à 3 semaines si la douceur se maintient.`;
-  const dayNames = d.time.map(t=>new Date(t+"T12:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"numeric"}));
-  const di = d.time.indexOf(c.time.slice(0,10));
+  if(r72>=20) verdict+=` Il est tombé ${fmt(r72)} mm ces 3 derniers jours : les champignons sortent en général 1 à 3 semaines après une bonne pluie, si la douceur se maintient.`;
+  const dayName = (t,i)=> i===di ? "Aujourd’hui" : i===di+1 ? "Demain" : new Date(t+"T12:00:00").toLocaleDateString("fr-FR",{weekday:"long"}).replace(/^./,m=>m.toUpperCase());
+  const days = d.time.map((t,i)=>i<di?"":`<div class="d"><b>${esc(dayName(t,i))}</b>${wxIcon(d.weather_code[i])}<span class="mm${(d.precipitation_sum[i]||0)>=2?" wet":""}">${fmt(d.precipitation_sum[i],(d.precipitation_sum[i]||0)<10?1:0)} mm</span><span>${fmt(d.temperature_2m_min[i])}° / ${fmt(d.temperature_2m_max[i])}°</span></div>`).join("");
   box.innerHTML = `
-    <p class="place">${esc(name || `${fmt(lat,4)}, ${fmt(lon,4)}`)}<small>${alt!=null?`${fmt(alt)} m d’altitude. `:""}Source : ${src}.</small></p>
-    <div class="now"><span class="big">${fmt(c.temperature_2m)}°</span><span class="sky">${esc(WMO[c.weather_code]||"")}<br><small style="font-family:var(--sans);font-size:14px;color:var(--muted)">ressenti ${fmt(c.apparent_temperature)}°</small></span></div>
-    <dl class="wx">
-      <dt>Humidité de l’air</dt><dd>${fmt(c.relative_humidity_2m)} %</dd>
-      <dt>Vent</dt><dd>${fmt(c.wind_speed_10m)} km/h, rafales ${fmt(c.wind_gusts_10m)}</dd>
-      <dt>Pluie ces dernières 24 h</dt><dd>${fmt(r24,1)} mm</dd>
-      <dt>Pluie ces 3 derniers jours</dt><dd>${fmt(r72,1)} mm</dd>
-      <dt>Pluie prévue, 12 h</dt><dd>${fmt(next12,1)} mm</dd>
-    </dl>
-    <canvas class="chart" id="hourly" aria-label="Prochaines 24 heures"></canvas>
-    <div class="keys"><span><i style="background:var(--water)"></i>pluie par heure</span><span><i class="l" style="background:var(--moss)"></i>température</span></div>
-    <div class="days">${d.time.map((t,i)=>i<di?"":`<div><b>${i===di?"Aujourd’hui":esc(dayNames[i])}</b>${esc(WMO[d.weather_code[i]]||"")}<br>${fmt(d.temperature_2m_min[i])}° / ${fmt(d.temperature_2m_max[i])}°<br>${fmt(d.precipitation_sum[i],1)} mm</div>`).join("")}</div>
-    <p class="verdict">${esc(verdict)}</p>`;
-  // Graphique des 24 prochaines heures
-  const cv=$("#hourly"); const {ctx,Wd,Ht}=prepCanvas(cv);
-  const cs=getComputedStyle(document.documentElement), col=n=>cs.getPropertyValue(n).trim();
-  const P=h.precipitation.slice(i0,i0+24), T=h.temperature_2m.slice(i0,i0+24), n=P.length, bw=Wd/n, top=14, bot=Ht-16, hh=bot-top;
-  const maxP=Math.max(2,...P); P.forEach((v,i)=>{ const bh=(v||0)/maxP*hh; ctx.fillStyle=col("--water"); ctx.fillRect(i*bw+1,bot-bh,Math.max(1,bw-2),bh); });
-  const lo=Math.min(...T)-1, hi=Math.max(...T)+1; drawLine(ctx,T,i=>i*bw+bw/2,v=>bot-(v-lo)/(hi-lo)*hh,col("--moss"));
-  ctx.fillStyle=col("--muted"); ctx.font="12px 'Alegreya Sans', sans-serif";
-  ctx.fillText(`${fmt(maxP,1)} mm/h`,2,11); const tl=`${fmt(lo+1)} à ${fmt(hi-1)} °C`; ctx.fillText(tl,Wd-ctx.measureText(tl).width-2,11);
-  for(let i=0;i<n;i+=6){ ctx.fillText(h.time[i0+i].slice(11,13)+" h", i*bw+2, Ht-3); }
+    <div class="wx-now">${wxIcon(c.weather_code, 54)}<div><span class="big">${fmt(c.temperature_2m)}°</span><div class="sky">${esc(WMO[c.weather_code]||"")} · ressenti ${fmt(c.apparent_temperature)}° · vent ${fmt(c.wind_speed_10m)} km/h${c.wind_gusts_10m>=30?`, rafales ${fmt(c.wind_gusts_10m)}`:""} · humidité ${fmt(c.relative_humidity_2m)} %</div></div></div>
+    <div class="wx-myco"><h2>Pour les champignons</h2><div class="g3">
+      <div><b>${fmt(p26)} mm</b><small>pluie des 26 derniers jours</small></div>
+      <div><b>${lastBig==null?"> 4 sem.":lastBig===0?"aujourd’hui":`${lastBig} j`}</b><small>depuis une pluie de 10 mm et plus</small></div>
+      <div><b>${fmt(next3,next3<10?1:0)} mm</b><small>annoncés sur 3 jours</small></div></div></div>
+    <h2 class="cap">Heure par heure</h2>
+    <div class="hours">${hours.map(x=>`<div class="${x.P>=0.2?"rain":""}"><span>${x.t.slice(11,13)} h</span>${wxIcon(x.W,20)}<b>${fmt(x.T)}°</b><span class="mm">${x.P>=0.05?fmt(x.P,1):"0"} mm</span><span>${x.RH!=null?fmt(x.RH)+" %":""}</span></div>`).join("")}</div>
+    <p class="wx-src" style="margin:0">Température, pluie de l’heure et humidité de l’air. Fais glisser pour voir les 24 heures.</p>
+    <h2 class="cap">Prochains jours</h2>
+    <div class="dlist">${days}</div>
+    <p class="verdict">${esc(verdict)}</p>
+    <p class="wx-src">${alt!=null?`${fmt(alt)} m d’altitude. `:""}${nHD>=12 ? "Heure par heure : modèle AROME France HD de Météo-France (maille d’environ 1 km). " : ""}Jours et cumuls : ${esc(src)}, via Open-Meteo. Les cumuls passés sont modélisés ; sur la zone scannée, l’appli les recale sur les stations Météo-France.</p>`;
 }
 
 const DIAG = [
@@ -2989,7 +3498,7 @@ $("#diagbtn").addEventListener("click", runDiag);
 $("#heatop").addEventListener("input", e=>{ const v=Number(e.target.value); if(heatLayer) heatLayer.setOpacity(v); if(zoneHeat) zoneHeat.setOpacity(v*0.85); });
 
 async function setArea(lat, lon){
-  const d = deptAt(lat,lon); CENTER=[lat,lon]; CENTER_ALT=null; ZONE_KM=25;
+  const d = deptNear(lat,lon); CENTER=[lat,lon]; CENTER_ALT=null; ZONE_KM=25;
   const kx=Math.cos(lat*Math.PI/180), db={s:lat-ZONE_KM/110.57, n:lat+ZONE_KM/110.57, w:lon-ZONE_KM/(111.32*kx), e:lon+ZONE_KM/(111.32*kx)};
   Z = {id:"zone", court: d ? d.nom : "Zone", lieu:"Au centre de la zone étudiée", depts: deptsNear(db), center:CENTER, km:ZONE_KM};
   if(setSpeciesSet(isMedDefault(lat,lon))) buildSpecies();
@@ -2998,7 +3507,7 @@ async function setArea(lat, lon){
   try{
     await loadWeather();
     const sl=$("#day"); sl.min=25; sl.max=W.days.length-1; sl.value=W.todayIdx; sl.disabled=false;
-    S.day=W.todayIdx; S.month=monthOfDay(); $("#daylabel").innerHTML=dayLabel(S.day); syncMapDay(); buildSpecies(); drawCharts(CENTER[0],CENTER[1],CENTER_ALT);
+    S.day=W.todayIdx; S.month=monthOfDay(); $("#daylabel").innerHTML=dayLabel(S.day); syncMapDay(); buildSpecies(); drawCharts(CENTER[0],CENTER[1],CENTER_ALT); updateSummary();
     if(!W.hasSM) $("#chartnote").textContent += " L’humidité du sol n’est pas fournie ici : l’indice d’eau repose sur la pluie et le bilan hydrique.";
     loadStationRain().then(()=>{ if(S.grid) computeWaterBalance(S.grid.cells); if(chartTarget) drawCharts(chartTarget.lat,chartTarget.lon,chartTarget.alt); render(); })
       .catch(e=>{ console.warn("Stations Météo-France", e); if(chartTarget) drawCharts(chartTarget.lat,chartTarget.lon,chartTarget.alt); });
@@ -3023,13 +3532,13 @@ map.on("moveend", ()=>{ clearTimeout(viewTimer); viewTimer=setTimeout(()=>{ try{
    ============================================================ */
 const panel = $("#panel"), handle = $("#handle");
 const POP_TOP = () => window.matchMedia("(max-width:760px)").matches ? 196 : 84;
-const SHEET = { peek: 168, half: () => Math.round(window.innerHeight*0.5), full: () => Math.round(window.innerHeight*0.88) };
+const SHEET = { get peek(){ return Math.round(Math.min(270, Math.max(200, window.innerHeight*0.33))); }, half: () => Math.round(window.innerHeight*0.5), full: () => Math.round(window.innerHeight*0.88) };
 let sheetState = "peek";
 function setSheet(state, px){
   if(!window.matchMedia("(max-width:760px)").matches) return;
   sheetState = state;
   const h = px!=null ? px : state==="closed" ? 0 : state==="peek" ? SHEET.peek : state==="half" ? SHEET.half() : SHEET.full();
-  panel.classList.toggle("closed", state==="closed"); $("#sheetopen").hidden = state!=="closed";
+  panel.classList.toggle("closed", state==="closed");
   document.documentElement.style.setProperty("--sheet", h+"px");
   if(state==="peek") panel.scrollTop = 0;
 
@@ -3037,7 +3546,6 @@ function setSheet(state, px){
 }
 handle.addEventListener("click", ()=>setSheet(sheetState==="peek" ? "half" : "peek"));
 $("#sheetbtn").addEventListener("click", e=>{ e.stopPropagation(); setSheet("closed"); });
-$("#sheetopen").addEventListener("click", ()=>setSheet("peek"));
 handle.addEventListener("keydown", e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); handle.click(); } });
 (function(){ // glisser la poignée
   let y0=null, h0=0, moved=false;
@@ -3052,7 +3560,8 @@ handle.addEventListener("keydown", e=>{ if(e.key==="Enter"||e.key===" "){ e.prev
 window.addEventListener("resize", ()=>setSheet(sheetState));
 setSheet("peek");
 // Sur téléphone, un clic sur la carte replie le volet pour laisser voir la fenêtre d’information
-map.on("popupopen", ()=>{ if(sheetState==="half" || sheetState==="full") setSheet("peek"); });
+map.on("popupopen", ()=>{ document.body.classList.add("popup-open"); if(sheetState==="half" || sheetState==="full") setSheet("peek"); });
+map.on("popupclose", ()=>document.body.classList.remove("popup-open"));
 
 /* Position GPS */
 let meMarker=null, meCircle=null, watchId=null;
@@ -3131,7 +3640,7 @@ $("#savetrip").addEventListener("click", async ()=>{
   const btn=$("#savetrip"), note=$("#tripnote");
   const G = S.grid || S.zoneGrid;
   if(!G){ note.textContent="Lancez d’abord une analyse, ou attendez la fin du scan du secteur."; return; }
-  const gc = deptAt((G.b.s+G.b.n)/2, (G.b.w+G.b.e)/2);
+  const gc = deptNear((G.b.s+G.b.n)/2, (G.b.w+G.b.e)/2);
   const def = `${gc ? gc.nom : "Sortie"}, ${new Date().toLocaleDateString("fr-FR",{day:"numeric",month:"short"})}`;
   const name = prompt("Nom de la sortie :", def); if(name===null) return;
   btn.disabled=true;
@@ -3158,7 +3667,7 @@ async function openTrip(id){
   let t=null;
   try{ if(id!=null) t=await DB.get(id); else { const all=(await DB.all())||[]; all.sort((a,b)=>b.savedAt-a.savedAt); t=all[0]||null; } }catch(e){}
   if(!t){ $("#tripnote").textContent="Aucune sortie enregistrée."; return; }
-  { const tc=[(t.b.s+t.b.n)/2,(t.b.w+t.b.e)/2], dd=deptAt(tc[0],tc[1]); CENTER=tc; ZONE_KM=25; CENTER_ALT=null;
+  { const tc=[(t.b.s+t.b.n)/2,(t.b.w+t.b.e)/2], dd=deptNear(tc[0],tc[1]); CENTER=tc; ZONE_KM=25; CENTER_ALT=null;
     Z={id:"zone", court: dd?dd.nom:(t.zoneName||"Zone"), lieu:"Au centre de la sortie", depts:[], center:tc, km:25};
     setSpeciesSet(t.med!=null ? t.med : (t.zone==="pic-saint-loup" ? true : isMedDefault(tc[0],tc[1]))); }
   W.days=t.W.days; W.todayIdx=t.W.todayIdx; W.hasSM=t.W.hasSM; W.obsUntil=t.W.obsUntil; W.nStations=t.W.nStations; W.src=t.W.src;
@@ -3172,7 +3681,7 @@ async function openTrip(id){
   S.month=monthOfDay(); $("#daylabel").innerHTML=dayLabel(S.day); buildSpecies();
   map.fitBounds([[t.b.s,t.b.w],[t.b.n,t.b.e]]);
   render(); drawCharts(CENTER[0],CENTER[1],CENTER_ALT);
-  setSheet("peek");
+  setTab("carte");
   setStatus(`Sortie « ${t.name||""} » (${dateFr(t.savedAt)}). La météo est celle du jour de l’enregistrement.`);
 }
 migrateOldTrip().then(refreshTripList);
@@ -3347,7 +3856,7 @@ const LOUPE_SVG = '<svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="
 const AMA_PIN = AMANITA_SVG.replace('width="40" height="40"','width="26" height="26"');
 const repType = r => r.type || "ok"; // les anciens repères étaient des cueillettes
 function repContext(lat, lon){
-  const c = cellAt({lat,lng:lon}), g = gridOf({lat,lng:lon}), ctx = {zone: (deptAt(lat,lon)||{}).nom || ""};
+  const c = cellAt({lat,lng:lon}), g = gridOf({lat,lng:lon}), ctx = {zone: (deptNear(lat,lon)||{}).nom || ""};
   if(c){ ctx.alt = c.alt!=null ? Math.round(c.alt) : null; ctx.roche = c.geo ? c.geo.label : null; ctx.foret = essenceName(c.label);
     if(g){ const ta=treesAround(c,g); ctx.arbres = ta.list.map(([n,f])=>`${n} ${Math.round(f*100)} %`).join(", "); }
     try{ const st=currentStats(); if(st){ const w=cellWx(c,st); ctx.meteo = `pluie 26 j : ${fmt(w.P26)} mm, temp. 20 j : ${fmt(w.T20,1)} °C`; }
@@ -3421,7 +3930,7 @@ async function drawReps(){
     L.marker([r.lat,r.lon],{icon:L.divIcon({className:"rep-pin",html:todo?LOUPE_SVG:AMA_PIN,iconSize:[26,26],iconAnchor:[13,24]}),title:r.name, zIndexOffset: todo?0:100})
       .on("click", ev=>{ L.DomEvent.stopPropagation(ev);
         const img = r.photo ? `<img src="${URL.createObjectURL(r.photo)}" alt="" style="width:100%;max-height:140px;object-fit:cover;border-radius:8px;margin:4px 0">` : "";
-        L.popup({maxWidth:260, autoPanPaddingTopLeft:[14,POP_TOP()], autoPanPaddingBottomRight:[14, (sheetState==="closed"?0:SHEET.peek)+20]}).setLatLng([r.lat,r.lon]).setContent(
+        L.popup({maxWidth:260, autoPanPaddingTopLeft:[14,POP_TOP()], autoPanPaddingBottomRight:[14, botInset()+20]}).setLatLng([r.lat,r.lon]).setContent(
           `<div class="pop"><h3>${esc(r.name)}</h3><p class="why">${todo?"À chercher":"Vérifié"}${r.folder?` · ${esc(r.folder)}`:""} · ${new Date(r.verifiedAt||r.date).toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})}</p>${img}${repLine(r)?`<p>${esc(repLine(r))}</p>`:""}${r.note?`<p>${esc(r.note)}</p>`:""}
           <button type="button" class="addrep editrep" data-id="${r.id}">Modifier</button>${todo?` <button type="button" class="addrep markok" data-id="${r.id}">Vérifié ✓</button>`:""}</div>`).openOn(map); })
       .addTo(repLayer);
@@ -3472,6 +3981,278 @@ async function shareFile(name, type, text){
 }
 drawReps();
 
+/* ============================================================
+   Nouvelle interface : onglets Carte, Espèces, Carnet, Météo, Réglages
+   ============================================================ */
+const isMobile = () => window.matchMedia("(max-width:760px)").matches;
+const TABS = ["carte","especes","carnet","meteo","reglages"];
+const TAB_SHEET = {carte:"peek", especes:"full", carnet:"half", meteo:"half", reglages:"full"};
+let curTab = "carte";
+function tabH(){ const t=document.getElementById("tabbar"); return t && getComputedStyle(t).display!=="none" ? t.offsetHeight : 0; }
+function botInset(){ return isMobile() ? tabH() + (sheetState==="closed" ? 0 : SHEET.peek) : 0; }
+function setTab(which, opts={}){
+  if(!TABS.includes(which)) which="carte";
+  const same = which===curTab; curTab=which;
+  for(const t of TABS){ const v=document.getElementById("v-"+t); if(v) v.hidden = t!==which; }
+  document.querySelectorAll("#tabbar button").forEach(b=>{ if(b.dataset.tab===which) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
+  if(!same) panel.scrollTop = 0;
+  if(isMobile()){
+    if(opts.sheet) setSheet(opts.sheet);
+    else if(same && !opts.keep) setSheet(sheetState==="closed" ? TAB_SHEET[which] : "closed");
+    else if(!same) setSheet(TAB_SHEET[which]);
+  }
+  setTimeout(refreshMap, 30);
+  if(which==="carnet") refreshRepList();
+  if(which==="especes" && !opts.keepGuide && !same) closeGuide();
+  if(which==="especes") buildCatalog();
+  if(which==="meteo" && !same) showWxDefault();
+}
+document.getElementById("tabbar").addEventListener("click", e=>{ const b=e.target.closest("button[data-tab]"); if(b) setTab(b.dataset.tab); });
+
+/* ----- Résumé de la zone, en haut de l’onglet Carte ----- */
+function spById(id){ return SPECIES.find(s=>s.id===id) || ALLSP().find(s=>s.id===id); }
+function updateSummary(){
+  const box=$("#topsum"); if(!box) return;
+  const keys=S.keys;
+  if(!keys || !S.grid && !S.zoneGrid){
+    const names = S.species.map(id=>(spById(id)||{}).nom).filter(Boolean);
+    box.innerHTML = `<p class="hint">${names.length ? `Tu cherches : <b>${esc(names.join(", "))}</b>. ` : S.allMode ? "Tous les champignons sont suivis. " : ""}Zoome sur un coin (15 km de côté au plus), puis touche l’amanite « Scan ».</p>`;
+  } else {
+    const chosen = S.species.filter(id=>keys[id]);
+    const others = Object.keys(keys).filter(id=>!chosen.includes(id)).sort((a,b)=>keys[b].k-keys[a].k);
+    const ids = chosen.concat(others).slice(0, Math.max(3, chosen.length));
+    box.innerHTML = ids.map(id=>{ const sp=spById(id), q=keys[id], sel=chosen.includes(id);
+      return `<div class="row${sel?"":" oth"}"><b class="${sel?"":"oth"}" data-guide="${id}" role="button" tabindex="0">${esc(sp?sp.nom:id)}</b><div class="track"><span style="width:${Math.round(q.k*100)}%"></span></div><em>${q.k>=0.02?pct(q.k):"—"}</em></div>`; }).join("")
+      + (chosen.length ? "" : `<p class="hint" style="font-size:12.5px">Les plus probables ici. Choisis tes champignons avec « Mes champignons ».</p>`);
+  }
+  updateChips();
+}
+function updateChips(){
+  const el=$("#chips"); if(!el) return;
+  const st=currentStats(); if(!st || !CENTER){ el.innerHTML=""; return; }
+  let w=null; try{ w=blendWeather(nearestWeights(CENTER[0],CENTER[1]), st, CENTER_ALT); }catch(e){}
+  if(!w){ el.innerHTML=""; return; }
+  const out=[`<span>${fmt(w.P26raw)} mm en 26 j</span>`,
+    `<span>${w.lastBig==null?"Pas de pluie de 10 mm depuis 6 semaines":w.lastBig===0?"Bonne pluie aujourd’hui":`Bonne pluie il y a ${w.lastBig} j`}</span>`];
+  const lt=legacyText(); if(lt) out.push(`<span class="warm">12 mois : ${esc(lt.split(" :")[0])}</span>`);
+  el.innerHTML=out.join("");
+}
+document.addEventListener("click", e=>{ const g=e.target.closest && e.target.closest("[data-guide]"); if(g){ e.preventDefault(); openGuide(g.dataset.guide); } });
+document.addEventListener("keydown", e=>{ if((e.key==="Enter"||e.key===" ") && e.target.dataset && e.target.dataset.guide){ e.preventDefault(); openGuide(e.target.dataset.guide); } });
+
+/* ----- Catalogue des espèces ----- */
+const HOST_NOM = {hetre:"hêtre",chene:"chênes caducs",chene_vert:"chêne vert",chataignier:"châtaignier",bouleau:"bouleau",robinier:"robinier",peuplier:"peuplier",pin:"pins",pin_maritime:"pin maritime",sapin:"sapin",epicea:"épicéa",meleze:"mélèze",douglas:"douglas",cedre:"cèdre"};
+let _allsp=null;
+function ALLSP(){
+  if(_allsp) return _allsp;
+  const m=new Map(); for(const sp of SPECIES_AIG.concat(SPECIES_PSL)) if(!m.has(sp.id)) m.set(sp.id, sp);
+  _allsp=[...m.values()]; return _allsp;
+}
+function spFull(id){ const cur=SPECIES.find(s=>s.id===id); if(cur) return {...cur, ...(GUIDE[id]||{}), suivi:true}; const d=DANGER.find(s=>s.id===id); if(d) return {...d, danger:true}; const a=ALLSP().find(s=>s.id===id); return a ? {...a, ...(GUIDE[id]||{}), suivi:false} : null; }
+function shapeSVG(forme, col, size=40){
+  const s=size, dark="rgba(0,0,0,.28)";
+  const g = {
+    bolet:`<path d="M6 21 Q22 4 38 21 Q22 25 6 21 Z" fill="${col}"/><path d="M15 23 Q13 36 18 39 L26 39 Q31 36 29 23 Z" fill="#EADFC6" stroke="${dark}" stroke-width=".8"/>`,
+    amanite:`<path d="M7 18 Q22 4 37 18 Q22 21 7 18 Z" fill="${col}"/><path d="M19 20 L18 34 L26 34 L25 20 Z" fill="#F4F1E6" stroke="${dark}" stroke-width=".8"/><path d="M16 24 Q22 28 28 24 L27 26 Q22 29 17 26 Z" fill="#F4F1E6"/><path d="M14 33 Q22 41 30 33 Q28 38 22 39 Q16 38 14 33 Z" fill="#F4F1E6" stroke="${dark}" stroke-width=".8"/>`,
+    entonnoir:`<path d="M7 15 Q22 8 37 15 Q36 19 27 22 L25 36 Q22 39 19 36 L17 22 Q8 19 7 15 Z" fill="${col}" stroke="${dark}" stroke-width=".8"/>`,
+    trompette:`<path d="M10 9 Q22 13 34 9 Q30 20 25 25 L24 38 L20 38 L19 25 Q14 20 10 9 Z" fill="${col}"/>`,
+    lames:`<path d="M6 20 Q22 6 38 20 Q22 23 6 20 Z" fill="${col}"/><path d="M8 20 Q22 23 36 20" stroke="${dark}" stroke-width="1" fill="none"/><path d="M20 22 L19 38 L25 38 L24 22 Z" fill="#EFE8D8" stroke="${dark}" stroke-width=".8"/>`,
+    lepiote:`<path d="M5 19 Q22 5 39 19 Q22 21 5 19 Z" fill="#EADCC6"/><circle cx="22" cy="11" r="2.5" fill="${col}"/><circle cx="15" cy="15" r="1.4" fill="${col}"/><circle cx="29" cy="15" r="1.4" fill="${col}"/><path d="M21 20 L20 38 L24 38 L23 20 Z" fill="#E6D8C0"/><path d="M18 25 L26 25 L25 27 L19 27 Z" fill="#F7F2E8"/>`,
+    console:`<path d="M8 10 L8 36" stroke="#6B5A48" stroke-width="5"/><path d="M10 14 Q34 10 36 22 Q33 30 10 28 Z" fill="${col}"/>`,
+    morille:`<path d="M15 26 Q12 12 22 5 Q32 12 29 26 Z" fill="${col}"/><path d="M18 10 L26 10 M16 15 L28 15 M15 20 L29 20 M20 7 L18 25 M24 7 L26 25" stroke="${dark}" stroke-width="1.2"/><path d="M17 26 L18 38 L26 38 L27 26 Z" fill="#EFE6D2"/>`,
+    chou:`<g fill="${col}" stroke="${dark}" stroke-width=".9"><path d="M9 26 q-3 -8 5 -9 q1 -7 8 -5 q6 -6 10 1 q8 0 5 8 q4 6 -3 9 q-3 6 -10 4 q-8 3 -11 -3 q-6 -1 -4 -5 z"/><path d="M15 20 q3 3 0 6 M22 15 q3 4 -1 7 M29 19 q2 4 -2 6" fill="none"/></g>`,
+    touffe:`<path d="M4 34 Q22 30 40 34 L40 40 L4 40 Z" fill="#8C6A4A"/><g fill="${col}"><path d="M6 17 Q14 10 21 17 Q14 20 6 17 Z"/><path d="M12 18 L14 34 L16 34 L15 18 Z"/><path d="M20 12 Q29 4 37 12 Q29 15 20 12 Z"/><path d="M27 14 L26 34 L29 34 L30 14 Z"/></g>`
+  }[forme] || "";
+  return `<svg viewBox="0 0 44 44" width="${s}" height="${s}" aria-hidden="true">${g}</svg>`;
+}
+function badgeOf(sp){
+  if(sp.danger) return `<span class="badge ${sp.comest}">${sp.comest==="mortel"?"Mortel":"Toxique"}</span>`;
+  const c=String(sp.comest||""); const lab = /^excellent/.test(c) ? "Excellent" : /^bon/.test(c) ? "Bon" : "Moyen";
+  return `<span class="badge">${lab}</span>`;
+}
+let catFilter = "saison";
+function catItems(){
+  const q=norm(($("#cat-q")||{}).value||"").trim(), m=new Date().getMonth()+1;
+  const ed = ALLSP().map(s=>spFull(s.id)).sort((a,b)=>prio(a.id)-prio(b.id) || a.nom.localeCompare(b.nom,"fr"));
+  const dg = DANGER.map(d=>({...d, danger:true}));
+  if(q) return {ed: ed.filter(s=>norm(s.nom+" "+s.latin).includes(q)), dg: dg.filter(s=>norm(s.nom+" "+s.latin).includes(q))};
+  if(catFilter==="saison") return {ed: ed.filter(s=>s.mois.includes(m)), dg: dg.filter(s=>s.mois.includes(m))};
+  if(catFilter==="comest") return {ed, dg:[]};
+  if(catFilter==="danger") return {ed:[], dg};
+  return {ed, dg};
+}
+function catRow(sp){
+  const k = S.keys && S.keys[sp.id];
+  return `<button type="button" class="cat-it" data-guide="${sp.id}"><span class="thumb" data-latin="${esc(sp.latin)}" data-nom="${esc(sp.nom)}">${shapeSVG(sp.forme||"lames", sp.col||"#B9A27E", 40)}</span><span><b>${esc(sp.nom)}</b><i>${esc(sp.latin)}</i></span>${k && k.k>=0.05 ? `<span class="badge pct" title="Chance dans la zone scannée">${pct(k.k)}</span>` : badgeOf(sp)}</button>`;
+}
+function buildCatalog(){
+  const box=$("#cat-list"); if(!box) return;
+  const {ed,dg}=catItems();
+  let h="";
+  if(ed.length) h+=`<h3 class="cat-h">${catFilter==="saison" && !($("#cat-q").value) ? "De saison, à chercher" : "Comestibles"}</h3>` + ed.map(catRow).join("");
+  if(dg.length) h+=`<h3 class="cat-h dg">Dangereux, à savoir reconnaître</h3>` + dg.map(catRow).join("");
+  if(!h) h=`<p class="cat-empty">Aucune espèce ne correspond.</p>`;
+  box.innerHTML=h;
+  observeThumbs(box);
+}
+$("#cat-q").addEventListener("input", ()=>buildCatalog());
+document.querySelector("#v-especes .filters").addEventListener("click", e=>{
+  const b=e.target.closest("button[data-f]"); if(!b) return; catFilter=b.dataset.f; $("#cat-q").value="";
+  document.querySelectorAll("#v-especes .filters button").forEach(x=>x.setAttribute("aria-checked", x===b)); buildCatalog();
+});
+/* Vignettes : photo de la page Wikipédia de l’espèce, chargée quand la ligne devient visible */
+const THUMB_KEY="thumbs-v1"; let thumbStore={}; try{ thumbStore=JSON.parse(localStorage.getItem(THUMB_KEY))||{}; }catch(e){}
+let thumbObs=null;
+function observeThumbs(root){
+  const els=[...root.querySelectorAll(".thumb[data-latin]")];
+  const load = async el=>{
+    const latin=el.dataset.latin.replace(/\s+(spp?\.?|et voisines)$/,"").split(",")[0].trim(), nom=el.dataset.nom;
+    let src=thumbStore[latin];
+    if(src===undefined){
+      let res=null; for(const [lang,t] of [["fr",latin],["fr",nom],["en",latin]]){ try{ res=await wikiSummary(lang,t); }catch(e){} if(res) break; }
+      src = res ? res.src : null; thumbStore[latin]=src; if(src){ try{ localStorage.setItem(THUMB_KEY, JSON.stringify(Object.fromEntries(Object.entries(thumbStore).filter(([k,v])=>v)))); }catch(e){} }
+    }
+    if(src){ const im=new Image(); im.alt=""; im.decoding="async"; im.onload=()=>{ el.innerHTML=""; el.appendChild(im); }; im.src=src; }
+  };
+  if(!("IntersectionObserver" in window)){ els.forEach(load); return; }
+  if(!thumbObs) thumbObs=new IntersectionObserver(ents=>{ for(const en of ents) if(en.isIntersecting){ thumbObs.unobserve(en.target); load(en.target); } }, {root:null, rootMargin:"200px"});
+  els.forEach(el=>thumbObs.observe(el));
+}
+
+/* ----- Fiche guide ----- */
+function closeGuide(){ const g=$("#guide"); if(g){ g.hidden=true; g.innerHTML=""; } const c=$("#catalog"); if(c) c.hidden=false; }
+function openGuide(id){
+  const sp=spFull(id); if(!sp) return;
+  map.closePopup();
+  setTab("especes", {sheet: isMobile() ? "full" : null, keepGuide:true, keep:true});
+  $("#catalog").hidden=true;
+  const g=$("#guide"); g.hidden=false;
+  const m=new Date().getMonth()+1, k=S.keys && S.keys[id];
+  const mois = sp.mois ? sp.mois.map(x=>MOIS[x-1]).join(", ") : "";
+  const hotes = (sp.hotes||[]).length && (sp.hotes||[]).length<10 ? sp.hotes.map(h=>HOST_NOM[h]||h).join(", ") : (sp.milieu==="ouvert" ? "milieux ouverts" : "");
+  const confondu = sp.danger ? Object.entries(GUIDE).filter(([gid,v])=>(v.faux||[]).some(f=>f.id===id)).map(([gid])=>spFull(gid)).filter(Boolean) : [];
+  let h = `<button type="button" class="g-back" id="g-back">‹ Espèces</button>
+    <div class="g-title"><div><h1>${esc(sp.nom)}</h1><i>${esc(sp.latin)}</i></div>${badgeOf(sp)}</div>
+    <div class="gal" id="g-gal"><figure class="solo"><div class="ph">${shapeSVG(sp.forme||"lames", sp.col||"#B9A27E", 120)}</div><figcaption>Recherche de photos…</figcaption></figure></div>`;
+  if(k && !sp.danger) h += `<div class="g-now">${k.k>=0.05 ? `Dans la zone scannée : <b>${pct(k.k)}</b> de chance dans les meilleurs coins${S.mode==="meteo"?" pour le jour choisi":""}.` : `Peu de chances dans la zone scannée${S.mode==="meteo"?" pour le jour choisi":""}.`}</div>`;
+  else if(sp.mois && !sp.danger) h += `<div class="g-now">${sp.mois.includes(m) ? "De saison en ce moment." : "Hors saison en ce moment."}${sp.suivi===false ? " Pas suivi par le calcul dans la région de la carte." : ""}</div>`;
+  h += `<div class="g-facts">${mois?`<span>${esc(mois)}</span>`:""}${sp.alt?`<span>${fmt(sp.alt[0])} à ${fmt(sp.alt[1])} m</span>`:""}${sp.sol?`<span>sol ${esc(sp.sol)}</span>`:""}${hotes?`<span>${esc(hotes)}</span>`:""}</div>`;
+  if(sp.habitat) h += `<p style="margin:0;font-size:14.5px">${esc(sp.habitat)}</p>`;
+  if(sp.steps && sp.steps.length) h += `<section class="g-sec"><h2>${sp.danger?"Le reconnaître":"Reconnaître, pas à pas"}</h2><ol class="steps">${sp.steps.map(([t,d])=>`<li><div><b>${esc(t)}</b><p>${esc(d)}</p></div></li>`).join("")}</ol></section>`;
+  if(sp.danger) h += `<div class="urg"><b>Ce qu’il provoque.</b> ${esc(sp.effets)}</div>`;
+  if(confondu.length) h += `<section class="g-sec"><h2>On le confond avec</h2><p style="margin:0;font-size:14.5px">${confondu.map(c=>`<b class="lnk" data-guide="${c.id}" style="text-decoration:underline;text-underline-offset:3px;cursor:pointer">${esc(c.nom)}</b>`).join(", ")}</p></section>`;
+  if(!sp.danger){
+    const faux=sp.faux||[];
+    h += `<section class="g-sec"><h2>Ne pas confondre avec</h2>${faux.length ? `<div class="faux">${faux.map(f=>`<div class="f ${norm(f.niv).replace(/\s+/g,"-")}"><header><b class="${f.id?"lnk":""}" ${f.id?`data-guide="${f.id}"`:""}>${esc(f.nom)}</b>${f.niv==="mortel"?'<span class="badge mortel">Mortel</span>':f.niv==="toxique"?'<span class="badge toxique">Toxique</span>':`<span class="badge">${esc(f.niv.charAt(0).toUpperCase()+f.niv.slice(1))}</span>`}</header><i>${esc(f.latin)}</i><p>${esc(f.diff)}</p></div>`).join("")}</div>` : `<p style="margin:0;font-size:14.5px">Pas de confusion dangereuse connue si l’on vérifie chaque étape ci-dessus.</p>`}</section>`;
+    h += `<section class="g-sec"><h2>Avant de manger</h2>${sp.cuisine?`<p style="margin:0 0 6px;font-size:14.5px">${esc(sp.cuisine)}</p>`:""}<ul class="g-rules">${SAFETY.regles.map(r=>`<li>${esc(r)}</li>`).join("")}</ul></section>`;
+  }
+  h += `<div class="urg">${esc(SAFETY.urgence)}<br><a class="call" href="tel:15">Appeler le 15</a><a class="call" href="https://centres-antipoison.net/" target="_blank" rel="noopener">Centres antipoison</a></div>`;
+  if(!sp.danger) h += `<div class="g-act"><button type="button" class="bigbtn" id="g-hunt" ${sp.suivi?"":"disabled"}>${S.species.includes(id)?"Déjà dans mes champignons":"Le chercher sur la carte"}</button><button type="button" class="bigbtn" id="g-top">Haut de la fiche</button></div>`;
+  h += `<p class="g-src">${esc(SAFETY.sources)}</p>`;
+  g.innerHTML=h;
+  panel.scrollTop=0;
+  $("#g-back").addEventListener("click", ()=>{ closeGuide(); buildCatalog(); panel.scrollTop=0; });
+  const top=$("#g-top"); if(top) top.addEventListener("click", ()=>{ panel.scrollTop=0; });
+  const hunt=$("#g-hunt"); if(hunt) hunt.addEventListener("click", ()=>{
+    S.species=[id, ...S.species.filter(x=>x!==id)].slice(0,3); S.allMode=false; saveMySpecies(); buildSpecies(); render(); updateSummary();
+    setTab("carte"); banner.show(`${sp.nom} ajouté à tes champignons. Zoome sur un coin et touche « Scan ».`);
+  });
+  loadGallery(sp);
+}
+
+/* Galerie : photos de l’article Wikipédia de l’espèce (plusieurs vues), auteurs et licences lus sur Wikimedia Commons */
+const GAL_BAD = /(map|carte|distribution|range|logo|icon|spore|micro|bulliard|sowerby|krombholz|plate|planche|tafel|drawing|dessin|illustration|herbar|stamp|timbre|chart|diagram|schema|sch[eé]ma|\.svg|\.gif|\.tif)/i;
+async function wikiMedia(lang, title){
+  const r = await fetch(`https://${lang}.wikipedia.org/api/rest_v1/page/media-list/${encodeURIComponent(title.replace(/ /g,"_"))}`);
+  if(!r.ok) return [];
+  const js = await r.json();
+  return (js.items||[]).filter(it=>it.type==="image" && it.showInGallery!==false && it.title && !GAL_BAD.test(it.title)).map(it=>it.title.replace(/^(Fichier|File):/,"File:"));
+}
+const stripTags = s => String(s||"").replace(/<[^>]*>/g,"").replace(/\s+/g," ").trim();
+async function commonsInfo(titles){
+  const url=`https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=800&titles=${encodeURIComponent(titles.join("|"))}`;
+  const js = await fetchJSON(url, {}, 20000);
+  const pages = Object.values((js.query||{}).pages||{});
+  const byTitle = {}; for(const p of pages){ const ii=p.imageinfo&&p.imageinfo[0]; if(!ii) continue; const md=ii.extmetadata||{};
+    byTitle[p.title.replace(/_/g," ")] = {src: ii.thumburl||ii.url, page: ii.descriptionurl, auteur: stripTags(md.Artist&&md.Artist.value).slice(0,80), licence: stripTags(md.LicenseShortName&&md.LicenseShortName.value)}; }
+  return titles.map(t=>byTitle[t.replace(/_/g," ")]).filter(x=>x && x.src);
+}
+async function loadGallery(sp){
+  const box=$("#g-gal"); if(!box) return;
+  const latin=sp.latin.replace(/\s+(spp?\.?|et voisines)$/,"").split(",")[0].trim(), key="gal-v1:"+latin;
+  let items=null; try{ items=JSON.parse(localStorage.getItem(key)); }catch(e){}
+  if(!items){
+    try{
+      let titles=[];
+      for(const [lang,t] of [["fr",latin],["fr",sp.nom],["en",latin]]){
+        try{ const l=await wikiMedia(lang,t); for(const x of l) if(!titles.includes(x)) titles.push(x); }catch(e){}
+        if(titles.length>=6) break;
+      }
+      titles=titles.slice(0,6);
+      items = titles.length ? await commonsInfo(titles) : [];
+      if(items.length) try{ localStorage.setItem(key, JSON.stringify(items)); }catch(e){}
+    }catch(e){ items=[]; }
+  }
+  if($("#g-gal")!==box) return;
+  if(!items.length){ box.querySelector("figcaption").textContent = navigator.onLine ? "Pas de photo trouvée : schéma de la silhouette." : "Photos indisponibles hors connexion : schéma de la silhouette."; return; }
+  box.innerHTML = items.map((it,i)=>`<figure${items.length===1?' class="solo"':""}><img src="${esc(it.src)}" alt="Photo ${i+1} de ${esc(sp.nom)}" loading="${i?"lazy":"eager"}"><figcaption>${esc(it.auteur||"Auteur inconnu")}${it.licence?`, ${esc(it.licence)}`:""} · <a href="${esc(it.page)}" target="_blank" rel="noopener">Wikimedia Commons</a></figcaption></figure>`).join("");
+  if(items.length>1) box.insertAdjacentHTML("afterend", `<p class="galnote">${items.length} photos, fais glisser. Elles illustrent l’espèce, elles ne suffisent pas à l’identifier.</p>`);
+}
+
+/* ----- Carnet : partager sa position ----- */
+let shareData=null;
+function doShare(d){
+  if(navigator.share){ return navigator.share(d).then(()=>true).catch(e=>{ if(e && e.name==="AbortError") return true; return false; }); }
+  return Promise.resolve(false);
+}
+$("#sharepos").addEventListener("click", ()=>{
+  const note=$("#repnote");
+  const go = (lat, lon, acc)=>{
+    const ll=`${lat.toFixed(5)},${lon.toFixed(5)}`;
+    shareData = {title:"Ma position", text:`Je suis ici : ${lat.toFixed(5)}, ${lon.toFixed(5)}${acc?` (à ${Math.round(acc)} m près)`:""}.`, url:`https://www.google.com/maps/search/?api=1&query=${ll}`};
+    doShare(shareData).then(ok=>{
+      if(ok){ note.textContent="Position partagée."; return; }
+      note.innerHTML = `Position trouvée : ${esc(ll)}. <button type="button" class="pill" id="share2">Envoyer</button> <button type="button" class="pill" id="copy2">Copier</button>`;
+    });
+  };
+  if(H.on && H.last){ go(H.last[0], H.last[1], null); return; }
+  if(meMarker && meCircle && Date.now()-(S.meAt||0) < 60000){ const p=meMarker.getLatLng(); go(p.lat, p.lng, meCircle.getRadius()); return; }
+  if(!navigator.geolocation){ note.textContent="Ce navigateur ne donne pas accès à la position."; return; }
+  note.textContent="Recherche de ta position…";
+  navigator.geolocation.getCurrentPosition(pos=>{ showMe(pos); S.meAt=Date.now(); go(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy); },
+    err=>{ note.textContent = err.code===1 ? "Localisation refusée : autorise-la pour ce site dans les réglages." : "Signal GPS introuvable."; },
+    {enableHighAccuracy:true, timeout:20000, maximumAge:15000});
+});
+document.addEventListener("click", e=>{
+  if(!shareData) return;
+  if(e.target.id==="share2") doShare(shareData).then(ok=>{ if(ok) $("#repnote").textContent="Position partagée."; });
+  if(e.target.id==="copy2"){ const t=`${shareData.text} ${shareData.url}`; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(()=>{ $("#repnote").textContent="Position copiée : colle-la dans un message."; }).catch(()=>{ $("#repnote").textContent=t; }); }
+});
+
+/* ----- Réglages : fond de carte et couches ----- */
+const OVL = [["Relief",relief],["Géologie (BRGM)",geol],["Forêts publiques",foretsPub],["Forêts anciennes",foretsAnc],["Peuplements analysés",forestLayer],["Cours d’eau et sources",waterLayerRef],["Observations naturalistes",obsLayerRef],["Mes repères",repLayerRef],["Contours des départements",zone]];
+function syncOverlays(){
+  const box=$("#overlays"); if(!box) return;
+  if(!box.children.length) box.innerHTML = OVL.map(([n],i)=>`<label>${esc(n)}<input type="checkbox" data-i="${i}"></label>`).join("");
+  box.querySelectorAll("input").forEach(inp=>{ inp.checked = map.hasLayer(OVL[Number(inp.dataset.i)][1]); });
+  document.querySelectorAll("#basepick .opt").forEach(b=>b.setAttribute("aria-pressed", map.hasLayer(b.dataset.base==="plan"?basePlan:baseOrtho)));
+}
+$("#overlays").addEventListener("change", e=>{ const l=OVL[Number(e.target.dataset.i)][1]; if(e.target.checked) l.addTo(map); else map.removeLayer(l); });
+$("#basepick").addEventListener("click", e=>{ const b=e.target.closest(".opt"); if(!b) return; const on=b.dataset.base==="plan"?basePlan:baseOrtho, off=on===basePlan?baseOrtho:basePlan;
+  if(!map.hasLayer(on)){ map.removeLayer(off); on.addTo(map); on.bringToBack(); } syncOverlays(); });
+let ovlTimer=null; map.on("layeradd layerremove", ()=>{ clearTimeout(ovlTimer); ovlTimer=setTimeout(syncOverlays, 50); });
+syncOverlays();
+
+/* ----- Météo sur place ----- */
+let wxMode = "map", lastGPS = null, wxStamp = {k:null, t:0};
+function showWxDefault(){
+  const ll = wxMode==="gps" && lastGPS ? lastGPS : lastClickLL ? [lastClickLL.lat,lastClickLL.lng] : (CENTER || [map.getCenter().lat, map.getCenter().lng]);
+  const k = ll.map(v=>v.toFixed(3)).join(","); if(wxStamp.k===k && Date.now()-wxStamp.t < 10*60000 && $("#wxnow").children.length) return;
+  showPlaceWeather(ll, wxMode==="gps");
+}
+$("#wx-gps").addEventListener("click", ()=>useGPS());
+$("#status").addEventListener("click", e=>e.currentTarget.classList.toggle("open"));
+
 /* Service worker : application et tuiles disponibles hors ligne */
 if("serviceWorker" in navigator && location.protocol.startsWith("http")){
   navigator.serviceWorker.register("./sw.js").catch(e=>console.warn("Service worker", e));
@@ -3485,10 +4266,10 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
     if(n){ await openTrip(); setStatus("Pas de réseau : dernière sortie ouverte. Les autres sont dans « Mes sorties ».", false); return; }
   }
   let lv=null; try{ lv=JSON.parse(localStorage.getItem("lastView")); }catch(e){}
-  if(lv && deptAt(lv.lat, lv.lon)) map.setView([lv.lat, lv.lon], lv.z); else map.fitBounds(REGION_BOUNDS, {paddingTopLeft:[20,80], paddingBottomRight:[20, window.matchMedia("(max-width:760px)").matches ? 190 : 20]});
+  if(lv && (DEPTS.length ? deptNear(lv.lat, lv.lon) : inMetro(lv.lat, lv.lon))) map.setView([lv.lat, lv.lon], lv.z); else map.fitBounds(REGION_BOUNDS, {paddingTopLeft:[20,80], paddingBottomRight:[20, window.matchMedia("(max-width:760px)").matches ? 190 : 20]});
   drawZones(); setTimeout(refreshMap, 50);
-  S.med = null; setSpeciesSet(false); loadMySpecies(); buildSpecies();
-  setStatus("Zoomez sur le coin à étudier (15 km de côté au plus), puis touchez l’amanite « Scan » en haut à gauche.");
+  S.med = null; setSpeciesSet(false); loadMySpecies(); buildSpecies(); updateSummary();
+  setStatus("");
   const c=map.getCenter(); setArea(c.lat, c.lng);
 })();
 window.__pousses = {classifyForest, geomContains, hostFactor, soilFactor, weatherParts, terrainParts, waterIndex, pointStats, blendWeather, SPECIES, W};

@@ -1,7 +1,7 @@
 {
   "name": "Carte des pousses",
   "short_name": "Pousses",
-  "description": "Chances de pousse des champignons : Aigoual, Pic Saint-Loup, Haut-Languedoc.",
+  "description": "Chances de pousse des champignons en France métropolitaine.",
   "lang": "fr",
   "start_url": "./",
   "scope": "./",
