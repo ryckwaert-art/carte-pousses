@@ -3580,7 +3580,7 @@ handle.addEventListener("keydown", e=>{ if(e.key==="Enter"||e.key===" "){ e.prev
   handle.addEventListener("pointerup", end); handle.addEventListener("pointercancel", end);
 })();
 window.addEventListener("resize", ()=>setSheet(sheetState));
-setSheet("peek");
+setSheet("closed"); // à l’ouverture, la carte seule : le volet s’ouvre avec l’onglet Carte
 // Sur téléphone, un clic sur la carte replie le volet pour laisser voir la fenêtre d’information
 map.on("popupopen", ()=>{ document.body.classList.add("popup-open"); if(sheetState==="half" || sheetState==="full") setSheet("peek"); });
 map.on("popupclose", ()=>document.body.classList.remove("popup-open"));

@@ -3,7 +3,7 @@
    - bibliothèques et polices : copie locale d’abord
    - tuiles des fonds de carte : copie locale d’abord, enregistrées au fil de la navigation et lors de « Préparer la sortie »
    - données (météo, forêts, altitudes…) : toujours depuis le réseau */
-const APP = "pousses-app-v35", LIBS = "pousses-libs-v1", TILES = "pousses-tiles-v1", PHOTOS = "pousses-photos-v1";
+const APP = "pousses-app-v36", LIBS = "pousses-libs-v1", TILES = "pousses-tiles-v1", PHOTOS = "pousses-photos-v1";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon2-180.png", "./icon2-192.png", "./icon2-512.png", "./lib/leaflet.js", "./lib/leaflet.css", "./lib/geotiff.js", "./departements.json",
   "./fonts/HKGrotesk-Regular.woff2", "./fonts/HKGrotesk-Italic.woff2", "./fonts/HKGrotesk-Medium.woff2", "./fonts/HKGrotesk-SemiBold.woff2", "./fonts/HKGrotesk-Bold.woff2"];
 const LIB_HOSTS = ["cdnjs.cloudflare.com", "cdn.jsdelivr.net", "fonts.googleapis.com", "fonts.gstatic.com"];
