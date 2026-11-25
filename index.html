@@ -450,6 +450,10 @@ h2.cap{font-size:12.5px;font-weight:700;letter-spacing:.07em;text-transform:uppe
 .dlist .d .mm{color:var(--muted)}
 .dlist .d .mm.wet{color:var(--water);font-weight:700}
 .wx-src{font-size:12px;color:var(--muted)}
+.quickctl{display:flex;flex-direction:column;gap:8px;margin-top:8px !important}
+.qbtn{width:58px;min-height:56px;padding:5px 2px 4px;border-radius:14px;border:2px solid var(--ink);background:var(--panel);color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-shadow:0 2px 6px rgba(0,0,0,.25);cursor:pointer;font:700 9.5px/1.05 var(--sans);letter-spacing:.02em;text-align:center}
+.qbtn[aria-pressed="true"]{background:var(--moss);border-color:var(--moss);color:#fff}
+.qbtn.hk[aria-pressed="true"]{background:#2E7BD6;border-color:#2E7BD6}
 /* Onglets */
 #tabbar{position:fixed;left:0;bottom:0;width:390px;z-index:1300;height:var(--tabh);padding-bottom:env(safe-area-inset-bottom,0px);display:grid;grid-template-columns:repeat(5,minmax(0,1fr));background:var(--panel);border-top:1px solid var(--line);border-right:1px solid var(--line)}
 #tabbar button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:0;background:transparent;color:var(--muted);font:inherit;font-size:11px;font-weight:500;cursor:pointer;padding:6px 0 4px}
@@ -3854,7 +3858,7 @@ function startHike(){
 async function stopHike(){
   if(H.watch!=null) navigator.geolocation.clearWatch(H.watch); clearInterval(H.timer);
   try{ if(H.wake) await H.wake.release(); }catch(e){} H.wake=null;
-  H.on=false; document.body.classList.remove("hiking"); $("#hud").hidden=true; setTimeout(refreshMap, 50);
+  H.on=false; document.body.classList.remove("hiking"); $("#hud").hidden=true; setTimeout(refreshMap, 50); setTimeout(()=>{ if(typeof syncQuick==="function") syncQuick(); }, 0);
   if(H.zones){ map.removeLayer(H.zones); H.zones=null; }
   $("#hike").classList.remove("on"); $("#hike").setAttribute("aria-pressed","false");
   if(H.track.length>2 && confirm(`Parcours de ${fmt(H.dist/1000,1)} km. L’exporter en fichier GPX ?`)){
@@ -3863,7 +3867,7 @@ async function stopHike(){
   }
   if(H.line && !confirm("Garder le tracé du parcours affiché sur la carte ?")){ map.removeLayer(H.line); }
 }
-$("#hike").addEventListener("click", ()=>{ H.on ? stopHike() : startHike(); });
+$("#hike").addEventListener("click", ()=>{ H.on ? stopHike() : startHike(); setTimeout(()=>{ if(typeof syncQuick==="function") syncQuick(); }, 50); });
 $("#hud-stop").addEventListener("click", stopHike);
 $("#hud-center").addEventListener("click", ()=>{ H.follow=true; if(H.last) map.setView(H.last, Math.max(map.getZoom(),15)); });
 $("#hud-rep").addEventListener("click", ()=>openRepForm({gps:true, type:"ok"}));
@@ -4274,6 +4278,27 @@ function showWxDefault(){
 }
 $("#wx-gps").addEventListener("click", ()=>useGPS());
 $("#status").addEventListener("click", e=>e.currentTarget.classList.toggle("open"));
+
+
+/* Boutons rapides sur la carte : forêts publiques et randonnée, toujours à portée de doigt */
+const QuickCtl = L.Control.extend({ options:{position:"topright"},
+  onAdd(){ const d=L.DomUtil.create("div","quickctl leaflet-control");
+    d.innerHTML = `<button type="button" class="qbtn" id="q-pub" aria-pressed="false" title="Ne colorer que les forêts publiques, où la cueillette familiale est tolérée"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l5 7h-3l4 6H6l4-6H7z"/><path d="M12 16v5"/></svg>Forêts<br>publiques</button>
+      <button type="button" class="qbtn hk" id="q-hike" aria-pressed="false" title="Mode randonnée : suivi GPS, distance, repères"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13" cy="4" r="2"/><path d="M11 21l2-6 3 3v3M13 15l-1-5 4 2 2 3M12 10l-4 2-1 4"/><path d="M18 9l2 12"/></svg>Rando</button>`;
+    L.DomEvent.disableClickPropagation(d); L.DomEvent.disableScrollPropagation(d); return d; } });
+new QuickCtl().addTo(map);
+function syncQuick(){
+  const pb=$("#q-pub"), hk=$("#q-hike"); if(pb) pb.setAttribute("aria-pressed", S.land==="public"); if(hk) hk.setAttribute("aria-pressed", !!(typeof H!=="undefined" && H.on));
+}
+$("#q-pub").addEventListener("click", ()=>{
+  const on = S.land!=="public"; const r=document.querySelector(`input[name="land"][value="${on?"public":"tous"}"]`);
+  r.checked=true; r.dispatchEvent(new Event("change",{bubbles:true}));
+  if(on){ if(!map.hasLayer(foretsPub)) foretsPub.addTo(map); banner.show(S.grid ? "Coloration limitée aux forêts publiques (contours en vert). Cueillette familiale tolérée, souvent 5 litres par personne et par jour." : "Forêts publiques affichées. Le prochain scan ne colorera qu’elles."); }
+  else { if(map.hasLayer(foretsPub)) map.removeLayer(foretsPub); }
+  syncQuick();
+});
+$("#q-hike").addEventListener("click", ()=>{ H.on ? stopHike() : startHike(); setTimeout(syncQuick, 50); });
+document.querySelectorAll('input[name="land"]').forEach(r=>r.addEventListener("change", syncQuick));
 
 /* Service worker : application et tuiles disponibles hors ligne */
 if("serviceWorker" in navigator && location.protocol.startsWith("http")){
